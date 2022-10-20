@@ -65,6 +65,7 @@ class Mesh():
             y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])
             X_bl = tf.concat([x_bl, y_bl], axis=1)
             self.add_data(bl,x_bl,y_bl,X_bl)
+            print(X_bl[0])
 
 
         xspace = np.linspace(self.lb[0], self.ub[0], self.N_r + 1, dtype=self.DTYPE)
@@ -90,3 +91,33 @@ class Mesh():
         plt.xlabel('$x$')
         plt.ylabel('$y$')
         plt.title('Positions of collocation points and boundary data');
+
+# modificar para dominio circular en cartesianas
+
+########################################################################################################
+
+
+def set_domain(X):
+    x,y = X
+    xmin = x[0]
+    xmax = x[1]
+    ymin = y[0]
+    ymax = y[1]
+
+    lb = tf.constant([xmin, ymin], dtype='float32')
+    ub = tf.constant([xmax, ymax], dtype='float32')
+
+    return (lb,ub)
+
+
+if __name__=='__main__':
+    domain = ([0.01,1],[0,2*np.pi])
+    #PDE = PDE_Model()
+    domain = set_domain(domain)
+
+    lb = {'type':'D', 'value':0, 'fun':None, 'dr':None, 'r':1}
+
+    borders = {'1':lb}
+
+    mesh = Mesh(domain, N_b=20, N_r=1500)
+    mesh.create_mesh(borders)
