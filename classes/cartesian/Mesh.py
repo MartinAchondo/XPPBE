@@ -10,6 +10,7 @@ class Mesh():
         N_r=200
         ):
         self.DTYPE='float32'
+        self.pi = tf.constant(np.pi, dtype=self.DTYPE)
         self.N_b = N_b
         self.N_r = int(np.sqrt(N_r))
         self.lb = domain[0]
@@ -33,7 +34,7 @@ class Mesh():
             if fun == None:
                 u_b = self.fun_u_b(x1, x2, value=value)
             else:
-                ub = fun(x1, x2)
+                u_b = fun(x1, x2)
             self.XD_data.append(X)
             self.UD_data.append(u_b)
         elif type_b == 'N':
@@ -58,19 +59,31 @@ class Mesh():
         self.derN = list()
         self.XI_data = list()
         self.derI = list()
-
+ 
+        #estan a bases de radios (fijar un radio)
         for bl in self.borders.values():
-            x_bl = tf.ones((self.N_b,1), dtype=self.DTYPE)*bl['r']
-            y_bl = tf.constant(np.linspace(self.lb[1], self.ub[1], self.N_b, dtype=self.DTYPE))
-            y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])
+            r_bl = tf.ones((self.N_b,1), dtype=self.DTYPE)*bl['r']
+            theta_bl = tf.constant(np.linspace(0, 2*self.pi, self.N_b, dtype=self.DTYPE))
+            theta_bl = tf.reshape(theta_bl,[theta_bl.shape[0],1])
+            x_bl = r_bl*tf.cos(theta_bl)
+            y_bl = r_bl*tf.sin(theta_bl)
             X_bl = tf.concat([x_bl, y_bl], axis=1)
             self.add_data(bl,x_bl,y_bl,X_bl)
-            print(X_bl[0])
 
 
+        #crear dominio circular (cascaron para generalizar)
         xspace = np.linspace(self.lb[0], self.ub[0], self.N_r + 1, dtype=self.DTYPE)
         yspace = np.linspace(self.lb[1], self.ub[1], self.N_r + 1, dtype=self.DTYPE)
-        X, Y = np.meshgrid(xspace, yspace)
+        ############################33#####
+        Lx = list()
+        Ly = list()
+        r = xspace**2+yspace**2
+        for i in range(len(xspace)):
+            if r[i]<1:
+                Lx.append(xspace)
+                Ly.append(yspace)
+        #################################33
+        X, Y = np.meshgrid(np.array(Lx), np.array(Ly))
         self.X_r = tf.constant(np.vstack([X.flatten(),Y.flatten()]).T)
  
         self.D_bl = (x_bl,y_bl)
@@ -83,12 +96,21 @@ class Mesh():
             'interface': (self.XI_data,self.derI)
         }
 
+    def get_X(self,X):
+        R = list()
+        for i in range(X.shape[1]):
+            R.append(X[:,i:i+1])
+        return R
+
+    def stack_X(self,x,y):
+        L = list()
+        R = tf.stack([self.x[:,0], self.y[:,0]], axis=1)
+        return R
+
     def plot_points(self):
-        r1,o1 = self.D_bl
+        x1,y1 = self.D_bl
         rm,om = self.D_r
         fig = plt.figure(figsize=(9,6))
-        x1 = r1*np.cos(o1)
-        y1 = r1*np.sin(o1)
         xm = rm*np.cos(om)
         ym = rm*np.sin(om)
         plt.scatter(x1, y1, marker='X', vmin=-1, vmax=1)
@@ -126,3 +148,5 @@ if __name__=='__main__':
 
     mesh = Mesh(domain, N_b=20, N_r=1500)
     mesh.create_mesh(borders)
+
+    print(mesh.get_X(mesh.data_mesh['residual']))

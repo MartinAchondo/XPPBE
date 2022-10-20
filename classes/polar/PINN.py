@@ -171,8 +171,7 @@ class PINN():
 
     def solve(self,N=1000,flag_time=True):
         self.flag_time = flag_time
-        lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay([1000,3000],[1e-2,1e-3,5e-4])
-        optim = tf.keras.optimizers.Adam(learning_rate=lr)
+        optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
         if self.flag_time:
             t0 = time()
             self.solve_with_TFoptimizer(optim, N)
