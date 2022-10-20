@@ -1,4 +1,7 @@
 /others
+/.others
 /.venv
 /saved_models
+/.saved_models
 commands.txt
+/.vscode
