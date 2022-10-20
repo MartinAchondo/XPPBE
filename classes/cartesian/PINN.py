@@ -22,7 +22,12 @@ class PINN():
         self.mesh = mesh
         self.lb = mesh.lb
         self.ub = mesh.ub
-        self.X_r,self.XD_data,self.UD_data,self.XN_data,self.UN_data,self.derN,self.XI_data,self.derI = self.mesh.data_mesh
+
+        self.X_r = self.mesh.data_mesh['residual']
+        self.XD_data,self.UD_data = self.mesh.data_mesh['dirichlet']
+        self.XN_data,self.UN_data,self.derN = self.mesh.data_mesh['neumann']
+        self.XI_data,self.derI = self.mesh.data_mesh['interface']
+
         self.x = self.X_r[:,0:1]
         self.y = self.X_r[:,1:2]
 

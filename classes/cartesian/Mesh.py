@@ -76,7 +76,12 @@ class Mesh():
         self.D_bl = (x_bl,y_bl)
         self.D_r = (self.X_r[:,0],self.X_r[:,1])
 
-        self.data_mesh = self.X_r,self.XD_data,self.UD_data,self.XN_data,self.UN_data,self.derN,self.XI_data,self.derI
+        self.data_mesh = {
+            'residual': self.X_r,
+            'dirichlet': (self.XD_data,self.UD_data),
+            'neumann': (self.XN_data,self.UN_data,self.derN),
+            'interface': (self.XI_data,self.derI)
+        }
 
     def plot_points(self):
         r1,o1 = self.D_bl
