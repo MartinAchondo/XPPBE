@@ -5,3 +5,4 @@
 /.saved_models
 commands.txt
 /.vscode
+*__pycache__
