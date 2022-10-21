@@ -63,6 +63,12 @@ class PINN():
 
         self.model.save(os.path.join(dir_path,name))
 
+    def load_preconditioner(self,precond):
+        self.precond = precond
+        self.precond.X_r = self.X_r
+        self.precond.x = self.x
+        self.precond.y = self.y
+
 
     def get_r(self):
         with tf.GradientTape(persistent=True) as tape:
@@ -78,13 +84,13 @@ class PINN():
         u_yy = tape.gradient(u_y, self.y)
 
         del tape
-        return self.PDE.fun_r(self.x, self.y, u_x, u_xx, u_yy)
+        return self.PDE.fun_r(self.x, u_x, u_xx, self.y, u_y, u_yy)
     
 
     def loss_fn(self):
         
         L = dict()
-        L['r'] = loss
+        L['r'] = 0
         L['D'] = 0
         L['N'] = 0
 
@@ -92,7 +98,8 @@ class PINN():
         r = self.get_r()
         phi_r = tf.reduce_mean(tf.square(r))
         loss = self.w_r*phi_r
-        
+        L['r'] += loss
+
         #dirichlet
         for i in range(len(self.XD_data)):
             u_pred = self.model(self.XD_data[i])
@@ -130,6 +137,15 @@ class PINN():
         g = tape.gradient(loss, self.model.trainable_variables)
         del tape
         return loss, L, g
+
+
+    def get_precond_grad(self):
+        with tf.GradientTape(persistent=True) as tape:
+            tape.watch(self.model.trainable_variables)
+            loss = self.precond.loss_fn(self.model,self.mesh)
+        g = tape.gradient(loss, self.model.trainable_variables)
+        del tape
+        return loss, g
     
     
     def solve_with_TFoptimizer(self, optimizer, N=1001):
@@ -147,6 +163,19 @@ class PINN():
             self.current_loss = loss.numpy()
             self.callback()
         
+ 
+    def precond_with_TFoptimizer(self, optimizer, N=1001):
+        @tf.function
+        def train_step_precond():
+            loss, grad_theta = self.get_precond_grad()
+            optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
+            return loss
+
+        for i in range(N):
+            loss = train_step_precond()
+            self.current_loss = loss.numpy()
+            self.callback()
+
 
     def callback(self, xr=None):
         if self.iter % 50 == 0:
@@ -166,19 +195,40 @@ class PINN():
         else:
             self.solve_with_TFoptimizer(optim, N)
 
+
+    def preconditionate(self,N=1000,flag_time=True):
+        self.flag_time = flag_time
+        optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
+        if self.flag_time:
+            t0 = time()
+            self.precond_with_TFoptimizer(optim, N)
+            print('\nComputation time: {} seconds'.format(time()-t0))
+        else:
+            self.precond_with_TFoptimizer(optim, N)
+
+
     def evaluate_u(self,X):
         X_input = tf.constant([X])
         U_output = self.model(X_input)
-        return U_output
+        return U_output.numpy()[0][0]
 
-    def get_u(self,N=600):
-        xspace = tf.constant(np.linspace(self.lb[0], self.ub[0], N + 1))
-        yspace = tf.constant(np.linspace(self.lb[1], self.ub[1], N + 1))
+    def get_u(self,N=100):
+        xspace = np.linspace(self.lb[0], self.ub[0], N + 1, dtype=self.DTYPE)
+        yspace = np.linspace(self.lb[1], self.ub[1], N + 1, dtype=self.DTYPE)
         X, Y = np.meshgrid(xspace, yspace)
-        Xgrid = np.vstack([X.flatten(),Y.flatten()]).T
+
+        r = np.sqrt(X**2 + Y**2)
+        if 'rmin' in self.mesh.ins_domain:
+            inside = r < self.mesh.ins_domain['rmax'] and r > self.mesh.ins_domain['rmin']
+        else:
+            inside = r < self.mesh.ins_domain['rmax']
+        inside = r < 1
+
+        Xgrid = tf.constant(np.vstack([X[inside].flatten(),Y[inside].flatten()]).T)
+    
         upred = self.model(tf.cast(Xgrid,self.DTYPE))
-        U = upred.numpy().reshape(N+1,N+1)
-        return X,Y,U
+        
+        return X[inside].flatten(),Y[inside].flatten(),upred.numpy()
 
 
     def plot_loss_history(self, flag=True, ax=None):

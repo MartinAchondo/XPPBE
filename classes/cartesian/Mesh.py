@@ -48,10 +48,10 @@ class Mesh():
         elif type_b == 'I':
             self.XI_data.append(X)
 
-    def create_mesh(self,borders):
+    def create_mesh(self,borders,ins_domain):
 
         self.borders = borders
-
+        self.ins_domain = ins_domain
         self.XD_data = list()
         self.UD_data = list()
         self.XN_data = list()
@@ -74,17 +74,15 @@ class Mesh():
         #crear dominio circular (cascaron para generalizar)
         xspace = np.linspace(self.lb[0], self.ub[0], self.N_r + 1, dtype=self.DTYPE)
         yspace = np.linspace(self.lb[1], self.ub[1], self.N_r + 1, dtype=self.DTYPE)
-        ############################33#####
-        Lx = list()
-        Ly = list()
-        r = xspace**2+yspace**2
-        for i in range(len(xspace)):
-            if r[i]<1:
-                Lx.append(xspace)
-                Ly.append(yspace)
-        #################################33
-        X, Y = np.meshgrid(np.array(Lx), np.array(Ly))
-        self.X_r = tf.constant(np.vstack([X.flatten(),Y.flatten()]).T)
+        X, Y = np.meshgrid(xspace, yspace)
+        
+        r = np.sqrt(X**2 + Y**2)
+        if 'rmin' in ins_domain:
+            inside = r < ins_domain['rmax'] and r > ins_domain['rmin']
+        else:
+            inside = r < ins_domain['rmax']
+
+        self.X_r = tf.constant(np.vstack([X[inside].flatten(),Y[inside].flatten()]).T)
  
         self.D_bl = (x_bl,y_bl)
         self.D_r = (self.X_r[:,0],self.X_r[:,1])
@@ -103,17 +101,14 @@ class Mesh():
         return R
 
     def stack_X(self,x,y):
-        L = list()
-        R = tf.stack([self.x[:,0], self.y[:,0]], axis=1)
+        R = tf.stack([x[:,0], y[:,0]], axis=1)
         return R
 
     def plot_points(self):
         x1,y1 = self.D_bl
-        rm,om = self.D_r
+        xm,ym = self.D_r
         fig = plt.figure(figsize=(9,6))
-        xm = rm*np.cos(om)
-        ym = rm*np.sin(om)
-        plt.scatter(x1, y1, marker='X', vmin=-1, vmax=1)
+        plt.scatter(x1, y1, marker='X')
         plt.scatter(xm, ym, c='r', marker='.', alpha=0.1)
         plt.xlabel('$x$')
         plt.ylabel('$y$')
@@ -148,5 +143,3 @@ if __name__=='__main__':
 
     mesh = Mesh(domain, N_b=20, N_r=1500)
     mesh.create_mesh(borders)
-
-    print(mesh.get_X(mesh.data_mesh['residual']))
