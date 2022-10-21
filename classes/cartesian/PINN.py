@@ -49,7 +49,6 @@ class PINN():
     def adapt_PDE(self,PDE):
         self.PDE = PDE
 
-
     def load_NeuralNet(self,directory,name,lr):
         path = os.path.join(os.getcwd(),directory,name)
         NN_model = tf.keras.models.load_model(path, compile=False)
@@ -62,13 +61,6 @@ class PINN():
             os.makedirs(dir_path)
 
         self.model.save(os.path.join(dir_path,name))
-
-    def load_preconditioner(self,precond):
-        self.precond = precond
-        self.precond.X_r = self.X_r
-        self.precond.x = self.x
-        self.precond.y = self.y
-
 
     def get_r(self):
         with tf.GradientTape(persistent=True) as tape:
@@ -137,16 +129,6 @@ class PINN():
         g = tape.gradient(loss, self.model.trainable_variables)
         del tape
         return loss, L, g
-
-
-    def get_precond_grad(self):
-        with tf.GradientTape(persistent=True) as tape:
-            tape.watch(self.model.trainable_variables)
-            loss = self.precond.loss_fn(self.model,self.mesh)
-        g = tape.gradient(loss, self.model.trainable_variables)
-        del tape
-        return loss, g
-    
     
     def solve_with_TFoptimizer(self, optimizer, N=1001):
         @tf.function
@@ -162,20 +144,6 @@ class PINN():
             self.loss_bN.append(L_loss['N'])
             self.current_loss = loss.numpy()
             self.callback()
-        
- 
-    def precond_with_TFoptimizer(self, optimizer, N=1001):
-        @tf.function
-        def train_step_precond():
-            loss, grad_theta = self.get_precond_grad()
-            optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
-            return loss
-
-        for i in range(N):
-            loss = train_step_precond()
-            self.current_loss = loss.numpy()
-            self.callback()
-
 
     def callback(self, xr=None):
         if self.iter % 50 == 0:
@@ -183,7 +151,6 @@ class PINN():
                 print('It {:05d}: loss = {:10.8e}'.format(self.iter,self.current_loss))
         self.loss_hist.append(self.current_loss)
         self.iter+=1
-
 
     def solve(self,N=1000,flag_time=True):
         self.flag_time = flag_time
@@ -195,6 +162,37 @@ class PINN():
         else:
             self.solve_with_TFoptimizer(optim, N)
 
+
+class PINN_Precond(PINN):
+
+    def __init__(self):
+        super().__init__()
+
+    def load_preconditioner(self,precond):
+        self.precond = precond
+        self.precond.X_r = self.X_r
+        self.precond.x = self.x
+        self.precond.y = self.y
+
+    def get_precond_grad(self):
+        with tf.GradientTape(persistent=True) as tape:
+            tape.watch(self.model.trainable_variables)
+            loss = self.precond.loss_fn(self.model,self.mesh)
+        g = tape.gradient(loss, self.model.trainable_variables)
+        del tape
+        return loss, g
+
+    def precond_with_TFoptimizer(self, optimizer, N=1001):
+        @tf.function
+        def train_step_precond():
+            loss, grad_theta = self.get_precond_grad()
+            optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
+            return loss
+
+        for i in range(N):
+            loss = train_step_precond()
+            self.current_loss = loss.numpy()
+            self.callback()
 
     def preconditionate(self,N=1000,flag_time=True):
         self.flag_time = flag_time
