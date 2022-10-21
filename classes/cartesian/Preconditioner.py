@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 
-class preconditioner():
+class Preconditioner():
 
     def __init__(self):
         
@@ -31,3 +31,4 @@ class preconditioner():
         u = self.fun_r(self.x,self.y)
         loss = tf.reduce_mean(tf.square(upred-u))
         return loss
+        

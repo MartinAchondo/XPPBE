@@ -60,6 +60,9 @@ class Mesh():
         self.XI_data = list()
         self.derI = list()
  
+        x_bl = 0
+        y_bl = 0
+
         #estan a bases de radios (fijar un radio)
         for bl in self.borders.values():
             r_bl = tf.ones((self.N_b,1), dtype=self.DTYPE)*bl['r']
