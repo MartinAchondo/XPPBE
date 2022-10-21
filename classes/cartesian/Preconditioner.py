@@ -22,7 +22,7 @@ class preconditioner():
         return (lb,ub)
 
     def fun_r(self,x,y):
-        z = x**2 + y**2
+        z = -(1/4*self.pi)*(1/(tf.sqrt(x**2+y**2)))
         return z
 
     def loss_fn(self,model,mesh):

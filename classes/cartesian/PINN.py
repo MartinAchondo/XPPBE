@@ -217,18 +217,20 @@ class PINN():
         yspace = np.linspace(self.lb[1], self.ub[1], N + 1, dtype=self.DTYPE)
         X, Y = np.meshgrid(xspace, yspace)
 
-        r = np.sqrt(X**2 + Y**2)
-        if 'rmin' in self.mesh.ins_domain:
-            inside = r < self.mesh.ins_domain['rmax'] and r > self.mesh.ins_domain['rmin']
-        else:
-            inside = r < self.mesh.ins_domain['rmax']
-        inside = r < 1
+        if 'rmin' not in self.mesh.ins_domain:
+            self.mesh.ins_domain['rmin'] = 0.0000001
 
-        Xgrid = tf.constant(np.vstack([X[inside].flatten(),Y[inside].flatten()]).T)
-    
+        r = np.sqrt(X**2 + Y**2)
+        inside1 = r < self.mesh.ins_domain['rmax']
+        X1 = X[inside1]
+        Y1 = Y[inside1]
+        r = np.sqrt(X1**2 + Y1**2)
+        inside = r > self.mesh.ins_domain['rmin']
+
+        Xgrid = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten()]).T)
         upred = self.model(tf.cast(Xgrid,self.DTYPE))
         
-        return X[inside].flatten(),Y[inside].flatten(),upred.numpy()
+        return X1[inside].flatten(),Y1[inside].flatten(),upred.numpy()
 
 
     def plot_loss_history(self, flag=True, ax=None):
