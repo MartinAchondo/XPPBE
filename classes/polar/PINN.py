@@ -31,13 +31,12 @@ class PINN():
         self.x = self.X_r[:,0:1]
         self.y = self.X_r[:,1:2]
 
-    def create_NeuralNet(self,NN_class,*args,**kwargs):
-        self.model = NN_class(self.mesh.lb, self.mesh.ub,*args,**kwargs)
-        self.model.build_Net()
-
     def adapt_PDE(self,PDE):
         self.PDE = PDE
 
+    def create_NeuralNet(self,NN_class,*args,**kwargs):
+        self.model = NN_class(self.mesh.lb, self.mesh.ub,*args,**kwargs)
+        self.model.build_Net()
 
     def load_NeuralNet(self,directory,name):
         path = os.path.join(os.getcwd(),directory,name)
@@ -172,8 +171,7 @@ class PINN():
 
     def solve(self,N=1000,flag_time=True):
         self.flag_time = flag_time
-        lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay([1000,3000],[1e-2,1e-3,5e-4])
-        optim = tf.keras.optimizers.Adam(learning_rate=lr)
+        optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
         if self.flag_time:
             t0 = time()
             self.solve_with_TFoptimizer(optim, N)

@@ -17,27 +17,44 @@ class PINN():
         self.loss_bN = list()
         self.loss_P = list()
         self.iter = 0
+        self.lr = None
 
-    def adapt_mesh(self,mesh):
+    def adapt_mesh(self,mesh,
+        w_r=1,
+        w_d=1,
+        w_n=1,
+        w_i=1):
         self.mesh = mesh
         self.lb = mesh.lb
         self.ub = mesh.ub
-        self.X_r,self.XD_data,self.UD_data,self.XN_data,self.UN_data,self.derN,self.XI_data,self.derI = self.mesh.data_mesh
-        self.x = self.X_r[:,0:1]
-        self.y = self.X_r[:,1:2]
 
-    def create_NeuralNet(self,NN_class):
-        self.model = NN_class(self.mesh.lb, self.mesh.ub)
+        self.X_r = self.mesh.data_mesh['residual']
+        self.w_r = w_r
+        self.XD_data,self.UD_data = self.mesh.data_mesh['dirichlet']
+        self.w_d = w_d
+        self.XN_data,self.UN_data,self.derN = self.mesh.data_mesh['neumann']
+        self.w_n = w_n
+        self.XI_data,self.derI = self.mesh.data_mesh['interface']
+        self.w_i = w_i
+
+        self.x,self.y = self.mesh.get_X(self.X_r)
+        
+
+    def create_NeuralNet(self,NN_class,lr,*args,**kwargs):
+        self.model = NN_class(self.mesh.lb, self.mesh.ub,*args,**kwargs)
         self.model.build_Net()
+        self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
+
 
     def adapt_PDE(self,PDE):
         self.PDE = PDE
 
 
-    def load_NeuralNet(self,directory,name):
+    def load_NeuralNet(self,directory,name,lr):
         path = os.path.join(os.getcwd(),directory,name)
         NN_model = tf.keras.models.load_model(path, compile=False)
         self.model = NN_model
+        self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
 
     def save_model(self,directory,name):
         dir_path = os.path.join(os.getcwd(),directory)
@@ -46,13 +63,20 @@ class PINN():
 
         self.model.save(os.path.join(dir_path,name))
 
+    def load_preconditioner(self,precond):
+        self.precond = precond
+        self.precond.X_r = self.X_r
+        self.precond.x = self.x
+        self.precond.y = self.y
+
 
     def get_r(self):
         with tf.GradientTape(persistent=True) as tape:
            
             tape.watch(self.x)
             tape.watch(self.y)
-            u = self.model(tf.stack([self.x[:,0], self.y[:,0]], axis=1))
+            R = self.mesh.stack_X(self.x,self.y)
+            u = self.model(R)
             u_x = tape.gradient(u, self.x)
             u_y = tape.gradient(u, self.y)
             
@@ -60,77 +84,52 @@ class PINN():
         u_yy = tape.gradient(u_y, self.y)
 
         del tape
-        return self.PDE.fun_r(self.x, self.y, u_x, u_xx, u_yy)
+        return self.PDE.fun_r(self.x, u_x, u_xx, self.y, u_y, u_yy)
     
 
     def loss_fn(self):
         
-        r = self.get_r()
-        phi_r = tf.reduce_mean(tf.square(r))
-        loss = phi_r
         L = dict()
-        L['r'] = phi_r
+        L['r'] = 0
         L['D'] = 0
         L['N'] = 0
-        L['P'] = 0
-        
+
+        #residual
+        r = self.get_r()
+        phi_r = tf.reduce_mean(tf.square(r))
+        loss = self.w_r*phi_r
+        L['r'] += loss
+
+        #dirichlet
         for i in range(len(self.XD_data)):
             u_pred = self.model(self.XD_data[i])
-            loss += tf.reduce_mean(tf.square(self.UD_data[i] - u_pred))
-            L['D'] += tf.reduce_mean(tf.square(self.UD_data[i] - u_pred))
+            loss += self.w_d*tf.reduce_mean(tf.square(self.UD_data[i] - u_pred))
+            L['D'] += self.w_d*tf.reduce_mean(tf.square(self.UD_data[i] - u_pred))
 
-
+        #neumann
         for i in range(len(self.XN_data)):
-            x_n = self.XN_data[i][:,0:1]
-            y_n = self.XN_data[i][:,1:2]
+            x_n,y_n = self.mesh.get_X(self.XN_data[i])
             if self.derN[i]=='x':
                 with tf.GradientTape() as tapex:
                     tapex.watch(x_n)
-                    u_pred = self.model(tf.stack([x_n[:,0],y_n[:,0]], axis=1))
+                    R = self.mesh.stack_X(x_n,y_n)
+                    u_pred = self.model(R)
                 ux_pred = tapex.gradient(u_pred,x_n)
-                loss += tf.reduce_mean(tf.square(self.UN_data[i] - ux_pred))
+                loss += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - ux_pred))
+                L['N'] += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - ux_pred))
                 del tapex
-                L['N'] += tf.reduce_mean(tf.square(self.UN_data[i] - ux_pred))
             elif self.derN[i]=='y':
                 with tf.GradientTape() as tapey:
                     tapey.watch(y_n)
-                    u_pred = self.model(tf.stack([x_n[:,0],y_n[:,0]], axis=1))
+                    R = self.mesh.stack_X(x_n,y_n)
+                    u_pred = self.model(R)
                 uy_pred = tapey.gradient(u_pred,y_n)
-                loss += tf.reduce_mean(tf.square(self.UN_data[i] - uy_pred))
+                loss += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uy_pred))
+                L['N'] += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uy_pred))
                 del tapey
-                L['N'] += tf.reduce_mean(tf.square(self.UN_data[i] - uy_pred))
-
-        loss_p = self.add_periodicity()
-        loss += loss_p
-        L['P'] += loss_p
 
         return loss,L
     
-    def add_periodicity(self):
-        Xr_pts = self.mesh.X_r
-        pts = int(np.sqrt(self.mesh.N_r))+1
-        Xp_1 = Xr_pts[:pts]
-        Xp_2 = Xr_pts[len(Xr_pts)-pts:]
-
-        x_1 = Xp_1[:,0:1]
-        y_1 = Xp_1[:,1:2]
-        x_2 = Xp_2[:,0:1]
-        y_2 = Xp_2[:,1:2]
-            
-        with tf.GradientTape(persistent=True) as tape1:
-            tape1.watch(y_1)
-            tape1.watch(y_2)
-            u_pred_1 = self.model(tf.stack([x_1[:,0],y_1[:,0]], axis=1))
-            u_pred_2 = self.model(tf.stack([x_2[:,0],y_2[:,0]], axis=1))
-        uy_pred_1 = tape1.gradient(u_pred_1,y_1)
-        uy_pred_2 = tape1.gradient(u_pred_2,y_2)
-
-        loss = tf.reduce_mean(tf.square(u_pred_1-u_pred_2))
-        loss += tf.reduce_mean(tf.square(uy_pred_1-uy_pred_2))
-        
-        del tape_xp
-        return loss
-
     def get_grad(self):
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(self.model.trainable_variables)
@@ -138,6 +137,15 @@ class PINN():
         g = tape.gradient(loss, self.model.trainable_variables)
         del tape
         return loss, L, g
+
+
+    def get_precond_grad(self):
+        with tf.GradientTape(persistent=True) as tape:
+            tape.watch(self.model.trainable_variables)
+            loss = self.precond.loss_fn(self.model,self.mesh)
+        g = tape.gradient(loss, self.model.trainable_variables)
+        del tape
+        return loss, g
     
     
     def solve_with_TFoptimizer(self, optimizer, N=1001):
@@ -152,10 +160,22 @@ class PINN():
             self.loss_r.append(L_loss['r'])
             self.loss_bD.append(L_loss['D'])
             self.loss_bN.append(L_loss['N'])
-            self.loss_P.append(L_loss['P'])
             self.current_loss = loss.numpy()
             self.callback()
         
+ 
+    def precond_with_TFoptimizer(self, optimizer, N=1001):
+        @tf.function
+        def train_step_precond():
+            loss, grad_theta = self.get_precond_grad()
+            optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
+            return loss
+
+        for i in range(N):
+            loss = train_step_precond()
+            self.current_loss = loss.numpy()
+            self.callback()
+
 
     def callback(self, xr=None):
         if self.iter % 50 == 0:
@@ -167,8 +187,7 @@ class PINN():
 
     def solve(self,N=1000,flag_time=True):
         self.flag_time = flag_time
-        lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay([1000,3000],[1e-2,1e-3,5e-4])
-        optim = tf.keras.optimizers.Adam(learning_rate=lr)
+        optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
         if self.flag_time:
             t0 = time()
             self.solve_with_TFoptimizer(optim, N)
@@ -176,14 +195,42 @@ class PINN():
         else:
             self.solve_with_TFoptimizer(optim, N)
 
-    def get_u(self,N=600):
-        xspace = tf.constant(np.linspace(self.lb[0], self.ub[0], N + 1))
-        yspace = tf.constant(np.linspace(self.lb[1], self.ub[1], N + 1))
+
+    def preconditionate(self,N=1000,flag_time=True):
+        self.flag_time = flag_time
+        optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
+        if self.flag_time:
+            t0 = time()
+            self.precond_with_TFoptimizer(optim, N)
+            print('\nComputation time: {} seconds'.format(time()-t0))
+        else:
+            self.precond_with_TFoptimizer(optim, N)
+
+
+    def evaluate_u(self,X):
+        X_input = tf.constant([X])
+        U_output = self.model(X_input)
+        return U_output.numpy()[0][0]
+
+    def get_u(self,N=100):
+        xspace = np.linspace(self.lb[0], self.ub[0], N + 1, dtype=self.DTYPE)
+        yspace = np.linspace(self.lb[1], self.ub[1], N + 1, dtype=self.DTYPE)
         X, Y = np.meshgrid(xspace, yspace)
-        Xgrid = np.vstack([X.flatten(),Y.flatten()]).T
+
+        if 'rmin' not in self.mesh.ins_domain:
+            self.mesh.ins_domain['rmin'] = 0.0000001
+
+        r = np.sqrt(X**2 + Y**2)
+        inside1 = r < self.mesh.ins_domain['rmax']
+        X1 = X[inside1]
+        Y1 = Y[inside1]
+        r = np.sqrt(X1**2 + Y1**2)
+        inside = r > self.mesh.ins_domain['rmin']
+
+        Xgrid = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten()]).T)
         upred = self.model(tf.cast(Xgrid,self.DTYPE))
-        U = upred.numpy().reshape(N+1,N+1)
-        return X,Y,U
+        
+        return X1[inside].flatten(),Y1[inside].flatten(),upred.numpy()
 
 
     def plot_loss_history(self, flag=True, ax=None):
@@ -195,7 +242,6 @@ class PINN():
             ax.semilogy(range(len(self.loss_r)), self.loss_r,'r-',label='Loss_r')
             ax.semilogy(range(len(self.loss_bD)), self.loss_bD,'b-',label='Loss_bD')
             ax.semilogy(range(len(self.loss_bN)), self.loss_bN,'g-',label='Loss_bN')
-            ax.semilogy(range(len(self.loss_P)), self.loss_P,'c-',label='Loss_P')
         ax.legend()
         ax.set_xlabel('$n_{epoch}$')
         ax.set_ylabel('$\\phi^{n_{epoch}}$')

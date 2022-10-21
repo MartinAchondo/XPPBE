@@ -31,7 +31,8 @@ class PDE_Model():
         return tf.ones((n,1), dtype=self.DTYPE)*value
 
     def rhs(self,x,y):
-        return (1/(0.04*(2*self.pi)**0.5))*tf.exp((-1/(2*0.04**2))*(x**2+y**2))
+        sigma = 0.04
+        return (1/(sigma*(2*self.pi)**0.5))*tf.exp((-1/(2*sigma**2))*(x**2+y**2))
 
     # Define residual of the PDE
     def fun_r(self,x,u_x,u_xx,y,u_y,u_yy):

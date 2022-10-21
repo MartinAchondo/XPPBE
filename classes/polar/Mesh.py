@@ -33,7 +33,7 @@ class Mesh():
             if fun == None:
                 u_b = self.fun_u_b(x1, x2, value=value)
             else:
-                ub = fun(x1, x2)
+                u_b = fun(x1, x2)
             self.XD_data.append(X)
             self.UD_data.append(u_b)
         elif type_b == 'N':
@@ -65,7 +65,6 @@ class Mesh():
             y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])
             X_bl = tf.concat([x_bl, y_bl], axis=1)
             self.add_data(bl,x_bl,y_bl,X_bl)
-            print(X_bl[0])
 
 
         xspace = np.linspace(self.lb[0], self.ub[0], self.N_r + 1, dtype=self.DTYPE)
