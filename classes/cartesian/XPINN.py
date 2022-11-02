@@ -1,7 +1,5 @@
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
-import os
 from time import time
 
 
@@ -36,7 +34,6 @@ class XPINN():
         for solver,pde,union in zip(self.solvers,PDEs,unions):
             solver.adapt_PDE(pde)
             solver.un = union
-        
 
     def adapt_meshes(self,meshes,weights):
         for solver,mesh,weight in zip(self.solvers,meshes,weights):
@@ -62,7 +59,7 @@ class XPINN():
             with tf.GradientTape(persistent=True) as tape1:
                 tape1.watch(x_i)
                 tape1.watch(y_i)
-                R = self.mesh.stack_X(x_i,y_i)
+                R = solver.mesh.stack_X(x_i,y_i)
                 u_pred_1 = solver.model(R)
                 ux_pred_1 = tape1.gradient(u_pred_1,x_i)
                 uy_pred_1 = tape1.gradient(u_pred_1,y_i)
@@ -72,7 +69,7 @@ class XPINN():
             with tf.GradientTape(persistent=True) as tape2:
                 tape2.watch(x_i)
                 tape2.watch(y_i)
-                R = self.mesh.stack_X(x_i,y_i)
+                R = solver_ex.mesh.stack_X(x_i,y_i)
                 u_pred_2 = solver_ex.model(R)
                 ux_pred_2 = tape2.gradient(u_pred_2,x_i)
                 uy_pred_2 = tape2.gradient(u_pred_2,y_i)
@@ -139,6 +136,17 @@ class XPINN():
 
             self.current_loss = loss.numpy()
             self.callback()
+
+    def add_losses_NN(self):
+        self.solver1.loss_r = self.loss_r1
+        self.solver1.loss_bD = self.loss_bD1
+        self.solver1.loss_bN = self.loss_bN1
+        self.solver1.loss_bI = self.loss_bI1
+
+        self.solver2.loss_r = self.loss_r2
+        self.solver2.loss_bD = self.loss_bD2
+        self.solver2.loss_bN = self.loss_bN2
+        self.solver2.loss_bI = self.loss_bI2
         
 
     def callback(self, xr=None):
@@ -159,7 +167,11 @@ class XPINN():
             t0 = time()
             self.solve_with_TFoptimizer(optim, N)
             print('\nComputation time: {} seconds'.format(time()-t0))
+            
         else:
             self.solve_with_TFoptimizer(optim, N)
+        self.add_losses_NN()
+
+
 
 

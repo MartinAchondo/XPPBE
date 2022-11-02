@@ -133,5 +133,76 @@ class View_results():
         plt.ylabel('u');
 
 
+
+class View_results_X():
+
+    def __init__(self,XPINN,Post):
+
+        self.DTYPE='float32'
+        self.pi = tf.constant(np.pi, dtype=self.DTYPE)
+
+        self.XPINN = XPINN
+        self.NN = [XPINN.solver1,XPINN.solver2]
+        self.model = [XPINN.solver1.model,XPINN.solver2.model]
+        self.mesh = [XPINN.solver1.mesh,XPINN.solver2.mesh]
+
+        self.lb = [self.model[0].lb,self.model[1].lb]
+        self.ub = [self.model[0].ub,self.model[1].ub]
+
+        self.Post = list()
+        for NN in self.NN:
+            self.Post.append(Post(NN))
+
+
+    def plot_loss_history(self, flag=True, ax=None):
+        if not ax:
+            fig = plt.figure(figsize=(7,5))
+            ax = fig.add_subplot(111)
+        ax.semilogy(range(len(self.XPINN.loss_hist)), self.XPINN.loss_hist,'k-',label='Loss')
+        if flag: 
+            for NN in self.NN:
+                ax.semilogy(range(len(NN.loss_r)), NN.loss_r,'r-',label='Loss_r')
+                ax.semilogy(range(len(NN.loss_bD)), NN.loss_bD,'b-',label='Loss_bD')
+                ax.semilogy(range(len(NN.loss_bN)), NN.loss_bN,'g-',label='Loss_bN')
+            ax.semilogy(range(len(NN.loss_bI)), NN.loss_bI,'g-',label='Loss_bI')
+        ax.legend()
+        ax.set_xlabel('$n_{epoch}$')
+        ax.set_ylabel('$\\phi^{n_{epoch}}$')
+
+
+    def plot_u_domain_countour(self, N=100):
+        vmax,vmin = self.get_max_min()
+        for post_obj in self.Post:
+            x,y,u = post_obj.get_u_domain(N)
+            plt.scatter(x,y,c=u, vmin=vmin,vmax=vmax)
+        plt.colorbar();
+
+ 
+    def plot_u_domain_surface(self,N=100,alpha1=35,alpha2=135):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        vmax,vmin = self.get_max_min()
+        for post_obj in self.Post:
+            x,y,u = post_obj.get_u_domain(N)
+            ax.scatter(x,y,u,c=u, vmin=vmin,vmax=vmax)
+        ax.view_init(alpha1,alpha2)
+        ax.set_xlabel('$x$')
+        ax.set_ylabel('$y$');
+
+    def get_max_min(self,N=100):
+        U = list()
+        for post_obj in self.Post:
+            _,_,u = post_obj.get_u_domain(N)
+            U.append(u)
+        Umax = list(map(np.max,U))
+        vmax = np.max(np.array(Umax))
+        Umin = list(map(np.min,U))
+        vmin = np.min(np.array(Umin))
+        return vmax,vmin
+        
+            
+
+
 if __name__=='__main__':
     pass
