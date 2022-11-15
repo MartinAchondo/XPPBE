@@ -53,6 +53,7 @@ class XPINN():
 
 
     def loss_I(self,solver,solver_ex):
+        loss = 0
         for j in range(len(solver.XI_data)):
             x_i,y_i = solver.mesh.get_X(solver.XI_data[j])
             
@@ -77,7 +78,7 @@ class XPINN():
             uyy_2 = tape2.gradient(ux_pred_2,y_i)
 
             u_prom = (u_pred_1+u_pred_2)/2
-            loss = tf.reduce_mean(tf.square(u_pred_1 - u_prom)) 
+            loss += tf.reduce_mean(tf.square(u_pred_1 - u_prom)) 
 
             res = solver.PDE.fun_r(x_i,ux_pred_1,uxx_1,y_i,uy_pred_1,uyy_1)-solver_ex.PDE.fun_r(x_i,ux_pred_2,uxx_2,y_i,uy_pred_2,uyy_2)
             loss += tf.reduce_mean(tf.square(res))
@@ -104,7 +105,7 @@ class XPINN():
         return loss, L, g
     
     
-    def solve_with_TFoptimizer(self, optimizer, N=1001):
+    def solve_with_TFoptimizer(self, optimizer, N=1000):
 
         optimizer1,optimizer2 = optimizer
 
@@ -159,9 +160,8 @@ class XPINN():
 
     def solve(self,N=1000,flag_time=True):
         self.flag_time = flag_time
-        lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay([1000,3000],[1e-2,1e-3,5e-4])
-        optim1 = tf.keras.optimizers.Adam(learning_rate=lr)
-        optim2 = tf.keras.optimizers.Adam(learning_rate=lr)
+        optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
+        optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
         optim = [optim1,optim2]
         if self.flag_time:
             t0 = time()

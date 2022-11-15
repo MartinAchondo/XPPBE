@@ -15,8 +15,8 @@ class View_results():
         self.model = NN.model
         self.mesh = NN.mesh
 
-        self.lb = self.model.lb
-        self.ub = self.model.ub
+        self.lb = self.NN.mesh.lb
+        self.ub = self.NN.mesh.ub
 
     def get_grid(self,N=100):
         xspace = np.linspace(self.lb[0], self.ub[0], N + 1, dtype=self.DTYPE)
@@ -142,8 +142,8 @@ class View_results_X():
         self.model = [XPINN.solver1.model,XPINN.solver2.model]
         self.mesh = [XPINN.solver1.mesh,XPINN.solver2.mesh]
 
-        self.lb = [self.model[0].lb,self.model[1].lb]
-        self.ub = [self.model[0].ub,self.model[1].ub]
+        # self.lb = [self.model[0].lb,self.model[1].lb]
+        # self.ub = [self.model[0].ub,self.model[1].ub]
 
         self.Post = list()
         for NN in self.NN:
@@ -157,12 +157,13 @@ class View_results_X():
         ax.semilogy(range(len(self.XPINN.loss_hist)), self.XPINN.loss_hist,'k-',label='Loss')
         if flag: 
             iter = 1
+            c = [['r','b','g'],['salmon','royalblue','springgreen']]
             for NN in self.NN:
-                ax.semilogy(range(len(NN.loss_r)), NN.loss_r,'r-',label='Loss_r_NN_'+str(iter))
-                ax.semilogy(range(len(NN.loss_bD)), NN.loss_bD,'b-',label='Loss_bD_NN_'+str(iter))
-                ax.semilogy(range(len(NN.loss_bN)), NN.loss_bN,'g-',label='Loss_bN_NN_'+str(iter))
+                ax.semilogy(range(len(NN.loss_r)), NN.loss_r,c[iter-1][0],label='Loss_r_NN_'+str(iter))
+                ax.semilogy(range(len(NN.loss_bD)), NN.loss_bD,c[iter-1][1],label='Loss_bD_NN_'+str(iter))
+                ax.semilogy(range(len(NN.loss_bN)), NN.loss_bN,c[iter-1][2],label='Loss_bN_NN_'+str(iter))
                 iter += 1
-            ax.semilogy(range(len(NN.loss_bI)), NN.loss_bI,'m-',label='Loss_bI')
+            ax.semilogy(range(len(NN.loss_bI)), NN.loss_bI,'m',label='Loss_bI')
         ax.legend()
         ax.set_xlabel('$n_{epoch}$')
         ax.set_ylabel('$\\phi^{n_{epoch}}$')
@@ -193,9 +194,9 @@ class View_results_X():
         vmax,vmin = self.get_max_min_loss()
         for post_obj in self.Post:
             Xgrid,x,y = post_obj.get_grid(N)
-            post_obj.x,post_obj.y = post_obj.mesh.get_X(Xgrid)
+            post_obj.NN.x,post_obj.NN.y = post_obj.mesh.get_X(Xgrid)
             loss = post_obj.NN.get_r()
-            plt.scatter(x.flatten(),y.flatten(),c=tf.square(loss).numpy(), norm=matplotlib.colors.LogNorm(), vmin=vmin, vmax=vmax)
+            plt.scatter(x.flatten(),y.flatten(),c=tf.square(loss).numpy(), norm=matplotlib.colors.LogNorm(vmax=vmax, vmin=vmin))
         plt.colorbar();
 
 
@@ -229,11 +230,11 @@ class View_results_X():
             Xgrid,_,_ = post_obj.get_grid(N)
             post_obj.x,post_obj.y = post_obj.mesh.get_X(Xgrid)
             loss = post_obj.NN.get_r()
-            L.append(loss.numpy())
+            L.append(loss.numpy()**2)
         Lmax = list(map(np.max,L))
-        vmax = np.abs(np.max(np.array(Lmax)))
+        vmax = np.max(np.array(Lmax))
         Lmin = list(map(np.min,L))
-        vmin = np.abs(np.min(np.array(Lmin)))
+        vmin = np.min(np.array(Lmin))
         
         return vmax,vmin    
 
