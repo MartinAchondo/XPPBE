@@ -80,8 +80,8 @@ class XPINN():
             u_prom = (u_pred_1+u_pred_2)/2
             loss += tf.reduce_mean(tf.square(u_pred_1 - u_prom)) 
 
-            res = solver.PDE.fun_r(x_i,ux_pred_1,uxx_1,y_i,uy_pred_1,uyy_1)-solver_ex.PDE.fun_r(x_i,ux_pred_2,uxx_2,y_i,uy_pred_2,uyy_2)
-            loss += tf.reduce_mean(tf.square(res))
+            # res = solver.PDE.fun_r(x_i,ux_pred_1,uxx_1,y_i,uy_pred_1,uyy_1)-solver_ex.PDE.fun_r(x_i,ux_pred_2,uxx_2,y_i,uy_pred_2,uyy_2)
+            # loss += tf.reduce_mean(tf.square(res))
             
             norm_vn = tf.sqrt(x_i**2+y_i**2)
             v1 = (x_i*ux_pred_1+y_i*uy_pred_1)/norm_vn
