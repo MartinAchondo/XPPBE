@@ -63,6 +63,8 @@ class Mesh():
         x_bl = 0
         y_bl = 0
 
+        self.BP = list()
+
         #estan a bases de radios (fijar un radio)
         for bl in self.borders.values():
             r_bl = tf.ones((self.N_b,1), dtype=self.DTYPE)*bl['r']
@@ -72,6 +74,7 @@ class Mesh():
             y_bl = r_bl*tf.sin(theta_bl)
             X_bl = tf.concat([x_bl, y_bl], axis=1)
             self.add_data(bl,x_bl,y_bl,X_bl)
+            self.BP.append((x_bl,y_bl))
 
 
         #crear dominio circular (cascaron para generalizar)
@@ -91,8 +94,7 @@ class Mesh():
 
         self.X_r = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten()]).T)
 
- 
-        self.D_bl = (x_bl,y_bl)
+
         self.D_r = (self.X_r[:,0],self.X_r[:,1])
 
         self.data_mesh = {
@@ -113,10 +115,10 @@ class Mesh():
         return R
 
     def plot_points(self):
-        x1,y1 = self.D_bl
         xm,ym = self.D_r
         fig = plt.figure(figsize=(9,6))
-        plt.scatter(x1, y1, marker='X')
+        for x,y in self.BP:
+            plt.scatter(x, y, marker='X')
         plt.scatter(xm, ym, c='r', marker='.', alpha=0.1)
         plt.xlabel('$x$')
         plt.ylabel('$y$')

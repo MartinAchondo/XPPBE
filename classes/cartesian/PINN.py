@@ -16,6 +16,7 @@ class PINN():
         self.loss_bD = list()
         self.loss_bN = list()
         self.loss_P = list()
+        self.loss_bI = list()
         self.iter = 0
         self.lr = None
 
@@ -194,7 +195,7 @@ class PINN_Precond(PINN):
             self.current_loss = loss.numpy()
             self.callback()
 
-    def preconditionate(self,N=1000,flag_time=True):
+    def preconditionate(self,N=2000,flag_time=True):
         self.flag_time = flag_time
         optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
         if self.flag_time:

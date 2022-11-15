@@ -9,6 +9,8 @@ class Preconditioner():
         self.DTYPE='float32'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
 
+        self.epsilon = None
+
     def set_domain(self,X):
         x,y = X
         self.xmin = x[0]
@@ -22,7 +24,7 @@ class Preconditioner():
         return (lb,ub)
 
     def fun_r(self,x,y):
-        z = -(1/4*self.pi)*(1/(tf.sqrt(x**2+y**2)))
+        z = (1/(2*self.pi))*(1/self.epsilon)*tf.math.log(tf.sqrt(x**2+y**2))
         return z
 
     def loss_fn(self,model,mesh):
