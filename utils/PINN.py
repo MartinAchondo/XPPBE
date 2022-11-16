@@ -120,6 +120,22 @@ class PINN():
                 loss += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uy_pred))
                 L['N'] += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uy_pred))
                 del tapey
+            elif self.derN[i]=='r':
+                with tf.GradientTape(persistent=True) as taper:
+                    taper.watch(x_n)
+                    taper.watch(y_n)
+                    R = self.mesh.stack_X(x_n,y_n)
+                    u_pred = self.model(R)
+                ux_pred = taper.gradient(u_pred,x_n)
+                uy_pred = taper.gradient(u_pred,y_n)
+                
+                norm_vn = tf.sqrt(x_n**2+y_n**2)
+                un_pred = (x_n*ux_pred+y_n*uy_pred)/norm_vn
+
+                loss += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - un_pred))
+                L['N'] += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - un_pred))
+                del taper
+
 
         return loss,L
     

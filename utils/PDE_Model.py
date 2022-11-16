@@ -9,6 +9,7 @@ class PDE_Model():
         self.DTYPE='float32'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
         self.sigma = 0.04
+        self.epsilon = None
     
     def set_domain(self,X):
         x,y = X
@@ -37,6 +38,10 @@ class PDE_Model():
     # Define residual of the PDE
     def fun_r(self,x,u_x,u_xx,y,u_y,u_yy):
         return u_xx + u_yy - self.source(x,y)
+
+
+    def analytic(self,x,y):
+        return (1/(self.epsilon*2*self.pi))*tf.math.log(tf.sqrt(x**2+y**2))
         
 
 class PDE_Model_2():
@@ -46,6 +51,7 @@ class PDE_Model_2():
         self.DTYPE='float32'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
         self.sigma = 0.04
+        self.epsilon = None
     
     def set_domain(self,X):
         x,y = X
@@ -74,3 +80,8 @@ class PDE_Model_2():
     # Define residual of the PDE
     def fun_r(self,x,u_x,u_xx,y,u_y,u_yy):
         return u_xx + u_yy - self.source(x,y)
+
+    
+    def analytic(self,x,y):
+        return (1/(self.epsilon*2*self.pi))*tf.math.log(tf.sqrt(x**2+y**2))
+        

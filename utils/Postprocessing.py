@@ -100,7 +100,7 @@ class View_results():
         return X.flatten(),Y.flatten(),upred.numpy()
 
 
-    def plot_u_domain_countour(self,N=100):
+    def plot_u_domain_contour(self,N=100):
         x,y,u = self.get_u_domain(N)
         plt.scatter(x,y,c=u)
         plt.colorbar();
@@ -128,6 +128,40 @@ class View_results():
         plt.xlabel('x')
         plt.ylabel('u');
 
+
+    def plot_aprox_analytic(self,N=200):
+        x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
+        x = tf.reshape(x,[x.shape[0],1])
+        y = tf.ones((N,1), dtype=self.DTYPE)*0
+        X = tf.concat([x, y], axis=1)
+        U = self.model(X)
+
+        plt.plot(x[:,0],U[:,0], c='b', label='Aprox')
+
+        U2 = self.NN.PDE.analytic(x,y)
+        plt.plot(x[:,0],U2[:,0], c='r', label='Analytic')
+
+
+        plt.legend()
+        plt.xlabel('x')
+        plt.ylabel('u');
+
+
+    def plot_loss_analytic(self,N=200):
+        x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
+        x = tf.reshape(x,[x.shape[0],1])
+        y = tf.ones((N,1), dtype=self.DTYPE)*0
+        X = tf.concat([x, y], axis=1)
+        U = self.model(X)
+        U2 = self.NN.PDE.analytic(x,y)
+
+        error = tf.square(U-U2)
+        plt.plot(x[:,0],error[:,0], c='r', label='Error')
+
+        plt.legend()
+        plt.xlabel('x')
+        plt.ylabel('Error')
+        plt.yscale('log');
 
 
 class View_results_X():
@@ -169,7 +203,7 @@ class View_results_X():
         ax.set_ylabel('$\\phi^{n_{epoch}}$')
 
 
-    def plot_u_domain_countour(self, N=100):
+    def plot_u_domain_contour(self, N=100):
         vmax,vmin = self.get_max_min()
         for post_obj in self.Post:
             x,y,u = post_obj.get_u_domain(N)
@@ -211,6 +245,47 @@ class View_results_X():
             plt.plot(x[:,0],U[:,0])
         plt.xlabel('x')
         plt.ylabel('u');
+
+
+    def plot_aprox_analytic(self,N=200):
+        for post_obj,NN in zip(self.Post,self.NN):
+            x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
+            x = tf.reshape(x,[x.shape[0],1])
+            y = tf.ones((N,1), dtype=self.DTYPE)*0
+            X = tf.concat([x, y], axis=1)
+            U = post_obj.model(X)
+
+            plt.plot(x[:,0],U[:,0], c='b', label='Aprox')
+
+            U2 = NN.PDE.analytic(x,y)
+            plt.plot(x[:,0],U2[:,0], c='r', label='Analytic')
+
+        plt.legend()
+        plt.xlabel('x')
+        plt.ylabel('u');
+
+
+    def plot_loss_analytic(self,N=200):
+        c = ['b','r']
+        i=0
+        for post_obj,NN in zip(self.Post,self.NN):
+            x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
+            x = tf.reshape(x,[x.shape[0],1])
+            y = tf.ones((N,1), dtype=self.DTYPE)*0
+            X = tf.concat([x, y], axis=1)
+            U = post_obj.model(X)
+
+            U2 = NN.PDE.analytic(x,y)
+
+            error = tf.square(U-U2)
+
+            plt.plot(x[:,0],error[:,0], c=c[i], label='Error')
+            i += 1
+
+        plt.legend()
+        plt.xlabel('x')
+        plt.ylabel('Error')
+        plt.yscale('log');
 
 
     def get_max_min(self,N=100):
