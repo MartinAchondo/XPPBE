@@ -247,6 +247,22 @@ class View_results_X():
         plt.ylabel('u');
 
 
+    def plot_u_plane_direction(self,angle=0,N=200):
+        for post_obj in self.Post:
+            r = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
+            x = r*tf.cos(angle)
+            x = tf.reshape(x,[x.shape[0],1])
+            y = r*tf.sin(angle)
+            y = tf.reshape(y,[y.shape[0],1])
+            X = tf.concat([x, y], axis=1)
+            U = post_obj.model(X)
+
+            r = tf.reshape(r,[r.shape[0],1])
+            plt.plot(r[:,0],U[:,0])
+        plt.xlabel('r')
+        plt.ylabel('u');
+
+
     def plot_aprox_analytic(self,N=200):
         for post_obj,NN in zip(self.Post,self.NN):
             x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
