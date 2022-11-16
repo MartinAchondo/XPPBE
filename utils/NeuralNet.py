@@ -4,7 +4,7 @@ import tensorflow as tf
 class PINN_NeuralNet(tf.keras.Model):
 
     def __init__(self, lb,ub, 
-            input_shape_N=(None,2),
+            input_shape=(None,2),
             output_dim=1,
             num_hidden_layers=8, 
             num_neurons_per_layer=20,
@@ -13,7 +13,7 @@ class PINN_NeuralNet(tf.keras.Model):
             **kwargs):
         super().__init__(**kwargs)
 
-        self.input_shape_N = input_shape_N
+        self.input_shape_N = input_shape
         self.num_hidden_layers = num_hidden_layers
         self.output_dim = output_dim
         self.lb = lb
