@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import types
 
 
 class Preconditioner():
@@ -34,3 +35,5 @@ class Preconditioner():
         loss = tf.reduce_mean(tf.square(upred-u))
         return loss
         
+def change_fun(cls,new_func):
+    cls.fun_r = types.MethodType(new_func,cls)
