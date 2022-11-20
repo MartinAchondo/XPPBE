@@ -1,4 +1,4 @@
-mesh
+
 pinn_precond class
 preconditioner
 postprocessing
