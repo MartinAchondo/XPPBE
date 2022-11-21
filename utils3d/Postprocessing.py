@@ -19,9 +19,9 @@ class View_results():
         self.ub = self.NN.mesh.ub
 
     def get_grid(self,N=100):
-        xspace = np.linspace(self.lb[0], self.ub[0], self.N_r + 1, dtype=self.DTYPE)
-        yspace = np.linspace(self.lb[1], self.ub[1], self.N_r + 1, dtype=self.DTYPE)
-        zspace = np.linspace(self.lb[2], self.ub[2], self.N_r + 1, dtype=self.DTYPE)
+        xspace = np.linspace(self.lb[0], self.ub[0], N + 1, dtype=self.DTYPE)
+        yspace = np.linspace(self.lb[1], self.ub[1], N + 1, dtype=self.DTYPE)
+        zspace = np.linspace(self.lb[2], self.ub[2], N + 1, dtype=self.DTYPE)
         X, Y, Z = np.meshgrid(xspace, yspace, zspace)
         
         if 'rmin' not in self.mesh.ins_domain:
@@ -37,7 +37,7 @@ class View_results():
 
         Xgrid = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
 
-        return Xgrid,X1[inside],Y1[inside]
+        return Xgrid,X1[inside],Y1[inside],Z1[inside]
 
 
     def plot_loss_history(self, flag=True, ax=None):
@@ -108,7 +108,7 @@ class View_results():
     def plot_u_domain_contour(self,N=100):
         x,y,z,u = self.get_u_domain(N)
         plane = np.abs(z)<10**-4
-        plt.scatter(x[plane], y[plane], c=u)
+        plt.scatter(x[plane], y[plane], c=u[plane])
         plt.colorbar();
 
 
@@ -118,7 +118,7 @@ class View_results():
 
         x,y,z,u = self.get_u_domain(N)
         plane = np.abs(z)<10**-4
-        ax.scatter(x[plane], y[plane],u, c=u)
+        ax.scatter(x[plane], y[plane],u[plane], c=u[plane])
         ax.view_init(alpha1,alpha2)
         ax.set_xlabel('$x$')
         ax.set_ylabel('$y$');

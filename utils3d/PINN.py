@@ -180,7 +180,7 @@ class PINN():
             loss,L_loss = train_step()
             self.callback(loss,L_loss)
             if self.iter % 10 == 0:
-                pbar.set_description("Loss: %s" % self.current_loss)
+                pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
 
     def callback(self,loss,L_loss):
         self.loss_r.append(L_loss['r'])

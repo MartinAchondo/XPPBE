@@ -125,7 +125,7 @@ class XPINN():
             self.callback(L1,L2)
 
             if self.iter % 10 == 0:
-                pbar.set_description("Loss: %s" % self.current_loss)
+                pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
         
 
     def callback(self, L1,L2):
