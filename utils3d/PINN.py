@@ -100,41 +100,45 @@ class PINN():
         #dirichlet
         for i in range(len(self.XD_data)):
             u_pred = self.model(self.XD_data[i])
-            loss += self.w_d*tf.reduce_mean(tf.square(self.UD_data[i] - u_pred))
-            L['D'] += self.w_d*tf.reduce_mean(tf.square(self.UD_data[i] - u_pred))
+            loss_D = self.w_d*tf.reduce_mean(tf.square(self.UD_data[i] - u_pred)) 
+            loss += loss_D
+            L['D'] += loss_D
 
         #neumann
         for i in range(len(self.XN_data)):
             x_n,y_n,z_n = self.mesh.get_X(self.XN_data[i])
             if self.derN[i]=='x':
-                with tf.GradientTape() as tapex:
+                with tf.GradientTape(watch_accessed_variables=False) as tapex:
                     tapex.watch(x_n)
                     R = self.mesh.stack_X(x_n,y_n,z_n)
                     u_pred = self.model(R)
                 ux_pred = tapex.gradient(u_pred,x_n)
-                loss += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - ux_pred))
-                L['N'] += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - ux_pred))
                 del tapex
+
+                loss_N = self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - ux_pred)) 
+            
             elif self.derN[i]=='y':
-                with tf.GradientTape() as tapey:
+                with tf.GradientTape(watch_accessed_variables=False) as tapey:
                     tapey.watch(y_n)
                     R = self.mesh.stack_X(x_n,y_n,z_n)
                     u_pred = self.model(R)
                 uy_pred = tapey.gradient(u_pred,y_n)
-                loss += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uy_pred))
-                L['N'] += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uy_pred))
                 del tapey
+
+                loss_N = self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uy_pred)) 
+
             elif self.derN[i]=='z':
-                with tf.GradientTape() as tapez:
+                with tf.GradientTape(watch_accessed_variables=False) as tapez:
                     tapez.watch(z_n)
                     R = self.mesh.stack_X(x_n,y_n,z_n)
                     u_pred = self.model(R)
                 uz_pred = tapez.gradient(u_pred,z_n)
-                loss += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uz_pred))
-                L['N'] += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uz_pred))
                 del tapez
+
+                loss_N = self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uz_pred)) 
+            
             elif self.derN[i]=='r':
-                with tf.GradientTape(persistent=True) as taper:
+                with tf.GradientTape(persistent=True, watch_accessed_variables=False) as taper:
                     taper.watch(x_n)
                     taper.watch(y_n)
                     taper.watch(z_n)
@@ -143,14 +147,15 @@ class PINN():
                 ux_pred = taper.gradient(u_pred,x_n)
                 uy_pred = taper.gradient(u_pred,y_n)
                 uz_pred = taper.gradient(u_pred,z_n)
+                del taper
                 
                 norm_vn = tf.sqrt(x_n**2+y_n**2+z_n**2)
                 un_pred = (x_n*ux_pred + y_n*uy_pred + z_n*uz_pred)/norm_vn
 
-                loss += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - un_pred))
-                L['N'] += self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - un_pred))
-                del taper
+                loss_N = self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - un_pred)) 
 
+            loss += loss_N
+            L['N'] += loss_N    
 
         return loss,L
     

@@ -57,7 +57,7 @@ class XPINN():
         for j in range(len(solver.XI_data)):
             x_i,y_i,z_i = solver.mesh.get_X(solver.XI_data[j])
             
-            with tf.GradientTape(persistent=True) as tape1:
+            with tf.GradientTape(persistent=True, watch_accessed_variables=False) as tape1:
                 tape1.watch(x_i)
                 tape1.watch(y_i)
                 tape1.watch(z_i)
@@ -67,7 +67,9 @@ class XPINN():
             uy_pred_1 = tape1.gradient(u_pred_1,y_i)
             uz_pred_1 = tape1.gradient(u_pred_1,z_i)
 
-            with tf.GradientTape(persistent=True) as tape2:
+            del tape1
+
+            with tf.GradientTape(persistent=True, watch_accessed_variables=False) as tape2:
                 tape2.watch(x_i)
                 tape2.watch(y_i)
                 tape2.watch(z_i)
@@ -77,6 +79,8 @@ class XPINN():
             uy_pred_2 = tape2.gradient(u_pred_2,y_i)
             uz_pred_2 = tape2.gradient(u_pred_2,z_i)
 
+            del tape2
+
             u_prom = (u_pred_1+u_pred_2)/2
             loss += tf.reduce_mean(tf.square(u_pred_1 - u_prom)) 
             
@@ -84,9 +88,6 @@ class XPINN():
             v1 = (x_i*ux_pred_1 + y_i*uy_pred_1 + z_i*uz_pred_1)/norm_vn
             v2 = (x_i*ux_pred_2 + y_i*uy_pred_2 + z_i*uz_pred_2)/norm_vn
             loss += tf.reduce_mean(tf.square(v1*solver.un - v2*solver_ex.un))
-
-            del tape1
-            del tape2
             
         return loss
 
@@ -94,7 +95,7 @@ class XPINN():
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(solver.model.trainable_variables)
             loss,L = solver.loss_fn()
-            loss_I = self.loss_I(solver,solver_ex)
+            loss_I = solver.w_i*self.loss_I(solver,solver_ex)
             loss += loss_I 
             L['I'] = loss_I
         g = tape.gradient(loss, solver.model.trainable_variables)
@@ -103,7 +104,6 @@ class XPINN():
     
     
     def solve_with_TFoptimizer(self, optimizer, N=1000):
-
         optimizer1,optimizer2 = optimizer
 
         @tf.function
