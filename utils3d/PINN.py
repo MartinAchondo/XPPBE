@@ -3,6 +3,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import os
 from time import time
+from tqdm import tqdm as log_progress
 
 
 class PINN():
@@ -168,30 +169,30 @@ class PINN():
             optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
             return loss, L_loss
         
-        for i in range(N):
+        pbar = log_progress(range(N))
+        pbar.set_description("Loss: %s " % 100)
+        for i in pbar:
             loss,L_loss = train_step()
             self.loss_r.append(L_loss['r'])
             self.loss_bD.append(L_loss['D'])
             self.loss_bN.append(L_loss['N'])
             self.current_loss = loss.numpy()
             self.callback()
+            if self.iter % 10 == 0:
+                pbar.set_description("Loss: %s" % self.current_loss)
 
-    def callback(self, xr=None):
-        if self.iter % 50 == 0:
-            if self.flag_time:
-                print('It {:05d}: loss = {:10.8e}'.format(self.iter,self.current_loss))
+    def callback(self):
         self.loss_hist.append(self.current_loss)
         self.iter+=1
 
     def solve(self,N=1000,flag_time=True):
         self.flag_time = flag_time
         optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
-        if self.flag_time:
-            t0 = time()
-            self.solve_with_TFoptimizer(optim, N)
-            print('\nComputation time: {} seconds'.format(time()-t0))
-        else:
-            self.solve_with_TFoptimizer(optim, N)
+ 
+        t0 = time()
+        self.solve_with_TFoptimizer(optim, N)
+        print('\nComputation time: {} seconds'.format(time()-t0))
+
 
 
 class PINN_Precond(PINN):

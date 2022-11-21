@@ -55,27 +55,34 @@ class XPINN():
     def loss_I(self,solver,solver_ex):
         loss = 0
         for j in range(len(solver.XI_data)):
-            x_i,y_i = solver.mesh.get_X(solver.XI_data[j])
+            x_i,y_i,z_i = solver.mesh.get_X(solver.XI_data[j])
             
             with tf.GradientTape(persistent=True) as tape1:
                 tape1.watch(x_i)
                 tape1.watch(y_i)
-                R = solver.mesh.stack_X(x_i,y_i)
+                tape1.watch(z_i)
+                R = solver.mesh.stack_X(x_i,y_i,z_i)
                 u_pred_1 = solver.model(R)
                 ux_pred_1 = tape1.gradient(u_pred_1,x_i)
                 uy_pred_1 = tape1.gradient(u_pred_1,y_i)
+                uz_pred_1 = tape1.gradient(u_pred_1,z_i)
             uxx_1 = tape1.gradient(ux_pred_1,x_i)
             uyy_1 = tape1.gradient(ux_pred_1,y_i)
+            uzz_1 = tape1.gradient(ux_pred_1,z_i)
 
             with tf.GradientTape(persistent=True) as tape2:
                 tape2.watch(x_i)
                 tape2.watch(y_i)
-                R = solver_ex.mesh.stack_X(x_i,y_i)
+                tape2.watch(z_i)
+                R = solver_ex.mesh.stack_X(x_i,y_i,z_i)
                 u_pred_2 = solver_ex.model(R)
                 ux_pred_2 = tape2.gradient(u_pred_2,x_i)
                 uy_pred_2 = tape2.gradient(u_pred_2,y_i)
+                uz_pred_2 = tape2.gradient(u_pred_2,z_i)
             uxx_2 = tape2.gradient(ux_pred_2,x_i)
             uyy_2 = tape2.gradient(ux_pred_2,y_i)
+            uyz_2 = tape2.gradient(ux_pred_2,z_i)
+
 
             u_prom = (u_pred_1+u_pred_2)/2
             loss += tf.reduce_mean(tf.square(u_pred_1 - u_prom)) 
@@ -83,9 +90,9 @@ class XPINN():
             # res = solver.PDE.fun_r(x_i,ux_pred_1,uxx_1,y_i,uy_pred_1,uyy_1)-solver_ex.PDE.fun_r(x_i,ux_pred_2,uxx_2,y_i,uy_pred_2,uyy_2)
             # loss += tf.reduce_mean(tf.square(res))
             
-            norm_vn = tf.sqrt(x_i**2+y_i**2)
-            v1 = (x_i*ux_pred_1+y_i*uy_pred_1)/norm_vn
-            v2 = (x_i*ux_pred_2+y_i*uy_pred_2)/norm_vn
+            norm_vn = tf.sqrt(x_i**2 + y_i**2 + z_i**2)
+            v1 = (x_i*ux_pred_1 + y_i*uy_pred_1 + z_i*u_pred_1)/norm_vn
+            v2 = (x_i*ux_pred_2 + y_i*uy_pred_2 + z_i*u_pred_1)/norm_vn
             loss += tf.reduce_mean(tf.square(v1*solver.un - v2*solver_ex.un))
 
             del tape1

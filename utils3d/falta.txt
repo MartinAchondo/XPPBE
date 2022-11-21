@@ -1,5 +1,0 @@
-
-pinn_precond class
-preconditioner
-postprocessing
-xpinn

@@ -121,7 +121,8 @@ class View_results():
         x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
         x = tf.reshape(x,[x.shape[0],1])
         y = tf.ones((N,1), dtype=self.DTYPE)*0
-        X = tf.concat([x, y], axis=1)
+        z = tf.ones((N,1), dtype=self.DTYPE)*0
+        X = tf.concat([x, y, z], axis=1)
         U = self.model(X)
 
         plt.plot(x[:,0],U[:,0])
@@ -133,15 +134,16 @@ class View_results():
         x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
         x = tf.reshape(x,[x.shape[0],1])
         y = tf.ones((N,1), dtype=self.DTYPE)*0
-        X = tf.concat([x, y], axis=1)
+        z = tf.ones((N,1), dtype=self.DTYPE)*0
+        X = tf.concat([x, y, z], axis=1)
         U = self.model(X)
 
         plt.plot(x[:,0],U[:,0], c='b', label='Aprox')
 
-        U2 = self.NN.PDE.analytic(x,y)
+        U2 = self.NN.PDE.analytic(x,y,z)
         plt.plot(x[:,0],U2[:,0], c='r', label='Analytic')
 
-
+        plt.ylim([-3,1])
         plt.legend()
         plt.xlabel('x')
         plt.ylabel('u');
@@ -239,7 +241,8 @@ class View_results_X():
             x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
             x = tf.reshape(x,[x.shape[0],1])
             y = tf.ones((N,1), dtype=self.DTYPE)*0
-            X = tf.concat([x, y], axis=1)
+            z = tf.ones((N,1), dtype=self.DTYPE)*0
+            X = tf.concat([x, y, z], axis=1)
             U = post_obj.model(X)
 
             plt.plot(x[:,0],U[:,0])
@@ -247,14 +250,16 @@ class View_results_X():
         plt.ylabel('u');
 
 
-    def plot_u_plane_direction(self,angle=0,N=200):
+    def plot_u_plane_direction(self,theta=0,phi=0,N=200):
         for post_obj in self.Post:
             r = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
-            x = r*tf.cos(angle)
+            x = r*tf.sin(theta)*tf.cos(phi)
             x = tf.reshape(x,[x.shape[0],1])
-            y = r*tf.sin(angle)
+            y = r*tf.sin(theta)*tf.sin(phi)
             y = tf.reshape(y,[y.shape[0],1])
-            X = tf.concat([x, y], axis=1)
+            z = r*tf.cos(theta)
+            z = tf.reshape(z,[z.shape[0],1])
+            X = tf.concat([x, y, z], axis=1)
             U = post_obj.model(X)
 
             r = tf.reshape(r,[r.shape[0],1])

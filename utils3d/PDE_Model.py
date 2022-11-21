@@ -39,9 +39,8 @@ class PDE_Model():
         return u_xx + u_yy + u_zz - self.source(x,y,z)
 
 
-    def analytic(self,x,y):
-        return (1/(self.epsilon*2*self.pi))*tf.math.log(tf.sqrt(x**2+y**2))
-        
+    def analytic(self,x,y,z):
+        return (-1/(self.epsilon*4*self.pi))*1/(tf.sqrt(x**2+y**2+z**2))
 
 class PDE_Model_2():
 
@@ -81,6 +80,6 @@ class PDE_Model_2():
         return u_xx + u_yy - self.source(x,y)
 
     
-    def analytic(self,x,y):
-        return (1/(self.epsilon*2*self.pi))*tf.math.log(tf.sqrt(x**2+y**2))
+    def analytic(self,x,y,z):
+        return (1/(self.epsilon*4*self.pi))*1/(tf.sqrt(x**2+y**2+z**2))
         
