@@ -173,15 +173,15 @@ class PINN():
         pbar.set_description("Loss: %s " % 100)
         for i in pbar:
             loss,L_loss = train_step()
-            self.loss_r.append(L_loss['r'])
-            self.loss_bD.append(L_loss['D'])
-            self.loss_bN.append(L_loss['N'])
-            self.current_loss = loss.numpy()
-            self.callback()
+            self.callback(loss,L_loss)
             if self.iter % 10 == 0:
                 pbar.set_description("Loss: %s" % self.current_loss)
 
-    def callback(self):
+    def callback(self,loss,L_loss):
+        self.loss_r.append(L_loss['r'])
+        self.loss_bD.append(L_loss['D'])
+        self.loss_bN.append(L_loss['N'])
+        self.current_loss = loss.numpy()
         self.loss_hist.append(self.current_loss)
         self.iter+=1
 
@@ -205,6 +205,7 @@ class PINN_Precond(PINN):
         self.precond.X_r = self.X_r
         self.precond.x = self.x
         self.precond.y = self.y
+        self.precond.z = self.z
 
     def get_precond_grad(self):
         with tf.GradientTape(persistent=True) as tape:
@@ -221,18 +222,25 @@ class PINN_Precond(PINN):
             optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
             return loss
 
-        for i in range(N):
+        pbar = log_progress(range(N))
+        pbar.set_description("Loss: %s " % 100)
+        for i in pbar:
             loss = train_step_precond()
-            self.current_loss = loss.numpy()
-            self.callback()
+            self.callback(loss)
 
-    def preconditionate(self,N=2000,flag_time=True):
-        self.flag_time = flag_time
+            if self.iter % 10 == 0:
+                pbar.set_description("Loss: %s" % self.current_loss)
+
+    def callback(self,loss):
+        self.current_loss = loss.numpy()
+        self.loss_hist.append(self.current_loss)
+        self.iter+=1
+
+    def preconditionate(self,N=2000):
         optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
-        if self.flag_time:
-            t0 = time()
-            self.precond_with_TFoptimizer(optim, N)
-            print('\nComputation time: {} seconds'.format(time()-t0))
-        else:
-            self.precond_with_TFoptimizer(optim, N)
+
+        t0 = time()
+        self.precond_with_TFoptimizer(optim, N)
+        print('\nComputation time: {} seconds'.format(time()-t0))
+
 

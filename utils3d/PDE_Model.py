@@ -52,32 +52,31 @@ class PDE_Model_2():
         self.epsilon = None
     
     def set_domain(self,X):
-        x,y = X
-        self.xmin = x[0]
-        self.xmax = x[1]
-        self.ymin = y[0]
-        self.ymax = y[1]
+        x,y,z = X
+        self.xmin,self.xmax = x
+        self.ymin,self.ymax = y
+        self.zmin,self.zmax = z
 
-        lb = tf.constant([self.xmin, self.ymin], dtype=self.DTYPE)
-        ub = tf.constant([self.xmax, self.ymax], dtype=self.DTYPE)
+        lb = tf.constant([self.xmin, self.ymin, self.zmin], dtype=self.DTYPE)
+        ub = tf.constant([self.xmax, self.ymax, self.zmax], dtype=self.DTYPE)
 
         return (lb,ub)
 
     # Define boundary condition
-    def fun_u_b(self,x, y, value):
+    def fun_u_b(self,x, y, z, value):
         n = x.shape[0]
         return tf.ones((n,1), dtype=self.DTYPE)*value
 
-    def fun_ux_b(self,x, y, value):
+    def fun_ux_b(self,x, y, z, value):
         n = x.shape[0]
         return tf.ones((n,1), dtype=self.DTYPE)*value
 
-    def source(self,x,y):
+    def source(self,x,y,z):
         return 0
 
     # Define residual of the PDE
-    def fun_r(self,x,u_x,u_xx,y,u_y,u_yy):
-        return u_xx + u_yy - self.source(x,y)
+    def fun_r(self,x,u_x,u_xx,y,u_y,u_yy,z,u_z,u_zz):
+        return u_xx + u_yy + u_zz - self.source(x,y,z)
 
     
     def analytic(self,x,y,z):

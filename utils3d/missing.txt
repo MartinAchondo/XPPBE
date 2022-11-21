@@ -1,4 +1,4 @@
 
-pinn_precond class
-preconditioner
-postprocessing (solo cambie u plane y u plane direction)
+check plane condition
+
+view_results_x

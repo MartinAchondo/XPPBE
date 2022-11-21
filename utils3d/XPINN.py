@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from time import time
-
+from tqdm import tqdm as log_progress
 
 class XPINN():
     
@@ -63,12 +63,9 @@ class XPINN():
                 tape1.watch(z_i)
                 R = solver.mesh.stack_X(x_i,y_i,z_i)
                 u_pred_1 = solver.model(R)
-                ux_pred_1 = tape1.gradient(u_pred_1,x_i)
-                uy_pred_1 = tape1.gradient(u_pred_1,y_i)
-                uz_pred_1 = tape1.gradient(u_pred_1,z_i)
-            uxx_1 = tape1.gradient(ux_pred_1,x_i)
-            uyy_1 = tape1.gradient(ux_pred_1,y_i)
-            uzz_1 = tape1.gradient(ux_pred_1,z_i)
+            ux_pred_1 = tape1.gradient(u_pred_1,x_i)
+            uy_pred_1 = tape1.gradient(u_pred_1,y_i)
+            uz_pred_1 = tape1.gradient(u_pred_1,z_i)
 
             with tf.GradientTape(persistent=True) as tape2:
                 tape2.watch(x_i)
@@ -76,23 +73,16 @@ class XPINN():
                 tape2.watch(z_i)
                 R = solver_ex.mesh.stack_X(x_i,y_i,z_i)
                 u_pred_2 = solver_ex.model(R)
-                ux_pred_2 = tape2.gradient(u_pred_2,x_i)
-                uy_pred_2 = tape2.gradient(u_pred_2,y_i)
-                uz_pred_2 = tape2.gradient(u_pred_2,z_i)
-            uxx_2 = tape2.gradient(ux_pred_2,x_i)
-            uyy_2 = tape2.gradient(ux_pred_2,y_i)
-            uyz_2 = tape2.gradient(ux_pred_2,z_i)
-
+            ux_pred_2 = tape2.gradient(u_pred_2,x_i)
+            uy_pred_2 = tape2.gradient(u_pred_2,y_i)
+            uz_pred_2 = tape2.gradient(u_pred_2,z_i)
 
             u_prom = (u_pred_1+u_pred_2)/2
             loss += tf.reduce_mean(tf.square(u_pred_1 - u_prom)) 
-
-            # res = solver.PDE.fun_r(x_i,ux_pred_1,uxx_1,y_i,uy_pred_1,uyy_1)-solver_ex.PDE.fun_r(x_i,ux_pred_2,uxx_2,y_i,uy_pred_2,uyy_2)
-            # loss += tf.reduce_mean(tf.square(res))
             
             norm_vn = tf.sqrt(x_i**2 + y_i**2 + z_i**2)
-            v1 = (x_i*ux_pred_1 + y_i*uy_pred_1 + z_i*u_pred_1)/norm_vn
-            v2 = (x_i*ux_pred_2 + y_i*uy_pred_2 + z_i*u_pred_1)/norm_vn
+            v1 = (x_i*ux_pred_1 + y_i*uy_pred_1 + z_i*uz_pred_1)/norm_vn
+            v2 = (x_i*ux_pred_2 + y_i*uy_pred_2 + z_i*uz_pred_2)/norm_vn
             loss += tf.reduce_mean(tf.square(v1*solver.un - v2*solver_ex.un))
 
             del tape1
@@ -128,22 +118,31 @@ class XPINN():
             L2 = [loss2,L_loss2]
             return L1,L2
         
-        for i in range(N):
+        pbar = log_progress(range(N))
+        pbar.set_description("Loss: %s " % 100)
+        for i in pbar:
             L1,L2 = train_step()
-            self.loss_r1.append(L1[1]['r'])
-            self.loss_bD1.append(L1[1]['D'])
-            self.loss_bN1.append(L1[1]['N'])
-            self.loss_bI1.append(L1[1]['I'])
+            self.callback(L1,L2)
 
-            self.loss_r2.append(L2[1]['r'])
-            self.loss_bD2.append(L2[1]['D'])
-            self.loss_bN2.append(L2[1]['N'])
-            self.loss_bI2.append(L2[1]['I'])
+            if self.iter % 10 == 0:
+                pbar.set_description("Loss: %s" % self.current_loss)
+        
 
-            loss = L1[0] + L2[0]
+    def callback(self, L1,L2):
+        self.loss_r1.append(L1[1]['r'])
+        self.loss_bD1.append(L1[1]['D'])
+        self.loss_bN1.append(L1[1]['N'])
+        self.loss_bI1.append(L1[1]['I'])
 
-            self.current_loss = loss.numpy()
-            self.callback()
+        self.loss_r2.append(L2[1]['r'])
+        self.loss_bD2.append(L2[1]['D'])
+        self.loss_bN2.append(L2[1]['N'])
+        self.loss_bI2.append(L2[1]['I'])
+
+        loss = L1[0] + L2[0]
+        self.current_loss = loss.numpy()
+        self.loss_hist.append(self.current_loss)
+        self.iter+=1
 
     def add_losses_NN(self):
         self.solver1.loss_r = self.loss_r1
@@ -155,28 +154,17 @@ class XPINN():
         self.solver2.loss_bD = self.loss_bD2
         self.solver2.loss_bN = self.loss_bN2
         self.solver2.loss_bI = self.loss_bI2
-        
-
-    def callback(self, xr=None):
-        if self.iter % 50 == 0:
-            if self.flag_time:
-                print('It {:05d}: loss = {:10.8e}'.format(self.iter,self.current_loss))
-        self.loss_hist.append(self.current_loss)
-        self.iter+=1
 
 
-    def solve(self,N=1000,flag_time=True):
-        self.flag_time = flag_time
+    def solve(self,N=1000):
         optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
         optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
         optim = [optim1,optim2]
-        if self.flag_time:
-            t0 = time()
-            self.solve_with_TFoptimizer(optim, N)
-            print('\nComputation time: {} seconds'.format(time()-t0))
-            
-        else:
-            self.solve_with_TFoptimizer(optim, N)
+
+        t0 = time()
+        self.solve_with_TFoptimizer(optim, N)
+        print('\nComputation time: {} seconds'.format(time()-t0))
+
         self.add_losses_NN()
 
 

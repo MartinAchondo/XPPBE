@@ -13,25 +13,24 @@ class Preconditioner():
         self.epsilon = None
 
     def set_domain(self,X):
-        x,y = X
-        self.xmin = x[0]
-        self.xmax = x[1]
-        self.ymin = y[0]
-        self.ymax = y[1]
+        x,y,z = X
+        self.xmin,self.xmax = x
+        self.ymin,self.ymax = y
+        self.zmin,self.zmax = z
 
-        lb = tf.constant([self.xmin, self.ymin], dtype=self.DTYPE)
-        ub = tf.constant([self.xmax, self.ymax], dtype=self.DTYPE)
+        lb = tf.constant([self.xmin, self.ymin,self.zmin], dtype=self.DTYPE)
+        ub = tf.constant([self.xmax, self.ymax,self.zmax], dtype=self.DTYPE)
 
         return (lb,ub)
 
-    def fun_r(self,x,y):
-        z = (1/(2*self.pi))*(1/self.epsilon)*tf.math.log(tf.sqrt(x**2+y**2))
+    def fun_r(self,x,y,z):
+        z = (1/(4*self.pi))*(1/self.epsilon)*1/(tf.sqrt(x**2+y**2+z**2))
         return z
 
     def loss_fn(self,model,mesh):
-        R = mesh.stack_X(self.x,self.y)
+        R = mesh.stack_X(self.x,self.y,self.z)
         upred = model(R)
-        u = self.fun_r(self.x,self.y)
+        u = self.fun_r(self.x,self.y,self.z)
         loss = tf.reduce_mean(tf.square(upred-u))
         return loss
         

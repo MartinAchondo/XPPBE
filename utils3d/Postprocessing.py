@@ -19,21 +19,23 @@ class View_results():
         self.ub = self.NN.mesh.ub
 
     def get_grid(self,N=100):
-        xspace = np.linspace(self.lb[0], self.ub[0], N + 1, dtype=self.DTYPE)
-        yspace = np.linspace(self.lb[1], self.ub[1], N + 1, dtype=self.DTYPE)
-        X, Y = np.meshgrid(xspace, yspace)
-
+        xspace = np.linspace(self.lb[0], self.ub[0], self.N_r + 1, dtype=self.DTYPE)
+        yspace = np.linspace(self.lb[1], self.ub[1], self.N_r + 1, dtype=self.DTYPE)
+        zspace = np.linspace(self.lb[2], self.ub[2], self.N_r + 1, dtype=self.DTYPE)
+        X, Y, Z = np.meshgrid(xspace, yspace, zspace)
+        
         if 'rmin' not in self.mesh.ins_domain:
             self.mesh.ins_domain['rmin'] = -0.1
 
-        r = np.sqrt(X**2 + Y**2)
+        r = np.sqrt(X**2 + Y**2 + Z**2)
         inside1 = r < self.mesh.ins_domain['rmax']
         X1 = X[inside1]
         Y1 = Y[inside1]
-        r = np.sqrt(X1**2 + Y1**2)
+        Z1 = Z[inside1]
+        r = np.sqrt(X1**2 + Y1**2 + Z1**2)
         inside = r > self.mesh.ins_domain['rmin']
 
-        Xgrid = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten()]).T)
+        Xgrid = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
 
         return Xgrid,X1[inside],Y1[inside]
 
@@ -55,7 +57,7 @@ class View_results():
     def get_loss(self,N=100):
         
         Xgrid,_,_ = self.get_grid(N)
-        self.NN.x,self.NN.y = self.mesh.get_X(Xgrid)
+        self.NN.x,self.NN.y,self.NN.z = self.mesh.get_X(Xgrid)
         loss,L = self.NN.loss_fn()
 
         L['r'] = L['r'].numpy()
@@ -68,10 +70,11 @@ class View_results():
 
 
     def plot_loss(self,N=100):
-        Xgrid,x,y = self.get_grid(N)
-        self.NN.x,self.NN.y = self.mesh.get_X(Xgrid)
+        Xgrid,x,y,z = self.get_grid(N)
+        self.NN.x,self.NN.y,self.NN.z = self.mesh.get_X(Xgrid)
         loss = self.NN.get_r()
-        plt.scatter(x.flatten(),y.flatten(),c=tf.square(loss).numpy(), norm=matplotlib.colors.LogNorm())
+        plane = np.abs(z)<10**-4
+        plt.scatter(x.flatten()[plane],y.flatten()[plane],c=tf.square(loss).numpy()[plane], norm=matplotlib.colors.LogNorm())
         plt.colorbar();
 
 
@@ -82,27 +85,30 @@ class View_results():
 
     
     def evaluate_u_array(self,X):
-        x,y = X
+        x,y,z = X
         xt = tf.constant(x)
         yt = tf.constant(y)
+        zt = tf.constant(z)
         x = tf.reshape(xt,[xt.shape[0],1])
         y = tf.reshape(yt,[yt.shape[0],1])
+        z = tf.reshape(zt,[zt.shape[0],1])
         
-        X = tf.concat([x, y], axis=1)
+        X = tf.concat([x, y, z], axis=1)
         U = self.model(X)
 
-        return x[:,0],y[:,0],U[:,0]
+        return x[:,0],y[:,0],z[:,0],U[:,0]
 
 
     def get_u_domain(self,N=100):
-        Xgrid,X,Y = self.get_grid(N)
+        Xgrid,X,Y,Z = self.get_grid(N)
         upred = self.model(tf.cast(Xgrid,self.DTYPE))
-        return X.flatten(),Y.flatten(),upred.numpy()
+        return X.flatten(),Y.flatten(),Z.flatten(),upred.numpy()
 
 
     def plot_u_domain_contour(self,N=100):
-        x,y,u = self.get_u_domain(N)
-        plt.scatter(x,y,c=u)
+        x,y,z,u = self.get_u_domain(N)
+        plane = np.abs(z)<10**-4
+        plt.scatter(x[plane], y[plane], c=u)
         plt.colorbar();
 
 
@@ -110,8 +116,9 @@ class View_results():
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
 
-        x,y,u = self.get_u_domain(N)
-        ax.scatter(x,y,u, c=u)
+        x,y,z,u = self.get_u_domain(N)
+        plane = np.abs(z)<10**-4
+        ax.scatter(x[plane], y[plane],u, c=u)
         ax.view_init(alpha1,alpha2)
         ax.set_xlabel('$x$')
         ax.set_ylabel('$y$');
@@ -153,9 +160,10 @@ class View_results():
         x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
         x = tf.reshape(x,[x.shape[0],1])
         y = tf.ones((N,1), dtype=self.DTYPE)*0
-        X = tf.concat([x, y], axis=1)
+        z = tf.ones((N,1), dtype=self.DTYPE)*0
+        X = tf.concat([x, y, z], axis=1)
         U = self.model(X)
-        U2 = self.NN.PDE.analytic(x,y)
+        U2 = self.NN.PDE.analytic(x,y,z)
 
         error = tf.square(U-U2)
         plt.plot(x[:,0],error[:,0], c='r', label='Error')
@@ -324,7 +332,7 @@ class View_results_X():
         L = list()
         for post_obj in self.Post:
             Xgrid,_,_ = post_obj.get_grid(N)
-            post_obj.x,post_obj.y = post_obj.mesh.get_X(Xgrid)
+            post_obj.x,post_obj.y,post_obj.z = post_obj.mesh.get_X(Xgrid)
             loss = post_obj.NN.get_r()
             L.append(loss.numpy()**2)
         Lmax = list(map(np.max,L))
