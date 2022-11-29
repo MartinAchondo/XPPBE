@@ -80,5 +80,5 @@ class PDE_Model_2():
 
     
     def analytic(self,x,y,z):
-        return (1/(self.epsilon*4*self.pi))*1/(tf.sqrt(x**2+y**2+z**2))
+        return (-1/(self.epsilon*4*self.pi))*1/(tf.sqrt(x**2+y**2+z**2))
         

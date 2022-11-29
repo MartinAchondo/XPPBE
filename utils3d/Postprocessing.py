@@ -216,7 +216,7 @@ class View_results_X():
     def plot_u_domain_contour(self, N=100):
         vmax,vmin = self.get_max_min()
         for post_obj in self.Post:
-            x,y,u = post_obj.get_u_domain(N)
+            x,y,z,u = post_obj.get_u_domain(N)
             plt.scatter(x,y,c=u, vmin=vmin,vmax=vmax)
         plt.colorbar();
 
@@ -227,7 +227,7 @@ class View_results_X():
 
         vmax,vmin = self.get_max_min()
         for post_obj in self.Post:
-            x,y,u = post_obj.get_u_domain(N)
+            x,y,z,u = post_obj.get_u_domain(N)
             ax.scatter(x,y,u,c=u, vmin=vmin,vmax=vmax)
         ax.view_init(alpha1,alpha2)
         ax.set_xlabel('$x$')
@@ -281,14 +281,16 @@ class View_results_X():
             x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
             x = tf.reshape(x,[x.shape[0],1])
             y = tf.ones((N,1), dtype=self.DTYPE)*0
-            X = tf.concat([x, y], axis=1)
+            z = tf.ones((N,1), dtype=self.DTYPE)*0
+            X = tf.concat([x, y, z], axis=1)
             U = post_obj.model(X)
 
             plt.plot(x[:,0],U[:,0], c='b', label='Aprox')
 
-            U2 = NN.PDE.analytic(x,y)
+            U2 = NN.PDE.analytic(x,y,z)
             plt.plot(x[:,0],U2[:,0], c='r', label='Analytic')
-
+        
+        plt.ylim([-3,1])    
         plt.legend()
         plt.xlabel('x')
         plt.ylabel('u');
@@ -320,7 +322,7 @@ class View_results_X():
     def get_max_min(self,N=100):
         U = list()
         for post_obj in self.Post:
-            _,_,u = post_obj.get_u_domain(N)
+            _,_,_,u = post_obj.get_u_domain(N)
             U.append(u)
         Umax = list(map(np.max,U))
         vmax = np.max(np.array(Umax))
@@ -331,7 +333,7 @@ class View_results_X():
     def get_max_min_loss(self,N=100):
         L = list()
         for post_obj in self.Post:
-            Xgrid,_,_ = post_obj.get_grid(N)
+            Xgrid,_,_,_ = post_obj.get_grid(N)
             post_obj.x,post_obj.y,post_obj.z = post_obj.mesh.get_X(Xgrid)
             loss = post_obj.NN.get_r()
             L.append(loss.numpy()**2)

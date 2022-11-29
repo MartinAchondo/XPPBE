@@ -5,7 +5,6 @@ import os
 from time import time
 from tqdm import tqdm as log_progress
 
-
 class PINN():
     
     def __init__(self):
@@ -21,11 +20,12 @@ class PINN():
         self.iter = 0
         self.lr = None
 
-    def adapt_mesh(self,mesh,
+    def adapt_mesh(self, mesh,
         w_r=1,
         w_d=1,
         w_n=1,
         w_i=1):
+        
         self.mesh = mesh
         self.lb = mesh.lb
         self.ub = mesh.ub

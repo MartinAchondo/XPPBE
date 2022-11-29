@@ -5,13 +5,11 @@ from tqdm import tqdm as log_progress
 
 class XPINN():
     
-    def __init__(self,PINN):
+    def __init__(self, PINN):
 
         self.DTYPE = 'float32'
 
-        self.solver1 = PINN()
-        self.solver2 = PINN()
-
+        self.solver1, self.solver2 = PINN(), PINN()
         self.solvers = [self.solver1,self.solver2]
         
         self.loss_hist = list()
@@ -30,7 +28,7 @@ class XPINN():
         self.lr = None
 
 
-    def adapt_PDEs(self,PDEs,unions):
+    def adapt_PDEs(self,PDEs,unions) -> None:
         for solver,pde,union in zip(self.solvers,PDEs,unions):
             solver.adapt_PDE(pde)
             solver.un = union
@@ -168,5 +166,6 @@ class XPINN():
         self.add_losses_NN()
 
 
-
+if __name__=='__main__':
+    pass
 
