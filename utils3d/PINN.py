@@ -95,14 +95,14 @@ class PINN():
         r = self.get_r()
         phi_r = tf.reduce_mean(tf.square(r))
         loss = self.w_r*phi_r
-        L['r'] += loss
+        L['r'] += loss/self.w_r
 
         #dirichlet
         for i in range(len(self.XD_data)):
             u_pred = self.model(self.XD_data[i])
             loss_D = self.w_d*tf.reduce_mean(tf.square(self.UD_data[i] - u_pred)) 
             loss += loss_D
-            L['D'] += loss_D
+            L['D'] += loss_D/self.w_d
 
         #neumann
         for i in range(len(self.XN_data)):
@@ -155,7 +155,7 @@ class PINN():
                 loss_N = self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - un_pred)) 
 
             loss += loss_N
-            L['N'] += loss_N    
+            L['N'] += loss_N/self.w_n    
 
         return loss,L
     

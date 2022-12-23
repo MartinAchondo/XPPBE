@@ -95,7 +95,7 @@ class XPINN():
             loss,L = solver.loss_fn()
             loss_I = solver.w_i*self.loss_I(solver,solver_ex)
             loss += loss_I 
-            L['I'] = loss_I
+            L['I'] = loss_I/solver.w_i
         g = tape.gradient(loss, solver.model.trainable_variables)
         del tape
         return loss, L, g
