@@ -63,26 +63,7 @@ class PINN():
             os.makedirs(dir_path)
 
         self.model.save(os.path.join(dir_path,name))
-
-    def get_r(self):
-        with tf.GradientTape(persistent=True) as tape:
-           
-            tape.watch(self.x)
-            tape.watch(self.y)
-            tape.watch(self.z)
-            R = self.mesh.stack_X(self.x,self.y,self.z)
-            u = self.model(R)
-            u_x = tape.gradient(u, self.x)
-            u_y = tape.gradient(u, self.y)
-            u_z = tape.gradient(u, self.z)
-            
-        u_xx = tape.gradient(u_x, self.x)
-        u_yy = tape.gradient(u_y, self.y)
-        u_zz = tape.gradient(u_z, self.z)
-
-        del tape
-        return self.PDE.fun_r(self.x, u_x, u_xx, self.y, u_y, u_yy, self.z, u_z, u_zz)
-    
+ 
 
     def loss_fn(self):
         
@@ -92,70 +73,20 @@ class PINN():
         L['N'] = 0
 
         #residual
-        r = self.get_r()
-        phi_r = tf.reduce_mean(tf.square(r))
-        loss = self.w_r*phi_r
-        L['r'] += loss/self.w_r
+        X = (self.x,self.y,self.z)
+        loss_r = self.PDE.residual_loss(self.mesh,self.model,X)
+        loss = self.w_r*loss_r
+        L['r'] += loss_r
 
-        #dirichlet
-        for i in range(len(self.XD_data)):
-            u_pred = self.model(self.XD_data[i])
-            loss_D = self.w_d*tf.reduce_mean(tf.square(self.UD_data[i] - u_pred)) 
-            loss += loss_D
-            L['D'] += loss_D/self.w_d
+        #dirichlet 
+        loss_d = self.PDE.dirichlet_loss(self.mesh,self.model,self.XD_data,self.UD_data)
+        loss += self.w_d*loss_d
+        L['D'] += loss_d
 
         #neumann
-        for i in range(len(self.XN_data)):
-            x_n,y_n,z_n = self.mesh.get_X(self.XN_data[i])
-            if self.derN[i]=='x':
-                with tf.GradientTape(watch_accessed_variables=False) as tapex:
-                    tapex.watch(x_n)
-                    R = self.mesh.stack_X(x_n,y_n,z_n)
-                    u_pred = self.model(R)
-                ux_pred = tapex.gradient(u_pred,x_n)
-                del tapex
-
-                loss_N = self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - ux_pred)) 
-            
-            elif self.derN[i]=='y':
-                with tf.GradientTape(watch_accessed_variables=False) as tapey:
-                    tapey.watch(y_n)
-                    R = self.mesh.stack_X(x_n,y_n,z_n)
-                    u_pred = self.model(R)
-                uy_pred = tapey.gradient(u_pred,y_n)
-                del tapey
-
-                loss_N = self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uy_pred)) 
-
-            elif self.derN[i]=='z':
-                with tf.GradientTape(watch_accessed_variables=False) as tapez:
-                    tapez.watch(z_n)
-                    R = self.mesh.stack_X(x_n,y_n,z_n)
-                    u_pred = self.model(R)
-                uz_pred = tapez.gradient(u_pred,z_n)
-                del tapez
-
-                loss_N = self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - uz_pred)) 
-            
-            elif self.derN[i]=='r':
-                with tf.GradientTape(persistent=True, watch_accessed_variables=False) as taper:
-                    taper.watch(x_n)
-                    taper.watch(y_n)
-                    taper.watch(z_n)
-                    R = self.mesh.stack_X(x_n,y_n,z_n)
-                    u_pred = self.model(R)
-                ux_pred = taper.gradient(u_pred,x_n)
-                uy_pred = taper.gradient(u_pred,y_n)
-                uz_pred = taper.gradient(u_pred,z_n)
-                del taper
-                
-                norm_vn = tf.sqrt(x_n**2+y_n**2+z_n**2)
-                un_pred = (x_n*ux_pred + y_n*uy_pred + z_n*uz_pred)/norm_vn
-
-                loss_N = self.w_n*tf.reduce_mean(tf.square(self.UN_data[i] - un_pred)) 
-
-            loss += loss_N
-            L['N'] += loss_N/self.w_n    
+        loss_n = self.PDE.neumann_loss(self.mesh,self.model,self.XN_data,self.UN_data)
+        loss += self.w_n*loss_n
+        L['N'] += loss_n    
 
         return loss,L
     
@@ -197,6 +128,9 @@ class PINN():
         t0 = time()
         self.solve_with_TFoptimizer(optim, N)
         print('\nComputation time: {} seconds'.format(time()-t0))
+
+
+
 
 
 
