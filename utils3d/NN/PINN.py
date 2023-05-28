@@ -124,7 +124,9 @@ class PINN():
     def solve(self,N=1000,flag_time=True):
         self.flag_time = flag_time
         optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
- 
+
+        self.N_iters = N
+
         t0 = time()
         self.solve_with_TFoptimizer(optim, N)
         print('\nComputation time: {} seconds'.format(time()-t0))

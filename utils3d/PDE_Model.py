@@ -120,7 +120,7 @@ class PDE_Model():
         return Loss_d
 
 
-    def neumann_loss(self,mesh,model,XN,UN,V):
+    def neumann_loss(self,mesh,model,XN,UN,V=None):
         Loss_n = 0
         for i in range(len(XN)):
             X = mesh.get_X(XN[i])

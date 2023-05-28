@@ -18,6 +18,8 @@ class View_results():
         self.lb = self.NN.mesh.lb
         self.ub = self.NN.mesh.ub
 
+        self.loss_last = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
+
     def get_grid(self,N=100):
         xspace = np.linspace(self.lb[0], self.ub[0], N + 1, dtype=self.DTYPE)
         yspace = np.linspace(self.lb[1], self.ub[1], N + 1, dtype=self.DTYPE)
@@ -50,8 +52,12 @@ class View_results():
             ax.semilogy(range(len(self.NN.loss_bD)), self.NN.loss_bD,'b-',label='Loss_bD')
             ax.semilogy(range(len(self.NN.loss_bN)), self.NN.loss_bN,'g-',label='Loss_bN')
         ax.legend()
-        ax.set_xlabel('$n_{epoch}$')
-        ax.set_ylabel('$\\phi^{n_{epoch}}$')
+        ax.set_xlabel('$n: iterations$')
+        ax.set_ylabel(r'$\mathcal{L}: Losses$')
+        text_l = r'$\phi_{\theta}$'
+        plt.title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {self.loss_last}')
+        plt.grid()
+        plt.show();
         return ax
 
     def get_loss(self,N=100):
@@ -132,9 +138,15 @@ class View_results():
         X = tf.concat([x, y, z], axis=1)
         U = self.model(X)
 
-        plt.plot(x[:,0],U[:,0])
-        plt.xlabel('x')
-        plt.ylabel('u');
+        plt.plot(x[:,0],U[:,0], label='Solution of PDE', c='b')
+        plt.xlabel('r')
+        plt.ylabel(r'$\phi_{\theta}$')
+        loss = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
+        text_l = r'$\phi_{\theta}$'
+        plt.title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {loss}')
+        plt.grid()
+        plt.legend()
+        plt.show();
 
 
     def plot_aprox_analytic(self,N=200):
