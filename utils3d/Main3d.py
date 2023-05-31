@@ -30,7 +30,7 @@ folder_path = os.path.join('results','testSim')
 if os.path.exists(folder_path):
     shutil.rmtree(folder_path)
 
-os.mkdir(folder_path)
+os.makedirs(folder_path)
 filename = os.path.join(folder_path,'logfile.log')
 LOG_format = '%(levelname)s - %(name)s: %(message)s'
 logging.basicConfig(filename=filename, filemode='w', level=logging.INFO, format=LOG_format)
