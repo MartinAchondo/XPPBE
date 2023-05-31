@@ -26,7 +26,7 @@ from NN.Postprocessing import View_results_X
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
-folder_path = os.path.join('results_sim')
+folder_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'results_sim')
 if os.path.exists(folder_path):
     shutil.rmtree(folder_path)
 
@@ -148,7 +148,7 @@ PINN_solver.solve(N=N_iters)
 
 
 
-Post = View_results(PINN_solver, save=True, directory=folder_path)
+Post = View_results(PINN_solver, save=True, directory=folder_path, data=True)
 
 print("")
 print(f'Loss: {Post.loss_last}')
@@ -160,6 +160,9 @@ print("")
 Post.plot_loss_history();
 
 Post.plot_u_plane();
+
+if Post.data:
+        Post.close_file()
 
 print('')
 print('')

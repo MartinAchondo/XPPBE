@@ -5,18 +5,22 @@ import matplotlib
 from mpl_toolkits.mplot3d import Axes3D
 import logging
 import os
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
 
 class View_results():
 
-    def __init__(self,NN,save=False,directory=None):
+    def __init__(self,NN,save=False,directory=None, data=False):
 
         self.DTYPE='float32'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
         self.save = True
         self.directory = directory
+        self.data = data
+        if self.data:
+            self.Excel_writer = pd.ExcelWriter(os.path.join(directory,'results.xlsx'), engine='openpyxl')
 
         self.NN = NN
         self.model = NN.model
@@ -27,27 +31,9 @@ class View_results():
 
         self.loss_last = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
 
-    def get_grid(self,N=100):
-        xspace = np.linspace(self.lb[0], self.ub[0], N + 1, dtype=self.DTYPE)
-        yspace = np.linspace(self.lb[1], self.ub[1], N + 1, dtype=self.DTYPE)
-        zspace = np.linspace(self.lb[2], self.ub[2], N + 1, dtype=self.DTYPE)
-        X, Y, Z = np.meshgrid(xspace, yspace, zspace)
-        
-        if 'rmin' not in self.mesh.ins_domain:
-            self.mesh.ins_domain['rmin'] = -0.1
-
-        r = np.sqrt(X**2 + Y**2 + Z**2)
-        inside1 = r < self.mesh.ins_domain['rmax']
-        X1 = X[inside1]
-        Y1 = Y[inside1]
-        Z1 = Z[inside1]
-        r = np.sqrt(X1**2 + Y1**2 + Z1**2)
-        inside = r > self.mesh.ins_domain['rmin']
-
-        Xgrid = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
-
-        return Xgrid,X1[inside],Y1[inside],Z1[inside]
-
+    def close_file(self):
+        self.Excel_writer.close()
+        logger.info(f'Excel created: {"results.xlsx"}')
 
     def plot_loss_history(self, flag=True, ax=None):
         if not ax:
@@ -69,12 +55,76 @@ class View_results():
         ax.grid()
 
         if self.save:
-            path = 'Loss_history.png'
+            path = 'loss_history.png'
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
 
+            if self.data:
+                d = {'Residual': list(map(lambda tensor: tensor.numpy(), self.NN.loss_r)),
+                     'Dirichlet': list(map(lambda tensor: tensor.numpy(), self.NN.loss_bD)),
+                     'Neumann': list(map(lambda tensor: tensor.numpy(), self.NN.loss_bN))
+                     }
+                df = pd.DataFrame(d)
+                df.to_excel(self.Excel_writer, sheet_name='Losses', index=False)
+                
         return ax
+    
+    def plot_u_plane(self,N=200):
+        x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
+        x = tf.reshape(x,[x.shape[0],1])
+        y = tf.ones((N,1), dtype=self.DTYPE)*0
+        z = tf.ones((N,1), dtype=self.DTYPE)*0
+        X = tf.concat([x, y, z], axis=1)
+        U = self.model(X)
+
+        fig, ax = plt.subplots()
+
+        ax.plot(x[:,0], U[:,0], label='Solution of PDE', c='b')
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+
+        loss = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
+        text_l = r'$\phi_{\theta}$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {loss}')
+
+        ax.grid()
+        ax.legend()
+
+        if self.save:
+            path = 'solution.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            logger.info(f'Solution Plot saved: {path}')
+
+        if self.data:
+            d = {'x': x[:,0],
+                 'u': U[:,0]}
+            df = pd.DataFrame(d)
+            df.to_excel(self.Excel_writer, sheet_name='Solution', index=False)
+
+     
+    def get_grid(self,N=100):
+        xspace = np.linspace(self.lb[0], self.ub[0], N + 1, dtype=self.DTYPE)
+        yspace = np.linspace(self.lb[1], self.ub[1], N + 1, dtype=self.DTYPE)
+        zspace = np.linspace(self.lb[2], self.ub[2], N + 1, dtype=self.DTYPE)
+        X, Y, Z = np.meshgrid(xspace, yspace, zspace)
+        
+        if 'rmin' not in self.mesh.ins_domain:
+            self.mesh.ins_domain['rmin'] = -0.1
+
+        r = np.sqrt(X**2 + Y**2 + Z**2)
+        inside1 = r < self.mesh.ins_domain['rmax']
+        X1 = X[inside1]
+        Y1 = Y[inside1]
+        Z1 = Z[inside1]
+        r = np.sqrt(X1**2 + Y1**2 + Z1**2)
+        inside = r > self.mesh.ins_domain['rmin']
+
+        Xgrid = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
+
+        return Xgrid,X1[inside],Y1[inside],Z1[inside]
+
 
     def get_loss(self,N=100):
         
@@ -146,32 +196,7 @@ class View_results():
         ax.set_ylabel('$y$');
 
 
-    def plot_u_plane(self,N=200):
-        x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
-        x = tf.reshape(x,[x.shape[0],1])
-        y = tf.ones((N,1), dtype=self.DTYPE)*0
-        z = tf.ones((N,1), dtype=self.DTYPE)*0
-        X = tf.concat([x, y, z], axis=1)
-        U = self.model(X)
-
-        fig, ax = plt.subplots()
-
-        ax.plot(x[:,0], U[:,0], label='Solution of PDE', c='b')
-        ax.set_xlabel('r')
-        ax.set_ylabel(r'$\phi_{\theta}$')
-
-        loss = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
-        text_l = r'$\phi_{\theta}$'
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {loss}')
-
-        ax.grid()
-        ax.legend()
-
-        if self.save:
-            path = 'Solution.png'
-            path_save = os.path.join(self.directory,path)
-            fig.savefig(path_save)
-            logger.info(f'Solution Plot saved: {path}')
+       
 
 
     def plot_aprox_analytic(self,N=200):
