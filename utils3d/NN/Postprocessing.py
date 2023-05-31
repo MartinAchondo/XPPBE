@@ -171,7 +171,6 @@ class View_results():
             path = 'Solution.png'
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
-            fig.savefig(path)
             logger.info(f'Solution Plot saved: {path}')
 
 
@@ -210,6 +209,12 @@ class View_results():
         plt.xlabel('x')
         plt.ylabel('Error')
         plt.yscale('log');
+
+
+
+
+
+
 
 
 class View_results_X():

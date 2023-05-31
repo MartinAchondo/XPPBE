@@ -26,7 +26,7 @@ from NN.Postprocessing import View_results_X
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
-folder_path = os.path.join('results','testSim')
+folder_path = os.path.join('results_sim')
 if os.path.exists(folder_path):
     shutil.rmtree(folder_path)
 
