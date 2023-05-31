@@ -3,13 +3,20 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib
 from mpl_toolkits.mplot3d import Axes3D
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+
 
 class View_results():
 
-    def __init__(self,NN):
+    def __init__(self,NN,save=False,directory=None):
 
         self.DTYPE='float32'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
+        self.save = True
+        self.directory = directory
 
         self.NN = NN
         self.model = NN.model
@@ -44,20 +51,29 @@ class View_results():
 
     def plot_loss_history(self, flag=True, ax=None):
         if not ax:
-            fig = plt.figure(figsize=(7,5))
+            fig = plt.figure(figsize=(7, 5))
             ax = fig.add_subplot(111)
-        ax.semilogy(range(len(self.NN.loss_hist)), self.NN.loss_hist,'k-',label='Loss')
-        if flag: 
-            ax.semilogy(range(len(self.NN.loss_r)), self.NN.loss_r,'r-',label='Loss_r')
-            ax.semilogy(range(len(self.NN.loss_bD)), self.NN.loss_bD,'b-',label='Loss_bD')
-            ax.semilogy(range(len(self.NN.loss_bN)), self.NN.loss_bN,'g-',label='Loss_bN')
+
+        ax.semilogy(range(len(self.NN.loss_hist)), self.NN.loss_hist, 'k-', label='Loss')
+
+        if flag:
+            ax.semilogy(range(len(self.NN.loss_r)), self.NN.loss_r, 'r-', label='Loss_r')
+            ax.semilogy(range(len(self.NN.loss_bD)), self.NN.loss_bD, 'b-', label='Loss_bD')
+            ax.semilogy(range(len(self.NN.loss_bN)), self.NN.loss_bN, 'g-', label='Loss_bN')
+
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel(r'$\mathcal{L}: Losses$')
         text_l = r'$\phi_{\theta}$'
-        plt.title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {self.loss_last}')
-        plt.grid()
-        plt.show();
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {self.loss_last}')
+        ax.grid()
+
+        if self.save:
+            path = 'Loss_history.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            logger.info(f'Loss history Plot saved: {path}')
+
         return ax
 
     def get_loss(self,N=100):
@@ -138,15 +154,25 @@ class View_results():
         X = tf.concat([x, y, z], axis=1)
         U = self.model(X)
 
-        plt.plot(x[:,0],U[:,0], label='Solution of PDE', c='b')
-        plt.xlabel('r')
-        plt.ylabel(r'$\phi_{\theta}$')
+        fig, ax = plt.subplots()
+
+        ax.plot(x[:,0], U[:,0], label='Solution of PDE', c='b')
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+
         loss = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
         text_l = r'$\phi_{\theta}$'
-        plt.title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {loss}')
-        plt.grid()
-        plt.legend()
-        plt.show();
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {loss}')
+
+        ax.grid()
+        ax.legend()
+
+        if self.save:
+            path = 'Solution.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            fig.savefig(path)
+            logger.info(f'Solution Plot saved: {path}')
 
 
     def plot_aprox_analytic(self,N=200):

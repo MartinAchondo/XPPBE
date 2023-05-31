@@ -11,7 +11,7 @@ class PINN_NeuralNet(tf.keras.Model):
             num_hidden_blocks='8',
             activation='tanh',
             kernel_initializer='glorot_normal',
-            architecture_Net='FFNN',
+            architecture_Net='FCNN',
             **kwargs):
         super().__init__(**kwargs)
 
@@ -30,8 +30,8 @@ class PINN_NeuralNet(tf.keras.Model):
             name=f'layer_input')
 
 
-        # FFNN architecture
-        if self.architecture_Net == 'FFNN':             
+        # FCNN architecture
+        if self.architecture_Net == 'FCNN':             
             self.hidden_layers = list()
             for i in range(self.num_hidden_layers):
                 layer = tf.keras.layers.Dense(num_neurons_per_layer,
@@ -71,15 +71,15 @@ class PINN_NeuralNet(tf.keras.Model):
         self.build(self.input_shape_N)
 
     def call(self, X):
-        if self.architecture_Net == 'FFNN':
-            return self.call_FFNN(X)
+        if self.architecture_Net == 'FCNN':
+            return self.call_FCNN(X)
         elif self.architecture_Net == 'ResNet':
             return self.call_ResNet(X)
         
 
     # Call NeuralNet functions with the desire architecture
     
-    def call_FFNN(self,X):
+    def call_FCNN(self,X):
         Z = self.scale(X)
         for layer in self.hidden_layers:
             Z = layer(Z)

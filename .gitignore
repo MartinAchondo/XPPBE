@@ -7,3 +7,4 @@ commands.txt
 /.vscode
 *__pycache__
 /.classes
+*.log

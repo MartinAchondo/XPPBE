@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import os
 from time import time
 from tqdm import tqdm as log_progress
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PINN():
     
@@ -46,16 +49,18 @@ class PINN():
         self.model = NN_class(self.mesh.lb, self.mesh.ub,*args,**kwargs)
         self.model.build_Net()
         self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
-
+        logger.info("Neural Network created")
 
     def adapt_PDE(self,PDE):
         self.PDE = PDE
+        logger.info("PDE adapted")
 
     def load_NeuralNet(self,directory,name,lr):
         path = os.path.join(os.getcwd(),directory,name)
         NN_model = tf.keras.models.load_model(path, compile=False)
         self.model = NN_model
         self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
+        logger.info("Neural Network adapted")
 
     def save_model(self,directory,name):
         dir_path = os.path.join(os.getcwd(),directory)
@@ -112,6 +117,9 @@ class PINN():
             self.callback(loss,L_loss)
             if self.iter % 10 == 0:
                 pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
+        logger.info(f' Iterations: {N}')
+        logger.info(" Loss: {:6.4e}".format(self.current_loss))
+
 
     def callback(self,loss,L_loss):
         self.loss_r.append(L_loss['r'])
@@ -129,8 +137,8 @@ class PINN():
 
         t0 = time()
         self.solve_with_TFoptimizer(optim, N)
-        print('\nComputation time: {} seconds'.format(time()-t0))
-
+        #print('\nComputation time: {6.4e} seconds'.format(time()-t0))
+        logger.info('Computation time: {} seconds'.format(int((time()-t0)/60)))
 
 
 
