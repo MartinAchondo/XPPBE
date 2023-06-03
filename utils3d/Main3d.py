@@ -40,7 +40,7 @@ logger.info("==============================")
 
 
 
-for hidden in range(5,6):
+for hidden in range(3,12):
 
         folder_path = os.path.join(main_path,'results_sim_FCNN_'+str(hidden))
         if os.path.exists(folder_path):
@@ -117,7 +117,7 @@ for hidden in range(5,6):
         logger.info('================================================')
 
 
-for blocks in range(5,6):
+for blocks in range(3,12):
 
         folder_path = os.path.join(main_path,'results_sim_ResNet_'+str(blocks))
         if os.path.exists(folder_path):
