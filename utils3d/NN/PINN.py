@@ -138,7 +138,7 @@ class PINN():
         t0 = time()
         self.solve_with_TFoptimizer(optim, N)
         #print('\nComputation time: {6.4e} seconds'.format(time()-t0))
-        logger.info('Computation time: {} seconds'.format(int((time()-t0)/60)))
+        logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
 
 
 
