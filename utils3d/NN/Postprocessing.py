@@ -103,6 +103,25 @@ class View_results():
             df = pd.DataFrame(d)
             df.to_excel(self.Excel_writer, sheet_name='Solution', index=False)
 
+
+    def plot_u_domain_contour(self,N=100):
+        x,y,z,u = self.get_u_domain(N)
+        plane = np.abs(z)<10**-4
+    
+        fig, ax = plt.subplots()
+
+        s = ax.scatter(x[plane], y[plane], c=u[plane])
+        fig.colorbar(s, ax=ax)
+
+        loss = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
+        text_l = r'$\phi_{\theta}$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {loss}')
+
+        if self.save:
+            path = 'contour.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            logger.info(f'Contour Plot saved: {path}')
      
     def get_grid(self,N=100):
         xspace = np.linspace(self.lb[0], self.ub[0], N + 1, dtype=self.DTYPE)
@@ -175,14 +194,6 @@ class View_results():
         Xgrid,X,Y,Z = self.get_grid(N)
         upred = self.model(tf.cast(Xgrid,self.DTYPE))
         return X.flatten(),Y.flatten(),Z.flatten(),upred.numpy()
-
-
-    def plot_u_domain_contour(self,N=100):
-        x,y,z,u = self.get_u_domain(N)
-        plane = np.abs(z)<10**-4
-        plt.scatter(x[plane], y[plane], c=u[plane])
-        plt.colorbar();
-
 
     def plot_u_domain_surface(self,N=100,alpha1=35,alpha2=135):
         fig = plt.figure()
