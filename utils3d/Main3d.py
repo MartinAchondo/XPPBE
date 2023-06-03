@@ -99,7 +99,7 @@ for hidden in range(5,6):
 
         logger.info("> Solving PINN")
 
-        N_iters = 5
+        N_iters = 8000
         PINN_solver.solve(N=N_iters)
 
         Post = View_results(PINN_solver, save=True, directory=folder_path, data=True)
@@ -177,7 +177,7 @@ for blocks in range(5,6):
 
         logger.info("> Solving PINN")
 
-        N_iters = 5
+        N_iters = 8000
         PINN_solver.solve(N=N_iters)
 
         Post = View_results(PINN_solver, save=True, directory=folder_path, data=True)
