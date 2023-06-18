@@ -8,3 +8,5 @@ commands.txt
 *__pycache__
 /.classes
 *.log
+pscp.bash
+putty.bash

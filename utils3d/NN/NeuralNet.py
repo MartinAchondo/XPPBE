@@ -42,7 +42,6 @@ class PINN_NeuralNet(tf.keras.Model):
 
         # ResNet architecture
         elif self.architecture_Net == 'ResNet':
-
             self.first = tf.keras.layers.Dense(num_neurons_per_layer,
                                             activation=tf.keras.activations.get(activation),
                                             kernel_initializer=kernel_initializer,
