@@ -9,12 +9,11 @@ import logging
 import sys
 import shutil
 
-from PDE_Model import PDE_Model
-from PDE_Model import PDE_Model_2
-from Preconditioner import Preconditioner
-from Preconditioner import change_fun
+from DCM.PDE_Model import PDE_Model
+from DCM.Preconditioner import Preconditioner
+from DCM.Preconditioner import change_fun
 
-from Mesh import Mesh
+from BINet.Mesh import Mesh
 from NN.NeuralNet import PINN_NeuralNet
 
 from NN.PINN import PINN
@@ -38,12 +37,6 @@ logger = logging.getLogger(__name__)
 logger.info("==============================")
 
 
-
-
-folder_path = os.path.join(main_path,'results_sim_FCNN_'+str(hidden))
-if os.path.exists(folder_path):
-        shutil.rmtree(folder_path)
-os.makedirs(folder_path)
 
 logger.info("> Starting PINN Algorithm")
 
@@ -76,42 +69,46 @@ mesh1.create_mesh(borders, ins_domain)
 #mesh1.plot_points_2d();
 PINN_solver.adapt_mesh(mesh1,**weights)
 
-logger.info("> Creating NeuralNet")
+print(mesh1.X_r)
 
-lr = ([3000,6000],[1e-2,5e-3,5e-4])
-hyperparameters_FCNN = {
-        'input_shape': (None,3),
-        'num_hidden_layers': 6,
-        'num_neurons_per_layer': 30,
-        'output_dim': 1,
-        'activation': 'tanh',
-        'architecture_Net': 'FCNN'
-}
 
-hyperparameters = hyperparameters_FCNN
 
-PINN_solver.create_NeuralNet(PINN_NeuralNet,lr,**hyperparameters)
+# logger.info("> Creating NeuralNet")
 
-logger.info(json.dumps(hyperparameters, indent=4))
-PINN_solver.model.summary()
+# lr = ([3000,6000],[1e-2,5e-3,5e-4])
+# hyperparameters_FCNN = {
+#         'input_shape': (None,3),
+#         'num_hidden_layers': 6,
+#         'num_neurons_per_layer': 30,
+#         'output_dim': 1,
+#         'activation': 'tanh',
+#         'architecture_Net': 'FCNN'
+# }
 
-logger.info("> Solving PINN")
+# hyperparameters = hyperparameters_FCNN
 
-N_iters = 8000
-PINN_solver.solve(N=N_iters)
+# PINN_solver.create_NeuralNet(PINN_NeuralNet,lr,**hyperparameters)
 
-Post = View_results(PINN_solver, save=True, directory=folder_path, data=True)
+# logger.info(json.dumps(hyperparameters, indent=4))
+# PINN_solver.model.summary()
 
-logger.info("> Ploting Solution")
+# logger.info("> Solving PINN")
 
-Post.plot_loss_history();
-Post.plot_u_plane();
-Post.plot_u_domain_contour();
+# N_iters = 8000
+# PINN_solver.solve(N=N_iters)
 
-if Post.data:
-        Post.close_file()
+# Post = View_results(PINN_solver, save=True, directory=folder_path, data=True)
 
-logger.info('================================================')
-logger.info('================================================')
+# logger.info("> Ploting Solution")
+
+# Post.plot_loss_history();
+# Post.plot_u_plane();
+# Post.plot_u_domain_contour();
+
+# if Post.data:
+#         Post.close_file()
+
+# logger.info('================================================')
+# logger.info('================================================')
 
 
