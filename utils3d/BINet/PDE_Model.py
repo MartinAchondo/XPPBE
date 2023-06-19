@@ -57,7 +57,7 @@ class PDE_Model():
     def residual_loss(self,mesh,model,X): 
         x,y,z = X
         R = self.mesh.stack_X(x,y,z)
-        ud = tf.transpose(model(R)).numpy()
+        ud = tf.reshape(model(R), shape=[-1])
 
         self.slp_grid = bempp.api.GridFunction(self.slp_space, coefficients=ud)
         self.dlp_grid = bempp.api.GridFunction(self.dlp_space, coefficients=ud)
@@ -65,7 +65,6 @@ class PDE_Model():
         r =  self.slp_pot*self.slp_grid - self.dlp_pot*self.dlp_grid      
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
-
 
 
     ####################################################################################################################################################
