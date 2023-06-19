@@ -19,7 +19,8 @@ class Mesh():
 
     def create_sphere(self):
         self.grid = bempp.api.shapes.sphere(h=0.1)
-        self.X_r = tf.constant(np.transpose(self.grid.vertices),  dtype=tf.float32)
+        self.X_r = tf.constant(np.transpose(np.array(self.grid.vertices)),  dtype=tf.float32)
+
 
     def create_mesh(self,borders,ins_domain):
 
@@ -47,7 +48,7 @@ class Mesh():
             'interface': (self.XI_data,self.derI)
         }
 
-    def to_bempp(self,X):  #points en tutorial
+    def to_bempp(self,X):  #points en bempp
         R = X.numpy()
         return np.transpose(R)
 
@@ -63,35 +64,7 @@ class Mesh():
         R = tf.stack([x[:,0], y[:,0], z[:,0]], axis=1)
         return R
 
-    def plot_points_2d(self):
-        xm,ym,zm = self.D_r
-        fig = plt.figure(figsize=(9,6))
-        for x,y,z in self.BP:
-            plane = np.abs(z)<10**-4
-            plt.scatter(x[plane], y[plane], marker='X')
-        plane = np.abs(zm) <10**-4
-        plt.scatter(xm[plane], ym[plane], c='r', marker='.', alpha=0.1)
-        plt.xlabel('$x$')
-        plt.ylabel('$y$')
-        plt.title('Positions of collocation points and boundary data')
-        plt.show();
 
-    def plot_points_3d(self, alpha1=25, alpha2=25):
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-
-        xm,ym,zm = self.D_r
-        fig = plt.figure(figsize=(9,6))
-        for x,y,z in self.BP:
-            ax.scatter(x, y, z, marker='X')
-        ax.scatter(xm, ym, zm, c='r', marker='.', alpha=0.1)
-        ax.view_init(alpha1,alpha2)
-        ax.set_xlabel('$x$')
-        ax.set_ylabel('$y$')
-        plt.show()
-        #ax.title('Positions of collocation points and boundary data');
-
-# modificar para dominio circular en cartesianas
 
 ########################################################################################################
 

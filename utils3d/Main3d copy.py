@@ -9,11 +9,9 @@ import logging
 import sys
 import shutil
 
-from DCM.PDE_Model import PDE_Model
-from DCM.Preconditioner import Preconditioner
-from DCM.Preconditioner import change_fun
+from BINet.PDE_Model import PDE_Model
 
-from DCM.Mesh import Mesh
+from BINet.Mesh import Mesh
 from NN.NeuralNet import PINN_NeuralNet
 
 from NN.PINN import PINN
@@ -21,6 +19,7 @@ from NN.Postprocessing import View_results
 from NN.PINN import PINN_Precond
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+tf.config.run_functions_eagerly(True)
 
 main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'results')
 if os.path.exists(main_path):
