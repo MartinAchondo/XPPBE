@@ -10,6 +10,7 @@ class PDE_Model_IN():
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
         self.sigma = 0.04
         self.epsilon = None
+        self.q = None
     
     def set_domain(self,X):
         x,y,z = X
@@ -100,7 +101,13 @@ class PDE_Model_IN():
         return tf.ones((n,1), dtype=self.DTYPE)*value
 
     def source(self,x,y,z):
-        return (1/((2*self.pi)**(3.0/2)*self.sigma**3))*tf.exp((-1/(2*self.sigma**2))*(x**2+y**2+z**2))
+        sum = 0
+        for qk,Xk in self.q:
+            xk,yk,zk = Xk
+            deltak = tf.exp((-1/(2*self.sigma**2))*((x-xk)**2+(y-yk)**2+(z-zk)**2))
+            sum += qk*deltak
+        normalizer = (1/((2*self.pi)**(3.0/2)*self.sigma**3))
+        return (-1/self.epsilon)*sum*normalizer
     
     def analytic(self,x,y,z):
         return (-1/(self.epsilon*4*self.pi))*1/(tf.sqrt(x**2+y**2+z**2))
@@ -118,7 +125,7 @@ class PDE_Model_IN():
 
         return (x,y,z)
     
-
+    #sphere
     def normal_vector(self,X):
         x,y,z = X
         norm_vn = tf.sqrt(x**2+y**2+z**2)
