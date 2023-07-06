@@ -99,6 +99,7 @@ logger.info("> Ploting Solution")
 Post.plot_loss_history();
 Post.plot_u_plane();
 Post.plot_u_domain_contour();
+Post.plot_aprox_analytic();
 
 if Post.data:
         Post.close_file()

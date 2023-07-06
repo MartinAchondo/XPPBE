@@ -99,6 +99,7 @@ Post.plot_loss_history();
 Post.plot_u_plane();
 Post.plot_u_domain_contour();
 
+
 if Post.data:
         Post.close_file()
 

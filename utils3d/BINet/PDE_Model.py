@@ -61,7 +61,6 @@ class PDE_Model():
 
         self.slp_grid = bempp.api.GridFunction(self.slp_space, coefficients=ud)
         self.dlp_grid = bempp.api.GridFunction(self.dlp_space, coefficients=ud)
-
         r =  self.slp_pot*self.slp_grid - self.dlp_pot*self.dlp_grid      
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
@@ -82,9 +81,9 @@ class PDE_Model():
         self.ident_space = bempp.api.function_space(self.mesh.grid, "P", 1)
 
         X = self.mesh.to_bempp(self.X_r)
-        self.slp_pot = bempp.api.operators.potential.laplace.single_layer(
-            self.slp_space, X)
-        self.dlp_pot = bempp.api.operators.potential.laplace.double_layer(
-            self.dlp_space, X)
+        self.slp_pot = bempp.api.operators.boundary.laplace.single_layer(
+            self.slp_space, self.slp_space, X)
+        self.dlp_pot = bempp.api.operators.boundary.laplace.double_layer(
+            self.dlp_space, self.dlp_space, X)
         self.ident_pot = bempp.api.operators.boundary.sparse.identity(
             self.ident_space, self.ident_space, X)

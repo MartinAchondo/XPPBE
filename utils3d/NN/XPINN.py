@@ -52,8 +52,8 @@ class XPINN():
 
     def loss_I(self,solver,solver_ex):
         loss = 0
-        for j in range(len(solver.XI_data)):
-            x_i,y_i,z_i = solver.mesh.get_X(solver.XI_data[j])
+        for j in range(len(solver.PDE.XI_data)):
+            x_i,y_i,z_i = solver.mesh.get_X(solver.PDE.XI_data[j])
             
             with tf.GradientTape(persistent=True, watch_accessed_variables=False) as tape1:
                 tape1.watch(x_i)
@@ -116,6 +116,7 @@ class XPINN():
             L2 = [loss2,L_loss2]
             return L1,L2
         
+        self.N_iters = N
         pbar = log_progress(range(N))
         pbar.set_description("Loss: %s " % 100)
         for i in pbar:

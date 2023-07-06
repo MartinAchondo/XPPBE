@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 class View_results():
 
-    def __init__(self,NN,save=False,directory=None, data=False):
+    def __init__(self,NN,save=False,directory=None, data=False, X=False):
 
         self.DTYPE='float32'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
-        self.save = True
+        self.save = save
         self.directory = directory
         self.data = data
         if self.data:
@@ -29,7 +29,8 @@ class View_results():
         self.lb = self.NN.mesh.lb
         self.ub = self.NN.mesh.ub
 
-        self.loss_last = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
+        if not X:
+            self.loss_last = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
 
     def close_file(self):
         self.Excel_writer.close()
@@ -122,6 +123,47 @@ class View_results():
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
             logger.info(f'Contour Plot saved: {path}')
+
+
+    def plot_aprox_analytic(self,N=200):
+        x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
+        x = tf.reshape(x,[x.shape[0],1])
+        y = tf.ones((N,1), dtype=self.DTYPE)*0
+        z = tf.ones((N,1), dtype=self.DTYPE)*0
+        X = tf.concat([x, y, z], axis=1)
+        U = self.model(X)
+
+        fig, ax = plt.subplots() 
+
+        ax.plot(x[:,0],U[:,0], c='b', label='Aproximated')
+
+        U2 = self.NN.PDE.analytic(x,y,z)
+        ax.plot(x[:,0],U2[:,0], c='r', label='Analytic')
+
+        plt.ylim([-3,1])
+
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+        if np.max(U[:,0]) > 0:
+            ur = np.max(U[:,0])*1.2
+        else:
+            ur = 1
+        ax.set_ylim([np.min(U[:,0])*1.2,ur])
+
+        loss = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
+        text_l = r'$\phi_{\theta}$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {loss}')
+
+        ax.grid()
+        ax.legend()
+
+
+        if self.save:
+            path = 'solution_analytic.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            logger.info(f'Solution Plot saved: {path}')
+
      
     def get_grid(self,N=100):
         xspace = np.linspace(self.lb[0], self.ub[0], N + 1, dtype=self.DTYPE)
@@ -207,28 +249,6 @@ class View_results():
         ax.set_ylabel('$y$');
 
 
-       
-
-
-    def plot_aprox_analytic(self,N=200):
-        x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
-        x = tf.reshape(x,[x.shape[0],1])
-        y = tf.ones((N,1), dtype=self.DTYPE)*0
-        z = tf.ones((N,1), dtype=self.DTYPE)*0
-        X = tf.concat([x, y, z], axis=1)
-        U = self.model(X)
-
-        plt.plot(x[:,0],U[:,0], c='b', label='Aprox')
-
-        U2 = self.NN.PDE.analytic(x,y,z)
-        plt.plot(x[:,0],U2[:,0], c='r', label='Analytic')
-
-        plt.ylim([-3,1])
-        plt.legend()
-        plt.xlabel('x')
-        plt.ylabel('u');
-
-
     def plot_loss_analytic(self,N=200):
         x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
         x = tf.reshape(x,[x.shape[0],1])
@@ -255,22 +275,31 @@ class View_results():
 
 class View_results_X():
 
-    def __init__(self,XPINN,Post):
+    def __init__(self,XPINN,Post, save=False,directory=None, data=False):
 
         self.DTYPE='float32'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
+        self.save = save
+        self.directory = directory
+        self.data = data
+        if self.data:
+            self.Excel_writer = pd.ExcelWriter(os.path.join(directory,'results.xlsx'), engine='openpyxl')
 
         self.XPINN = XPINN
         self.NN = [XPINN.solver1,XPINN.solver2]
         self.model = [XPINN.solver1.model,XPINN.solver2.model]
         self.mesh = [XPINN.solver1.mesh,XPINN.solver2.mesh]
 
-        # self.lb = [self.model[0].lb,self.model[1].lb]
-        # self.ub = [self.model[0].ub,self.model[1].ub]
+        self.lb = [self.model[0].lb,self.model[1].lb]
+        self.ub = [self.model[0].ub,self.model[1].ub]
 
         self.Post = list()
+
         for NN in self.NN:
-            self.Post.append(Post(NN))
+            self.Post.append(Post(NN,X=True))
+
+        
+        self.loss_last = np.format_float_scientific(self.XPINN.loss_hist[-1], unique=False, precision=3)
 
 
     def plot_loss_history(self, flag=True, ax=None):
@@ -287,17 +316,74 @@ class View_results_X():
                 ax.semilogy(range(len(NN.loss_bN)), NN.loss_bN,c[iter-1][2],label='Loss_bN_NN_'+str(iter))
                 iter += 1
             ax.semilogy(range(len(NN.loss_bI)), NN.loss_bI,'m',label='Loss_bI')
+
         ax.legend()
-        ax.set_xlabel('$n_{epoch}$')
-        ax.set_ylabel('$\\phi^{n_{epoch}}$')
+        ax.set_xlabel('$n: iterations$')
+        ax.set_ylabel(r'$\mathcal{L}: Losses$')
+        text_l = r'$\phi_{\theta}$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
+        ax.grid()
+
+        if self.save:
+            path = 'loss_history.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            logger.info(f'Loss history Plot saved: {path}')
+
+
+    def plot_u_plane(self,N=200):
+        fig, ax = plt.subplots()
+        labels = ['Inside', 'Outside']
+        colr = ['r','b']
+        i = 0
+        for post_obj in self.Post:
+            x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
+            x = tf.reshape(x,[x.shape[0],1])
+            y = tf.ones((N,1), dtype=self.DTYPE)*0
+            z = tf.ones((N,1), dtype=self.DTYPE)*0
+            X = tf.concat([x, y, z], axis=1)
+            U = post_obj.model(X)
+
+            
+            ax.plot(x[:,0],U[:,0], label=labels[i], c=colr[i])
+            i += 1
+
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+
+        text_l = r'$\phi_{\theta}$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
+
+        ax.grid()
+        ax.legend()
+
+        if self.save:
+            path = 'solution.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            logger.info(f'Solution Plot saved: {path}')
 
 
     def plot_u_domain_contour(self, N=100):
+        fig, ax = plt.subplots()
         vmax,vmin = self.get_max_min()
         for post_obj in self.Post:
             x,y,z,u = post_obj.get_u_domain(N)
-            plt.scatter(x,y,c=u, vmin=vmin,vmax=vmax)
-        plt.colorbar();
+            plane = np.abs(z)<10**-4
+            s = ax.scatter(x[plane], y[plane], c=u[plane],vmin=vmin,vmax=vmax)
+            
+        ax.set_xlim([-10,10])
+        ax.set_ylim([-10,10])
+        fig.colorbar(s, ax=ax)
+
+        text_l = r'$\phi_{\theta}$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
+
+        if self.save:
+            path = 'contour.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            logger.info(f'Contour Plot saved: {path}')
 
  
     def plot_u_domain_surface(self,N=100,alpha1=35,alpha2=135):
@@ -321,20 +407,6 @@ class View_results_X():
             loss = post_obj.NN.get_r()
             plt.scatter(x.flatten(),y.flatten(),c=tf.square(loss).numpy(), norm=matplotlib.colors.LogNorm(vmax=vmax, vmin=vmin))
         plt.colorbar();
-
-
-    def plot_u_plane(self,N=200):
-        for post_obj in self.Post:
-            x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
-            x = tf.reshape(x,[x.shape[0],1])
-            y = tf.ones((N,1), dtype=self.DTYPE)*0
-            z = tf.ones((N,1), dtype=self.DTYPE)*0
-            X = tf.concat([x, y, z], axis=1)
-            U = post_obj.model(X)
-
-            plt.plot(x[:,0],U[:,0])
-        plt.xlabel('x')
-        plt.ylabel('u');
 
 
     def plot_u_plane_direction(self,theta=0,phi=0,N=200):
