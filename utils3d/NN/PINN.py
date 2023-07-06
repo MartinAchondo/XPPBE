@@ -28,34 +28,40 @@ class PINN():
         w_d=1,
         w_n=1,
         w_i=1):
+
+        logger.info("> Adapting Mesh")
         
         self.mesh = mesh
         self.lb = mesh.lb
         self.ub = mesh.ub
+        self.PDE.adapt_PDE_mesh(self.mesh)
 
-        self.X_r = self.mesh.data_mesh['residual']
-        self.w_r = w_r
-        self.XD_data,self.UD_data = self.mesh.data_mesh['dirichlet']
-        self.w_d = w_d
-        self.XN_data,self.UN_data,self.derN = self.mesh.data_mesh['neumann']
-        self.w_n = w_n
-        self.XI_data,self.derI = self.mesh.data_mesh['interface']
         self.w_i = w_i
+        self.w = {
+            'r': w_r,
+            'D': w_d,
+            'N': w_n
+        }
+        
+        self.L_names = ['r','D','N']
 
-        self.x,self.y,self.z = self.mesh.get_X(self.X_r)
+        logger.info("Mesh adapted")
         
 
     def create_NeuralNet(self,NN_class,lr,*args,**kwargs):
+        logger.info("> Creating NeuralNet")
         self.model = NN_class(self.mesh.lb, self.mesh.ub,*args,**kwargs)
         self.model.build_Net()
         self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
         logger.info("Neural Network created")
 
     def adapt_PDE(self,PDE):
+        logger.info("> Adapting PDE")
         self.PDE = PDE
         logger.info("PDE adapted")
 
     def load_NeuralNet(self,directory,name,lr):
+        logger.info("> Adapting NeuralNet")
         path = os.path.join(os.getcwd(),directory,name)
         NN_model = tf.keras.models.load_model(path, compile=False)
         self.model = NN_model
@@ -71,30 +77,12 @@ class PINN():
  
 
     def loss_fn(self):
-        
-        L = dict()
-        L['r'] = 0
-        L['D'] = 0
-        L['N'] = 0
-
-        #residual
-        X = (self.x,self.y,self.z)
-        loss_r = self.PDE.residual_loss(self.mesh,self.model,X)
-        loss = self.w_r*loss_r
-        L['r'] += loss_r
-
-        #dirichlet 
-        loss_d = self.PDE.dirichlet_loss(self.mesh,self.model,self.XD_data,self.UD_data)
-        loss += self.w_d*loss_d
-        L['D'] += loss_d
-
-        #neumann
-        loss_n = self.PDE.neumann_loss(self.mesh,self.model,self.XN_data,self.UN_data)
-        loss += self.w_n*loss_n
-        L['N'] += loss_n    
-
+        L = self.PDE.get_loss(self.model)
+        loss = 0
+        for t in self.L_names:
+            loss += L[t]*self.w[t]
         return loss,L
-    
+        
     def get_grad(self):
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(self.model.trainable_variables)
