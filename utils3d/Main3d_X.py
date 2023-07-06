@@ -48,6 +48,7 @@ PDE_in = PDE_Model_IN()
 domain_in = PDE_in.set_domain(domain_in)
 PDE_in.sigma = 0.04
 PDE_in.epsilon = 2
+PDE_in.q = [(1,[0,0,0])]
 
 lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':1}
 borders = {'1':lb}
