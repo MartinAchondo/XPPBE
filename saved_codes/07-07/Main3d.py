@@ -9,7 +9,7 @@ import logging
 import sys
 import shutil
 
-from DCM.PDE_Model import PDE_Model
+from DCM.PDE_Model import Poisson as PDE_Model
 from DCM.Preconditioner import Preconditioner
 from DCM.Preconditioner import change_fun
 
@@ -17,7 +17,7 @@ from DCM.Mesh import Mesh
 from NN.NeuralNet import PINN_NeuralNet
 
 from NN.PINN import PINN
-from NN.Postprocessing import View_results
+from DCM.Postprocessing import View_results
 from NN.PINN import PINN_Precond
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
@@ -47,6 +47,7 @@ PDE = PDE_Model()
 domain = PDE.set_domain(domain)
 PDE.sigma = 0.04
 PDE.epsilon = 1
+PDE.q = [(1,[0,0,0])]
 
 lb = {'type':'D', 'value':-1/(4*np.pi*PDE.epsilon), 'fun':None, 'dr':None, 'r':1}
 borders = {'1':lb}
@@ -89,7 +90,7 @@ PINN_solver.model.summary()
 
 logger.info("> Solving PINN")
 
-N_iters = 2
+N_iters = 10
 PINN_solver.solve(N=N_iters)
 
 Post = View_results(PINN_solver, save=True, directory=folder_path, data=True)

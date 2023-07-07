@@ -19,8 +19,8 @@ from NN.NeuralNet import PINN_NeuralNet
 from NN.PINN import PINN
 from NN.XPINN import XPINN
 
-from NN.Postprocessing import View_results
-from NN.Postprocessing import View_results_X
+from DCM.Postprocessing import View_results
+from DCM.Postprocessing import View_results_X
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 logger.info("==============================")
 
 
-folder_path = os.path.join(main_path,'test')
+folder_path = os.path.join(main_path,'plots')
 if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
 os.makedirs(folder_path)
@@ -105,7 +105,7 @@ logger.info(json.dumps(hyperparameters, indent=4))
 
 logger.info("> Solving XPINN")
 
-N_iters = 300
+N_iters = 3
 XPINN_solver.solve(N=N_iters)
 
 Post = View_results_X(XPINN_solver, View_results, save=True, directory=folder_path, data=False)
