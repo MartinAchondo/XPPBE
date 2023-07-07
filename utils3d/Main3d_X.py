@@ -9,8 +9,9 @@ import logging
 import sys
 import shutil
 
-from DCM.PDE_Model_X import PDE_Model_IN
-from DCM.PDE_Model_X import PDE_Model_OUT
+from DCM.PDE_Model import Poisson as PDE_Model_IN
+from DCM.PDE_Model import Helmholtz as PDE_Model_OUT
+from DCM.PDE_Model import PDE_2_domains
 
 from DCM.Mesh import Mesh
 from NN.NeuralNet import PINN_NeuralNet
@@ -73,10 +74,12 @@ ins_domain = {'rmax': 10,'rmin':1}
 mesh_out = Mesh(domain_out, N_b=60, N_r=1500)
 mesh_out.create_mesh(borders, ins_domain)
 
+PDE = PDE_2_domains()
+PDE.adapt_PDEs([PDE_in,PDE_out],[1,10])
 
 XPINN_solver = XPINN(PINN)
 
-XPINN_solver.adapt_PDEs([PDE_in,PDE_out],[1,10])
+XPINN_solver.adapt_PDEs(PDE)
 weights = {
         'w_r': 1,
         'w_d': 1,
@@ -88,8 +91,8 @@ XPINN_solver.adapt_meshes([mesh_in,mesh_out],[weights,weights])
 lr = ([1500,3500],[1e-2,5e-3,5e-4])
 hyperparameters = {
         'input_shape': (None,3),
-        'num_hidden_layers': 8,
-        'num_neurons_per_layer': 20,
+        'num_hidden_layers': 4,
+        'num_neurons_per_layer': 15,
         'output_dim': 1,
         'activation': 'tanh'
 }
@@ -102,7 +105,7 @@ logger.info(json.dumps(hyperparameters, indent=4))
 
 logger.info("> Solving XPINN")
 
-N_iters = 150
+N_iters = 300
 XPINN_solver.solve(N=N_iters)
 
 Post = View_results_X(XPINN_solver, View_results, save=True, directory=folder_path, data=False)
