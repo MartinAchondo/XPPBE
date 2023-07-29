@@ -5,7 +5,7 @@
 -   Probar regularizado
 -   Probar Bempp
 -   Crear clases child con regularizadores
--   Crear PDE con sinh (non linear)
+-   Crear PDE con sinh (non linear)  M
 
 -   REVISAR ECUACIONES Y GREEN FUNCTIONS
 

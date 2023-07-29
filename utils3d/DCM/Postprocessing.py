@@ -126,7 +126,7 @@ class View_results():
 
 
     def plot_aprox_analytic(self,N=200):
-        x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
+        x = tf.constant(np.linspace(0.02, self.ub[0], 200, dtype=self.DTYPE))
         x = tf.reshape(x,[x.shape[0],1])
         y = tf.ones((N,1), dtype=self.DTYPE)*0
         z = tf.ones((N,1), dtype=self.DTYPE)*0
@@ -385,6 +385,90 @@ class View_results_X():
             fig.savefig(path_save)
             logger.info(f'Contour Plot saved: {path}')
 
+
+    def plot_aprox_analytic(self,N=200):
+        
+        fig, ax = plt.subplots() 
+        for post_obj,NN in zip(self.Post,self.NN):
+            x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
+            x = tf.reshape(x,[x.shape[0],1])
+            y = tf.ones((N,1), dtype=self.DTYPE)*0
+            z = tf.ones((N,1), dtype=self.DTYPE)*0
+            X = tf.concat([x, y, z], axis=1)
+            U = post_obj.model(X)
+
+            ax.plot(x[:,0],U[:,0], c='b', label='Aprox')
+
+            U2 = NN.PDE.analytic(x,y,z)
+            ax.plot(x[:,0],U2[:,0], c='r', label='Analytic')
+            
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+
+        ax.grid()
+        ax.legend()
+
+        text_l = r'$\phi_{\theta}$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
+
+        if self.save:
+            path = 'analytic.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            logger.info(f'Analytic Plot saved: {path}')   
+
+
+    def plot_interface(self,N=20):
+
+        rr = 1
+        self.pi = np.pi
+        Theta_bl = np.pi/2
+        
+        fig, ax = plt.subplots() 
+
+        for post_obj,NN in zip(self.Post,self.NN):
+            r_bl = np.linspace(rr, rr, N + 1, dtype=self.DTYPE)
+            theta_bl = np.linspace(np.pi/2, np.pi/2, N + 1, dtype=self.DTYPE)
+            phi_bl = np.linspace(0, 2*self.pi, N + 1, dtype=self.DTYPE)
+            
+            R_bl, Theta_bl, Phi_bl = np.meshgrid(r_bl, theta_bl, phi_bl)
+            
+            X_bl = R_bl*np.sin(Theta_bl)*np.cos(Phi_bl)
+            Y_bl = R_bl*np.sin(Theta_bl)*np.sin(Phi_bl)
+            Z_bl = R_bl*np.cos(Theta_bl)
+            
+            x_bl = tf.constant(X_bl.flatten())
+            x_bl = tf.reshape(x_bl,[x_bl.shape[0],1])
+            y_bl = tf.constant(Y_bl.flatten())
+            y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])
+            z_bl = tf.constant(Z_bl.flatten())
+            z_bl = tf.reshape(z_bl,[z_bl.shape[0],1])
+            
+            XX_bl = tf.concat([x_bl, y_bl, z_bl], axis=1)
+
+            U = post_obj.model(XX_bl)
+
+            
+            ax.plot(x_bl[:,0],U[:,0], label='Interface', c='b')
+            
+            break
+        
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+
+        text_l = r'$\phi_{\theta}$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
+
+        ax.grid()
+        ax.legend()
+
+        if self.save:
+            path = 'interface.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            logger.info(f'Interface Plot saved: {path}')
+
+
  
     def plot_u_domain_surface(self,N=100,alpha1=35,alpha2=135):
         fig = plt.figure()
@@ -426,25 +510,6 @@ class View_results_X():
         plt.xlabel('r')
         plt.ylabel('u');
 
-
-    def plot_aprox_analytic(self,N=200):
-        for post_obj,NN in zip(self.Post,self.NN):
-            x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
-            x = tf.reshape(x,[x.shape[0],1])
-            y = tf.ones((N,1), dtype=self.DTYPE)*0
-            z = tf.ones((N,1), dtype=self.DTYPE)*0
-            X = tf.concat([x, y, z], axis=1)
-            U = post_obj.model(X)
-
-            plt.plot(x[:,0],U[:,0], c='b', label='Aprox')
-
-            U2 = NN.PDE.analytic(x,y,z)
-            plt.plot(x[:,0],U2[:,0], c='r', label='Analytic')
-        
-        plt.ylim([-3,1])    
-        plt.legend()
-        plt.xlabel('x')
-        plt.ylabel('u');
 
 
     def plot_loss_analytic(self,N=200):

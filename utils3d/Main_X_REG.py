@@ -6,8 +6,8 @@ import json
 import logging
 import shutil
 
-from DCM.PDE_Model import Poisson
-from DCM.PDE_Model import Helmholtz
+from DCM.PDE_Model_Regularized import Poisson
+from DCM.PDE_Model_Regularized import Helmholtz
 from DCM.PDE_Model import PDE_2_domains
 
 
