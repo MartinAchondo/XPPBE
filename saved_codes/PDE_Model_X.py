@@ -36,7 +36,6 @@ class PDE_Model_IN():
 
         self.x,self.y,self.z = self.mesh.get_X(self.X_r)
 
-        print()
 
 
     

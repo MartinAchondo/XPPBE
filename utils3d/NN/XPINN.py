@@ -2,6 +2,10 @@ import numpy as np
 import tensorflow as tf
 from time import time
 from tqdm import tqdm as log_progress
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class XPINN():
     
@@ -28,8 +32,9 @@ class XPINN():
         self.lr = None
 
 
-    def adapt_PDEs(self,PDEs,unions) -> None:
-        for solver,pde,union in zip(self.solvers,PDEs,unions):
+    def adapt_PDEs(self,PDE):
+        self.PDE = PDE
+        for solver,pde,union in zip(self.solvers,PDE.PDEs,PDE.uns):
             solver.adapt_PDE(pde)
             solver.un = union
 
@@ -49,53 +54,19 @@ class XPINN():
         for solver,name in zip(self.solvers,names):
             solver.save_model(dirs,name)   
 
+    
+    def get_loss(self,s1,s2):
+        loss,L = s1.loss_fn()
+        loss_I = self.PDE.loss_I(s1,s2)
+        L['I'] = loss_I
+        loss += s1.w_i*loss_I
+        return loss,L
 
-    def loss_I(self,solver,solver_ex):
-        loss = 0
-        for j in range(len(solver.PDE.XI_data)):
-            x_i,y_i,z_i = solver.mesh.get_X(solver.PDE.XI_data[j])
-            
-            with tf.GradientTape(persistent=True, watch_accessed_variables=False) as tape1:
-                tape1.watch(x_i)
-                tape1.watch(y_i)
-                tape1.watch(z_i)
-                R = solver.mesh.stack_X(x_i,y_i,z_i)
-                u_pred_1 = solver.model(R)
-            ux_pred_1 = tape1.gradient(u_pred_1,x_i)
-            uy_pred_1 = tape1.gradient(u_pred_1,y_i)
-            uz_pred_1 = tape1.gradient(u_pred_1,z_i)
-
-            del tape1
-
-            with tf.GradientTape(persistent=True, watch_accessed_variables=False) as tape2:
-                tape2.watch(x_i)
-                tape2.watch(y_i)
-                tape2.watch(z_i)
-                R = solver_ex.mesh.stack_X(x_i,y_i,z_i)
-                u_pred_2 = solver_ex.model(R)
-            ux_pred_2 = tape2.gradient(u_pred_2,x_i)
-            uy_pred_2 = tape2.gradient(u_pred_2,y_i)
-            uz_pred_2 = tape2.gradient(u_pred_2,z_i)
-
-            del tape2
-
-            u_prom = (u_pred_1+u_pred_2)/2
-            loss += tf.reduce_mean(tf.square(u_pred_1 - u_prom)) 
-            
-            norm_vn = tf.sqrt(x_i**2 + y_i**2 + z_i**2)
-            v1 = (x_i*ux_pred_1 + y_i*uy_pred_1 + z_i*uz_pred_1)/norm_vn
-            v2 = (x_i*ux_pred_2 + y_i*uy_pred_2 + z_i*uz_pred_2)/norm_vn
-            loss += tf.reduce_mean(tf.square(v1*solver.un - v2*solver_ex.un))
-            
-        return loss
 
     def get_grad(self,solver,solver_ex):
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(solver.model.trainable_variables)
-            loss,L = solver.loss_fn()
-            loss_I = solver.w_i*self.loss_I(solver,solver_ex)
-            loss += loss_I 
-            L['I'] = loss_I/solver.w_i
+            loss,L = self.get_loss(solver,solver_ex)
         g = tape.gradient(loss, solver.model.trainable_variables)
         del tape
         return loss, L, g
@@ -125,6 +96,8 @@ class XPINN():
 
             if self.iter % 10 == 0:
                 pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
+        logger.info(f' Iterations: {N}')
+        logger.info(" Loss: {:6.4e}".format(self.current_loss))
         
 
     def callback(self, L1,L2):
@@ -162,7 +135,8 @@ class XPINN():
 
         t0 = time()
         self.solve_with_TFoptimizer(optim, N)
-        print('\nComputation time: {} seconds'.format(time()-t0))
+        # print('\nComputation time: {} seconds'.format(time()-t0))
+        logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
 
         self.add_losses_NN()
 

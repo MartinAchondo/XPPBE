@@ -9,33 +9,25 @@ class Poisson(PDE_utils):
 
         self.sigma = 0.04
         self.epsilon = None
+        self.epsilon_G = None
         self.q = None
         super().__init__()
 
     # Define loss of the PDE
     def residual_loss(self,mesh,model,X):
         x,y,z = X
-        r = self.laplacian(mesh,model,X) - self.source(x,y,z)        
+        r = self.laplacian(mesh,model,X)*self.epsilon     
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
 
-
-    def source(self,x,y,z):
+    def G_Fun(self,x,y,z):
+        # epsilon es del interior
         sum = 0
         for qk,Xk in self.q:
             xk,yk,zk = Xk
-            deltak = tf.exp((-1/(2*self.sigma**2))*((x-xk)**2+(y-yk)**2+(z-zk)**2))
-            sum += qk*deltak
-        normalizer = (1/((2*self.pi)**(3.0/2)*self.sigma**3))
-        sum *= normalizer
-        return (-1/self.epsilon)*sum
-    
-    def Fundamental(self,X,Xr):
-        x,y,z = X
-        xr,yr,zr = Xr
-        r = tf.sqrt((x-xr)**2 + (y-yr)**2 + (z-zr)**2)
-        G = (1/(4*self.pi))*(1/r)
-        return G
+            r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            sum += qk*tf.sqrt(r_1)
+        return (1/(self.epsilon_G*4*self.pi))*sum
 
 
     def analytic(self,x,y,z):
@@ -45,7 +37,7 @@ class Poisson(PDE_utils):
             #r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
             q += qk
         r = tf.sqrt(x**2 + y**2 + z**2)
-        return q/(4*self.pi)*(1/(2*r)-1/(2*1)+1/(80*(1+0.125*1)*1))
+        return q/(4*self.pi)*(1/(2*r)-1/(2*1)+1/(80*(1+0.125*1)*1)) - self.G_Fun(x,y,z)
 
 
 
@@ -55,6 +47,8 @@ class Helmholtz(PDE_utils):
 
         self.sigma = 0.04
         self.epsilon = None
+        self.epsilon_2 = None
+        self.epsilon_G = None
         self.q = None
         super().__init__()
 
@@ -64,16 +58,20 @@ class Helmholtz(PDE_utils):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         u = model(R)
-        r = self.laplacian(mesh,model,X) - self.kappa**2*u      
+        r = self.laplacian(mesh,model,X) - self.kappa**2*(self.G_Fun(x,y,z)+u)    
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
     
-    def Fundamental(self,X,Xr):
-        x,y,z = X
-        xr,yr,zr = Xr
-        r = tf.sqrt((x-xr)**2 + (y-yr)**2 + (z-zr)**2)
-        G = (1/(4*self.pi))*(-tf.exp(-self.kappa*r)/r)
-        return G
+
+    def G_Fun(self,x,y,z):
+        # epsilon es del interior
+        sum = 0
+        for qk,Xk in self.q:
+            xk,yk,zk = Xk
+            r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            sum += qk*tf.sqrt(r_1)
+        return (1/(self.epsilon_G*4*self.pi))*sum
+
 
 
     def analytic(self,x,y,z):
@@ -83,7 +81,8 @@ class Helmholtz(PDE_utils):
             #r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
             q += qk
         r = tf.sqrt(x**2 + y**2 + z**2)
-        return q/(4*self.pi)*(tf.exp(-0.125*(r-1))/(80*(1+0.125*1)*r))
+        return q/(4*self.pi)*(tf.exp(-0.125*(r-1))/(80*(1+0.125*1)*r)) - self.G_Fun(x,y,z)
+
 
 
 class Non_Linear(PDE_utils):
@@ -92,6 +91,7 @@ class Non_Linear(PDE_utils):
 
         self.sigma = 0.04
         self.epsilon = None
+        self.epsilon_G = None
         self.q = None
         super().__init__()
 
@@ -101,11 +101,18 @@ class Non_Linear(PDE_utils):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         u = model(R)
-        r = self.laplacian(mesh,model,X) - self.kappa**2*tf.math.sinh(u)      
+        r = self.laplacian(mesh,model,X) - self.kappa**2*tf.math.sinh(self.G_Fun(x,y,z)+u)      
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
     
-
+    def G_Fun(self,x,y,z):
+        # epsilon es del interior
+        sum = 0
+        for qk,Xk in self.q:
+            xk,yk,zk = Xk
+            r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            sum += qk*r_1
+        return (-1/self.epsilon_G*4*self.pi)*sum
 
 
 
@@ -119,6 +126,19 @@ class PDE_2_domains(PDE_utils):
     def adapt_PDEs(self,PDEs,unions):
         self.PDEs = PDEs
         self.uns = unions
+
+
+    def dG_n(self,X):
+        # epsilon es del interior
+        x,y,z = X
+        n_v = self.normal_vector(X)
+        sum = 0
+        for qk,Xk in self.q:
+            xk,yk,zk = Xk
+            r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            sum += qk*r_1 
+        return (-1/self.epsilon_G*4*self.pi)*sum
+
 
 
     def loss_I(self,solver,solver_ex):
@@ -138,7 +158,7 @@ class PDE_2_domains(PDE_utils):
             u_prom = (u_1+u_2)/2
             
             loss += tf.reduce_mean(tf.square(u_1 - u_2)) 
-            loss += tf.reduce_mean(tf.square(du_1*solver.un - du_2*solver_ex.un))
+            loss += tf.reduce_mean(tf.square((du_1*solver.un - du_2*solver_ex.un)-(solver_ex.un-solver.un)*self.dG_n(x_i,y_i,z_i)))
             
         return loss
 
