@@ -8,4 +8,3 @@
 -   Crear PDE con sinh (non linear)  M
 
 -   REVISAR ECUACIONES Y GREEN FUNCTIONS
-

@@ -98,11 +98,11 @@ class View_results():
             fig.savefig(path_save)
             logger.info(f'Solution Plot saved: {path}')
 
-        if self.data:
-            d = {'x': x[:,0],
-                 'u': U[:,0]}
-            df = pd.DataFrame(d)
-            df.to_excel(self.Excel_writer, sheet_name='Solution', index=False)
+            if self.data:
+                d = {'x': x[:,0],
+                    'u': U[:,0]}
+                df = pd.DataFrame(d)
+                df.to_excel(self.Excel_writer, sheet_name='Solution', index=False)
 
 
     def plot_u_domain_contour(self,N=100):
@@ -301,6 +301,9 @@ class View_results_X():
         
         self.loss_last = np.format_float_scientific(self.XPINN.loss_hist[-1], unique=False, precision=3)
 
+    def close_file(self):
+        self.Excel_writer.close()
+        logger.info(f'Excel created: {"results.xlsx"}')
 
     def plot_loss_history(self, flag=True, ax=None):
         if not ax:
@@ -330,12 +333,25 @@ class View_results_X():
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
 
+            if self.data:
+                d = {'Residual_1': list(map(lambda tensor: tensor.numpy(), self.NN[0].loss_r)),
+                     'Residual_2': list(map(lambda tensor: tensor.numpy(), self.NN[1].loss_r)),
+                     'Dirichlet_1': list(map(lambda tensor: tensor.numpy(), self.NN[0].loss_bD)),
+                     'Dirichlet_2': list(map(lambda tensor: tensor.numpy(), self.NN[1].loss_bD)),
+                     'Neumann_1': list(map(lambda tensor: tensor.numpy(), self.NN[0].loss_bN)),
+                     'Neumann_2': list(map(lambda tensor: tensor.numpy(), self.NN[1].loss_bN)),
+                     'Interface': list(map(lambda tensor: tensor.numpy(), self.NN[0].loss_bN))
+                     }
+                df = pd.DataFrame(d)
+                df.to_excel(self.Excel_writer, sheet_name='Losses', index=False)
+
 
     def plot_u_plane(self,N=200):
         fig, ax = plt.subplots()
         labels = ['Inside', 'Outside']
         colr = ['r','b']
         i = 0
+        df = pd.DataFrame()
         for post_obj in self.Post:
             x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
             x = tf.reshape(x,[x.shape[0],1])
@@ -343,6 +359,16 @@ class View_results_X():
             z = tf.ones((N,1), dtype=self.DTYPE)*0
             X = tf.concat([x, y, z], axis=1)
             U = post_obj.model(X)
+
+            if self.data:
+                d = {'x': x[:,0],
+                    'u': U[:,0]}
+                df2 = pd.DataFrame(d)
+
+                frames = [df, df2]
+
+  
+                df = pd.concat(frames)
 
             
             ax.plot(x[:,0],U[:,0], label=labels[i], c=colr[i])
@@ -362,6 +388,9 @@ class View_results_X():
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
             logger.info(f'Solution Plot saved: {path}')
+
+            if self.data:
+                df.to_excel(self.Excel_writer, sheet_name='Solution', index=False)
 
 
     def plot_u_domain_contour(self, N=100):

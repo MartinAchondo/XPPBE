@@ -20,30 +20,25 @@ from NN.XPINN import XPINN
 from DCM.Postprocessing import View_results
 from DCM.Postprocessing import View_results_X
 
-
-
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
 
 main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'results')
 if os.path.exists(main_path):
         shutil.rmtree(main_path)
 os.makedirs(main_path)
 
-filename = os.path.join(main_path,'logfile.log')
-LOG_format = '%(levelname)s - %(name)s: %(message)s'
-logging.basicConfig(filename=filename, filemode='w', level=logging.INFO, format=LOG_format)
-logger = logging.getLogger(__name__)
-
-logger.info("==============================")
-
-
-folder_path = os.path.join(main_path,'test')
+folder_name = 'data'
+#folder_path = os.path.join(main_path,'data')
+folder_path = main_path
 if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
 os.makedirs(folder_path)
 
-
-
+filename = os.path.join(folder_path,'logfile.log')
+LOG_format = '%(levelname)s - %(name)s: %(message)s'
+logging.basicConfig(filename=filename, filemode='w', level=logging.INFO, format=LOG_format)
+logger = logging.getLogger(__name__)
 
 logger.info('================================================')
 
@@ -95,7 +90,7 @@ class Simulation():
 
     def postprocessing(self):
         
-        Post = View_results_X(self.XPINN_solver, View_results, save=True, directory=folder_path, data=False)
+        Post = View_results_X(self.XPINN_solver, View_results, save=True, directory=folder_path, data=True)
 
         logger.info("> Ploting Solution")
 
