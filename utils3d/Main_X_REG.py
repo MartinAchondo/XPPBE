@@ -138,7 +138,7 @@ def main():
     Sim.PDE_out.kappa = 0.125
     Sim.PDE_out.q = Sim.PDE_in.q 
 
-    u_an = Sim.PDE_out.outer_border(rB,0,0) - Sim.PDE_out.G_Fun(rB,0,0)
+    u_an = Sim.PDE_out.border_value(rB,0,0) - Sim.PDE_out.G_Fun(rB,0,0)
     lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI}
     lb2 = {'type':'D', 'value':u_an, 'fun':None, 'dr':None, 'r':rB}
     
