@@ -71,6 +71,16 @@ class Helmholtz(PDE_utils):
             r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
             sum += qk*tf.sqrt(r_1)
         return (1/(self.epsilon_G*4*self.pi))*sum
+    
+
+    def outer_border(self,x,y,z):
+        sum = 0
+        for qk,Xk in self.q:
+            xk,yk,zk = Xk
+            r_1 = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            sum += qk/r_1*tf.exp(-self.kappa*r_1)
+        return (1/(self.epsilon*4*self.pi))*sum
+      
 
 
 

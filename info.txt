@@ -7,3 +7,6 @@
 -   Crear PDE con sinh (non linear)  (Solo revisar PDE)
 
 -   REVISAR ECUACIONES Y GREEN FUNCTIONS
+
+
+git reset --hard HEAD~20
