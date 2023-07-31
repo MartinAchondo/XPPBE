@@ -126,8 +126,7 @@ class Non_Linear(PDE_utils):
 
 
 
-
-class PDE_2_domains(PDE_utils):
+class PBE_Interface(PDE_utils):
 
     def __init__(self):
         super().__init__()
@@ -138,10 +137,10 @@ class PDE_2_domains(PDE_utils):
         self.uns = unions
 
 
-    def dG_n(self,X):
+    def dG_n(self,x,y,z):
         # epsilon es del interior
-        x,y,z = X
-        n_v = self.normal_vector(X)
+        #x,y,z = X
+        #n_v = self.normal_vector(X)
         sum = 0
         for qk,Xk in self.q:
             xk,yk,zk = Xk

@@ -449,40 +449,38 @@ class View_results_X():
 
     def plot_interface(self,N=20):
 
+        labels = ['Inside', 'Outside']
+        colr = ['r','b']
+        i = 0
+
         rr = 1
         self.pi = np.pi
-        Theta_bl = np.pi/2
         
+        r_bl = np.linspace(rr, rr, N + 1, dtype=self.DTYPE)
+        theta_bl = np.linspace(np.pi/2, np.pi/2, N + 1, dtype=self.DTYPE)
+        phi_bl = np.linspace(0, 2*self.pi, N + 1, dtype=self.DTYPE)
+        
+        x_bl = tf.constant(r_bl*np.sin(theta_bl)*np.cos(phi_bl))
+        y_bl = tf.constant(r_bl*np.sin(theta_bl)*np.sin(phi_bl))
+        z_bl = tf.constant(r_bl*np.cos(theta_bl))
+        
+        x_bl = tf.reshape(x_bl,[x_bl.shape[0],1])
+        y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])
+        z_bl = tf.reshape(z_bl,[z_bl.shape[0],1])
+
+        phi_bl = tf.constant(phi_bl)
+        phi_bl = tf.reshape(phi_bl,[phi_bl.shape[0],1])
+
+        XX_bl = tf.concat([x_bl, y_bl, z_bl], axis=1)
+
         fig, ax = plt.subplots() 
 
-        for post_obj,NN in zip(self.Post,self.NN):
-            r_bl = np.linspace(rr, rr, N + 1, dtype=self.DTYPE)
-            theta_bl = np.linspace(np.pi/2, np.pi/2, N + 1, dtype=self.DTYPE)
-            phi_bl = np.linspace(0, 2*self.pi, N + 1, dtype=self.DTYPE)
-            
-            R_bl, Theta_bl, Phi_bl = np.meshgrid(r_bl, theta_bl, phi_bl)
-            
-            X_bl = R_bl*np.sin(Theta_bl)*np.cos(Phi_bl)
-            Y_bl = R_bl*np.sin(Theta_bl)*np.sin(Phi_bl)
-            Z_bl = R_bl*np.cos(Theta_bl)
-            
-            x_bl = tf.constant(X_bl.flatten())
-            x_bl = tf.reshape(x_bl,[x_bl.shape[0],1])
-            y_bl = tf.constant(Y_bl.flatten())
-            y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])
-            z_bl = tf.constant(Z_bl.flatten())
-            z_bl = tf.reshape(z_bl,[z_bl.shape[0],1])
-            
-            XX_bl = tf.concat([x_bl, y_bl, z_bl], axis=1)
-
+        for post_obj in self.Post:
             U = post_obj.model(XX_bl)
-
-            
-            ax.plot(x_bl[:,0],U[:,0], label='Interface', c='b')
-            
-            break
+            ax.plot(phi_bl[:,0],U[:,0], label=labels[i], c=colr[i])
+            i += 1
         
-        ax.set_xlabel('r')
+        ax.set_xlabel(r'$\varphi$')
         ax.set_ylabel(r'$\phi_{\theta}$')
 
         text_l = r'$\phi_{\theta}$'

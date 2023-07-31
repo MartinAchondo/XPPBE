@@ -117,10 +117,7 @@ class Non_Linear(PDE_utils):
     
 
 
-
-
-
-class PDE_2_domains(PDE_utils):
+class PBE_Interface(PDE_utils):
 
     def __init__(self):
         super().__init__()

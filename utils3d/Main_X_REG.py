@@ -8,7 +8,7 @@ import shutil
 
 from DCM.PDE_Model_Regularized import Poisson
 from DCM.PDE_Model_Regularized import Helmholtz
-from DCM.PDE_Model import PDE_2_domains
+from DCM.PDE_Model_Regularized import PBE_Interface
 
 
 from DCM.Mesh import Mesh
@@ -65,9 +65,10 @@ class Simulation():
         mesh_out = Mesh(domain_out, N_b=self.N_b, N_r=self.N_r)
         mesh_out.create_mesh(self.borders_out, self.ins_domain_out)
 
-        PDE = PDE_2_domains()
+        PDE = PBE_Interface()
         PDE.adapt_PDEs([PDE_in,PDE_out],[PDE_in.epsilon,PDE_out.epsilon])
         PDE.epsilon_G = PDE_in.epsilon_G
+        PDE.q = PDE_in.q
 
         self.XPINN_solver = XPINN(PINN)
 
@@ -161,8 +162,8 @@ def main():
     Sim.lr = ([3000,6000],[1e-2,5e-3,5e-4])
     Sim.hyperparameters = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 4,
-                'num_neurons_per_layer': 120,
+                'num_hidden_layers': 2,
+                'num_neurons_per_layer': 12,
                 'output_dim': 1,
                 'activation': 'tanh',
                 'architecture_Net': 'FCNN'
@@ -171,7 +172,7 @@ def main():
     Sim.setup_algorithm()
 
     # Solve
-    N_iters = 12000
+    N_iters = 4
     Sim.solve_algorithm(N_iters=N_iters)
     
     Sim.postprocessing()
