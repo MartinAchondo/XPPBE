@@ -116,31 +116,34 @@ def main():
     Sim = Simulation()
 
     # PDE
-    Sim.domain_in = ([-1,1],[-1,1],[-1,1])
+    rI = 1
+    rB = 10
+
+    Sim.domain_in = ([-rI,rI],[-rI,rI],[-rI,rI])
     Sim.PDE_in = Poisson()
     Sim.PDE_in.sigma = 0.04
     Sim.PDE_in.epsilon = 2
     Sim.PDE_in.epsilon_G = Sim.PDE_in.epsilon
     Sim.PDE_in.q = [(1,[0,0,0])]
 
-    lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':1}
+    lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI}
     Sim.borders_in = {'1':lb}
-    Sim.ins_domain_in = {'rmax': 1}
+    Sim.ins_domain_in = {'rmax': rI}
 
 
-    Sim.domain_out = ([-10,10],[-10,10],[-10,10])
+    Sim.domain_out = ([-rB,rB],[-rB,rB],[-rB,rB])
     Sim.PDE_out = Helmholtz()
     Sim.PDE_out.epsilon = 80
     Sim.PDE_out.epsilon_G = Sim.PDE_in.epsilon
     Sim.PDE_out.kappa = 0.125
     Sim.PDE_out.q = Sim.PDE_in.q 
 
-    u_an = np.exp(-Sim.PDE_out.kappa*(10-1))/(4*np.pi*Sim.PDE_out.epsilon*(1+Sim.PDE_out.kappa*1)*10)
-    lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':1}
-    lb2 = {'type':'D', 'value':u_an, 'fun':None, 'dr':None, 'r':10}
+    u_an = Sim.PDE_out.borber_value(rB,0,0,rI)
+    lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI}
+    lb2 = {'type':'D', 'value':u_an, 'fun':None, 'dr':None, 'r':rB}
     
     Sim.borders_out = {'1':lb,'2':lb2}
-    Sim.ins_domain_out = {'rmax': 10,'rmin':1}
+    Sim.ins_domain_out = {'rmax': rB,'rmin':rI}
 
 
     # Mesh

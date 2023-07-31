@@ -85,6 +85,16 @@ class Helmholtz(PDE_utils):
         r = tf.sqrt(x**2 + y**2 + z**2)
         return q/(4*self.pi)*(tf.exp(-0.125*(r-1))/(80*(1+0.125*1)*r))
 
+    def borber_value(self,x,y,z,R):
+        q = 0
+        for qk,Xk in self.q:
+            xk,yk,zk = Xk
+            #r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            q += qk
+        r = np.sqrt(x**2 + y**2 + z**2)
+        return q/(4*self.pi)*(np.exp(-self.kappa*(r-R))/(self.epsilon*(1+self.kappa*R)*r))
+
+
 
 class Non_Linear(PDE_utils):
 
