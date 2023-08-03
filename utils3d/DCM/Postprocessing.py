@@ -419,7 +419,10 @@ class View_results_X():
         
         fig, ax = plt.subplots() 
         for post_obj,NN in zip(self.Post,self.NN):
-            x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
+            rmin = post_obj.mesh.ins_domain['rmin']
+            if rmin < 0:
+                rmin = 0.05
+            x = tf.constant(np.linspace(rmin, post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
             x = tf.reshape(x,[x.shape[0],1])
             y = tf.ones((N,1), dtype=self.DTYPE)*0
             z = tf.ones((N,1), dtype=self.DTYPE)*0
@@ -428,8 +431,10 @@ class View_results_X():
 
             ax.plot(x[:,0],U[:,0], c='b', label='Aprox')
 
-            U2 = NN.PDE.analytic(x,y,z)
-            ax.plot(x[:,0],U2[:,0], c='r', label='Analytic')
+        x = np.linspace(self.Post[0].mesh.ins_domain['rmax']/10, self.Post[-1].mesh.ins_domain['rmax'], 200, dtype=self.DTYPE)
+
+        U2 = self.XPINN.PDE.analytic(x)
+        ax.plot(x,U2, c='r', label='Analytic')
             
         ax.set_xlabel('r')
         ax.set_ylabel(r'$\phi_{\theta}$')
