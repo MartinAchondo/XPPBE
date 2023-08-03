@@ -56,7 +56,7 @@ class Helmholtz(PDE_utils):
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
     
-    def borber_value(self,x,y,z,R):
+    def border_value(self,x,y,z,R):
         q = 0
         for qk,Xk in self.q:
             xk,yk,zk = Xk

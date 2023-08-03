@@ -67,7 +67,7 @@ class Helmholtz(PDE_utils):
     #         r_1 = np.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
     #         sum += qk/r_1*np.exp(-self.kappa*r_1)
     #     return (1/(self.epsilon*4*self.pi))*sum
-    def borber_value(self,x,y,z,R):
+    def border_value(self,x,y,z,R):
         q = 0
         for qk,Xk in self.q:
             xk,yk,zk = Xk
