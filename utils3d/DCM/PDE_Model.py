@@ -19,7 +19,6 @@ class Poisson(PDE_utils):
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
 
-
     def source(self,x,y,z):
         sum = 0
         for qk,Xk in self.q:
@@ -36,17 +35,6 @@ class Poisson(PDE_utils):
         r = tf.sqrt((x-xr)**2 + (y-yr)**2 + (z-zr)**2)
         G = (1/(4*self.pi))*(1/r)
         return G
-
-
-    def analytic(self,x,y,z):
-        q = 0
-        for qk,Xk in self.q:
-            xk,yk,zk = Xk
-            #r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
-            q += qk
-        r = tf.sqrt(x**2 + y**2 + z**2)
-        return q/(4*self.pi)*(1/(2*r)-1/(2*1)+1/(80*(1+0.125*1)*1))
-
 
 
 class Helmholtz(PDE_utils):
@@ -68,23 +56,21 @@ class Helmholtz(PDE_utils):
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
     
+    def border_value(self,x,y,z,R):
+        q = 0
+        for qk,Xk in self.q:
+            xk,yk,zk = Xk
+            #r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            q += qk
+        r = np.sqrt(x**2 + y**2 + z**2)
+        return q/(4*self.pi)*(np.exp(-self.kappa*(r-R))/(self.epsilon*(1+self.kappa*R)*r))
+
     def Fundamental(self,X,Xr):
         x,y,z = X
         xr,yr,zr = Xr
         r = tf.sqrt((x-xr)**2 + (y-yr)**2 + (z-zr)**2)
         G = (1/(4*self.pi))*(-tf.exp(-self.kappa*r)/r)
         return G
-
-
-    def analytic(self,x,y,z):
-        q = 0
-        for qk,Xk in self.q:
-            xk,yk,zk = Xk
-            #r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
-            q += qk
-        r = tf.sqrt(x**2 + y**2 + z**2)
-        return q/(4*self.pi)*(tf.exp(-0.125*(r-1))/(80*(1+0.125*1)*r))
-
 
 class Non_Linear(PDE_utils):
 
@@ -107,10 +93,7 @@ class Non_Linear(PDE_utils):
     
 
 
-
-
-
-class PDE_2_domains(PDE_utils):
+class PBE_Interface(PDE_utils):
 
     def __init__(self):
         super().__init__()
@@ -119,7 +102,6 @@ class PDE_2_domains(PDE_utils):
     def adapt_PDEs(self,PDEs,unions):
         self.PDEs = PDEs
         self.uns = unions
-
 
     def loss_I(self,solver,solver_ex):
         loss = 0
@@ -137,9 +119,25 @@ class PDE_2_domains(PDE_utils):
 
             u_prom = (u_1+u_2)/2
             
-            loss += tf.reduce_mean(tf.square(u_1 - u_2)) 
+            loss += tf.reduce_mean(tf.square(u_1 - u_prom)) 
             loss += tf.reduce_mean(tf.square(du_1*solver.un - du_2*solver_ex.un))
             
         return loss
+    
+
+    def analytic(self,r):
+        rI = self.problem['rI']
+        epsilon_1 = self.problem['epsilon_1']
+        epsilon_2 = self.problem['epsilon_2']
+        kappa = self.problem['kappa']
+        q = self.q[0][0]
+
+        f_IN = lambda r: (q/(4*self.pi)) * ( 1/(epsilon_1*r) - 1/(epsilon_1*rI) + 1/(epsilon_2*(1+kappa*rI)*rI) )
+        f_OUT = lambda r: (q/(4*self.pi)) * (np.exp(-kappa*(r-rI))/(epsilon_2*(1+kappa*rI)*r))
+
+        y = np.piecewise(r, [r<=rI, r>rI], [f_IN, f_OUT])
+
+        return y
+
 
     
