@@ -57,10 +57,10 @@ class Simulation():
         logger.info(json.dumps({'Mesh': self.mesh}, indent=4))
         self.XPINN_solver.adapt_meshes([mesh_in,mesh_out],[self.weights,self.weights])
 
-        hyperparameters = self.hyperparameters
-        self.XPINN_solver.create_NeuralNets(PINN_NeuralNet,[self.lr,self.lr],[hyperparameters,hyperparameters])
+        self.XPINN_solver.create_NeuralNets(PINN_NeuralNet,[self.lr,self.lr],[self.hyperparameters_in,self.hyperparameters_out])
         
-        logger.info(json.dumps({'hyperparameters': self.hyperparameters}, indent=4))
+        logger.info(json.dumps({'hyperparameters in': self.hyperparameters_in}, indent=4))
+        logger.info(json.dumps({'hyperparameters out': self.hyperparameters_out}, indent=4))
         logger.info(json.dumps({'weights': self.weights}, indent=4))
         logger.info(json.dumps({'Learning Rate': self.lr}))
 

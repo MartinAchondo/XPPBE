@@ -18,7 +18,7 @@ if os.path.exists(main_path):
 os.makedirs(main_path)
 
 folder_name = 'data'
-#folder_path = os.path.join(main_path,'data')
+folder_path = os.path.join(main_path,folder_name)
 folder_path = main_path
 if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
@@ -42,7 +42,8 @@ def main():
     # PDE
     q_list = [(1,[0,0,0])]
 
-    inputs = {'rmin': 0,
+    inputs = {'Problem': 'Main_X',
+              'rmin': 0,
               'rI': 1,
               'rB': 10,
               'epsilon_1':2,
@@ -96,7 +97,9 @@ def main():
     }
 
     Sim.lr = ([3000,6000],[1e-2,5e-3,5e-4])
-    Sim.hyperparameters = {
+
+    
+    Sim.hyperparameters_in = {
                 'input_shape': (None,3),
                 'num_hidden_layers': 4,
                 'num_neurons_per_layer': 100,
@@ -104,6 +107,17 @@ def main():
                 'activation': 'ReLU',
                 'architecture_Net': 'FCNN'
         }
+
+    Sim.hyperparameters_out = {
+                'input_shape': (None,3),
+                'num_hidden_layers': 4,
+                'num_neurons_per_layer': 100,
+                'output_dim': 1,
+                'activation': 'tanh',
+                'architecture_Net': 'FCNN'
+        }
+
+
 
     Sim.setup_algorithm()
 
