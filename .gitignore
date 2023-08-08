@@ -7,8 +7,11 @@ commands.txt
 /.vscode
 *__pycache__
 /.classes
-*.log
+.log
 pscp.bash
 putty.bash
 PLAN.txt
 /results_saved
+*saved_models
+/tests
+*PLAN

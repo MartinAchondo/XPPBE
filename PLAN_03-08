@@ -1,9 +1,0 @@
-Meeting 03-08:
-- Train the NN with exact solution
-- Then train with my loss function
-
-- Find preconditioner (initial guess)
-
-- Only use some points with true solution
-
-- ReLU only in the inside domain
