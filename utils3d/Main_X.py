@@ -104,7 +104,7 @@ def main():
     Sim.hyperparameters_in = {
                 'input_shape': (None,3),
                 'num_hidden_layers': 4,
-                'num_neurons_per_layer': 10,
+                'num_neurons_per_layer': 120,
                 'output_dim': 1,
                 'activation': 'ReLU',
                 'architecture_Net': 'FCNN'
@@ -113,7 +113,7 @@ def main():
     Sim.hyperparameters_out = {
                 'input_shape': (None,3),
                 'num_hidden_layers': 4,
-                'num_neurons_per_layer': 10,
+                'num_neurons_per_layer': 120,
                 'output_dim': 1,
                 'activation': 'tanh',
                 'architecture_Net': 'FCNN'
@@ -124,9 +124,9 @@ def main():
     Sim.setup_algorithm()
 
     # Solve
-    N_iters = 10
+    N_iters = 15000
     precondition = True
-    N_precond = 5
+    N_precond = 1500
     Sim.solve_algorithm(N_iters=N_iters, precond=precondition, N_precond=N_precond)
     
     Sim.postprocessing(folder_path=folder_path)
