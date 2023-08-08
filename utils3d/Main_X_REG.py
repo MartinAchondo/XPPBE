@@ -63,6 +63,7 @@ def main():
     Sim.PDE_in.epsilon = inputs['epsilon_1']
     Sim.PDE_in.epsilon_G = inputs['epsilon_1']
     Sim.PDE_in.q = q_list
+    Sim.PDE_in.problem = inputs
 
     lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI}
     Sim.borders_in = {'1':lb}
@@ -75,6 +76,7 @@ def main():
     Sim.PDE_out.epsilon_G = inputs['epsilon_1']
     Sim.PDE_out.kappa = inputs['kappa']
     Sim.PDE_out.q = q_list 
+    Sim.PDE_out.problem = inputs
 
     u_an = Sim.PDE_out.border_value(rB,0,0,rI) - Sim.PDE_out.G_Fun(rB,0,0)
     lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI}
@@ -101,17 +103,17 @@ def main():
     
     Sim.hyperparameters_in = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 4,
-                'num_neurons_per_layer': 100,
+                'num_hidden_layers': 3,
+                'num_neurons_per_layer': 40,
                 'output_dim': 1,
-                'activation': 'ReLU',
+                'activation': 'tanh',
                 'architecture_Net': 'FCNN'
         }
 
     Sim.hyperparameters_out = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 4,
-                'num_neurons_per_layer': 100,
+                'num_hidden_layers': 3,
+                'num_neurons_per_layer': 40,
                 'output_dim': 1,
                 'activation': 'tanh',
                 'architecture_Net': 'FCNN'
@@ -120,8 +122,10 @@ def main():
     Sim.setup_algorithm()
 
     # Solve
-    N_iters = 15000
-    Sim.solve_algorithm(N_iters=N_iters)
+    N_iters = 100
+    precondition = True
+    N_precond = 50
+    Sim.solve_algorithm(N_iters=N_iters, precond=precondition, N_precond=N_precond)
     
     Sim.postprocessing(folder_path=folder_path)
 

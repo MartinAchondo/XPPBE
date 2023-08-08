@@ -65,10 +65,10 @@ class Simulation():
         logger.info(json.dumps({'Learning Rate': self.lr}))
 
 
-    def solve_algorithm(self,N_iters):
+    def solve_algorithm(self,N_iters, precond=False, N_precond=10):
         logger.info("> Solving XPINN")
 
-        self.XPINN_solver.solve(N=N_iters)
+        self.XPINN_solver.solve(N=N_iters, precond=precond, N_precond=N_precond)
 
 
     def postprocessing(self,folder_path):

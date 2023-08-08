@@ -76,8 +76,11 @@ class PINN():
         self.model.save(os.path.join(dir_path,name))
  
 
-    def loss_fn(self):
-        L = self.PDE.get_loss(self.model)
+    def loss_fn(self, precond=False):
+        if precond:
+            L = self.PDE.get_loss_preconditioner(self.model)
+        else:
+            L = self.PDE.get_loss(self.model)
         loss = 0
         for t in self.L_names:
             loss += L[t]*self.w[t]

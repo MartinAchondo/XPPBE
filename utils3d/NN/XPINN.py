@@ -55,30 +55,33 @@ class XPINN():
             solver.save_model(dirs,name)   
 
     
-    def get_loss(self,s1,s2):
-        loss,L = s1.loss_fn()
-        loss_I = self.PDE.loss_I(s1,s2)
-        L['I'] = loss_I
-        loss += s1.w_i*loss_I
+    def get_loss(self,s1,s2, precond):
+        if precond:
+            loss,L = s1.loss_fn(precond=True)
+        else:
+            loss,L = s1.loss_fn(precond=False)
+            loss_I = self.PDE.loss_I(s1,s2)
+            L['I'] = loss_I
+            loss += s1.w_i*loss_I
         return loss,L
 
 
-    def get_grad(self,solver,solver_ex):
+    def get_grad(self,solver,solver_ex, precond):
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(solver.model.trainable_variables)
-            loss,L = self.get_loss(solver,solver_ex)
+            loss,L = self.get_loss(solver,solver_ex, precond)
         g = tape.gradient(loss, solver.model.trainable_variables)
         del tape
         return loss, L, g
     
     
-    def solve_with_TFoptimizer(self, optimizer, N=1000):
+    def solve_with_TFoptimizer(self, optimizer, N=1000, N_precond=10):
         optimizer1,optimizer2 = optimizer
 
         @tf.function
-        def train_step():
-            loss1, L_loss1, grad_theta1 = self.get_grad(self.solver1,self.solver2)
-            loss2, L_loss2, grad_theta2 = self.get_grad(self.solver2,self.solver1)
+        def train_step(precond):
+            loss1, L_loss1, grad_theta1 = self.get_grad(self.solver1,self.solver2, precond)
+            loss2, L_loss2, grad_theta2 = self.get_grad(self.solver2,self.solver1, precond)
 
             optimizer1.apply_gradients(zip(grad_theta1, self.solver1.model.trainable_variables))
             optimizer2.apply_gradients(zip(grad_theta2, self.solver2.model.trainable_variables))
@@ -91,11 +94,15 @@ class XPINN():
         pbar = log_progress(range(N))
         pbar.set_description("Loss: %s " % 100)
         for i in pbar:
-            L1,L2 = train_step()
+            L1,L2 = train_step(self.precondition)
             self.callback(L1,L2)
 
+            if self.iter>N_precond:
+                self.precondition = False
+            
             if self.iter % 10 == 0:
                 pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
+        
         logger.info(f' Iterations: {N}')
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
         
@@ -128,13 +135,16 @@ class XPINN():
         self.solver2.loss_bI = self.loss_bI2
 
 
-    def solve(self,N=1000):
+    def solve(self,N=1000, precond=False, N_precond=10):
+
+        self.precondition = precond
+
         optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
         optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
         optim = [optim1,optim2]
 
         t0 = time()
-        self.solve_with_TFoptimizer(optim, N)
+        self.solve_with_TFoptimizer(optim, N, N_precond)
         # print('\nComputation time: {} seconds'.format(time()-t0))
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
 

@@ -111,6 +111,10 @@ class Mesh():
 
         self.X_r = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
 
+        #Avoid singularities for precondition
+        inside = r > 0.1
+        self.X_r_P = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
+
 
         self.D_r = (self.X_r[:,0],self.X_r[:,1],self.X_r[:,2])
 
@@ -118,7 +122,8 @@ class Mesh():
             'residual': self.X_r,
             'dirichlet': (self.XD_data,self.UD_data),
             'neumann': (self.XN_data,self.UN_data,self.derN),
-            'interface': (self.XI_data,self.derI)
+            'interface': (self.XI_data,self.derI),
+            'precondition': self.X_r_P
         }
 
     def get_X(self,X):
