@@ -13,13 +13,12 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
 main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'results')
-if os.path.exists(main_path):
-        shutil.rmtree(main_path)
-os.makedirs(main_path)
+#if os.path.exists(main_path):
+#        shutil.rmtree(main_path)
+#os.makedirs(main_path)
 
 folder_name = 'data'
 folder_path = os.path.join(main_path,folder_name)
-folder_path = main_path
 if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
 os.makedirs(folder_path)
