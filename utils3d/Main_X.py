@@ -105,7 +105,7 @@ def main():
                 'num_hidden_layers': 4,
                 'num_neurons_per_layer': 120,
                 'output_dim': 1,
-                'activation': 'ReLU',
+                'activation': 'tanh',
                 'architecture_Net': 'FCNN'
         }
 
