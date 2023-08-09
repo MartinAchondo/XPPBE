@@ -126,7 +126,7 @@ class View_results():
 
 
     def plot_aprox_analytic(self,N=200):
-        x = tf.constant(np.linspace(0.02, self.ub[0], 200, dtype=self.DTYPE))
+        x = tf.constant(np.linspace(1, self.ub[0], 200, dtype=self.DTYPE))
         x = tf.reshape(x,[x.shape[0],1])
         y = tf.ones((N,1), dtype=self.DTYPE)*0
         z = tf.ones((N,1), dtype=self.DTYPE)*0
@@ -140,15 +140,13 @@ class View_results():
         U2 = self.NN.PDE.analytic(x,y,z)
         ax.plot(x[:,0],U2[:,0], c='r', label='Analytic')
 
-        plt.ylim([-3,1])
-
         ax.set_xlabel('r')
         ax.set_ylabel(r'$\phi_{\theta}$')
         if np.max(U[:,0]) > 0:
             ur = np.max(U[:,0])*1.2
         else:
             ur = 1
-        ax.set_ylim([np.min(U[:,0])*1.2,ur])
+        #ax.set_ylim([np.min(U[:,0])*1.2,ur])
 
         loss = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
         text_l = r'$\phi_{\theta}$'

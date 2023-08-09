@@ -35,6 +35,46 @@ class Poisson(PDE_utils):
         r = tf.sqrt((x-xr)**2 + (y-yr)**2 + (z-zr)**2)
         G = (1/(4*self.pi))*(1/r)
         return G
+    
+    def border_value(self,x,y,z,R):
+        q = 0
+        for qk,Xk in self.q:
+            xk,yk,zk = Xk
+            #r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            q += qk
+        r = np.sqrt(x**2 + y**2 + z**2)
+        return q/(4*self.pi)*(np.exp(-self.kappa*(r-R))/(self.epsilon*(1+self.kappa*R)*r))
+    
+    def preconditioner(self,mesh,model,X):
+        x,y,z = X
+
+        rI = self.problem['rI']
+        epsilon_1 = self.problem['epsilon_1']
+        epsilon_2 = self.problem['epsilon_2']
+        kappa = self.problem['kappa']
+        q = self.q[0][0]
+
+        R = mesh.stack_X(x,y,z)
+        u = model(R)
+        r = tf.sqrt(x**2+y**2+z**2)
+        upred = (q/(4*self.pi)) * ( 1/(epsilon_1*r) - 1/(epsilon_1*rI) + 1/(epsilon_2*(1+kappa*rI)*rI) )
+        loss = tf.reduce_mean(tf.square(upred-u))
+
+        return loss
+    
+
+    def analytic(self,x,y,z):
+        rI = self.problem['rI']
+        epsilon_1 = self.problem['epsilon_1']
+        epsilon_2 = self.problem['epsilon_2']
+        kappa = self.problem['kappa']
+        q = self.q[0][0]
+
+        r = tf.sqrt(x**2+y**2+z**2)
+        upred = (q/(4*self.pi)) * ( 1/(epsilon_1*r) - 1/(epsilon_1*rI) + 1/(epsilon_2*(1+kappa*rI)*rI) )
+
+        return upred
+
 
 
 class Helmholtz(PDE_utils):
@@ -71,6 +111,39 @@ class Helmholtz(PDE_utils):
         r = tf.sqrt((x-xr)**2 + (y-yr)**2 + (z-zr)**2)
         G = (1/(4*self.pi))*(-tf.exp(-self.kappa*r)/r)
         return G
+
+    def preconditioner(self,mesh,model,X):
+        x,y,z = X
+
+        rI = self.problem['rI']
+        epsilon_1 = self.problem['epsilon_1']
+        epsilon_2 = self.problem['epsilon_2']
+        kappa = self.problem['kappa']
+        q = self.q[0][0]
+
+        R = mesh.stack_X(x,y,z)
+        u = model(R)
+        r = tf.sqrt(x**2+y**2+z**2)
+        upred = (q/(4*self.pi)) * (tf.exp(-kappa*(r-rI))/(epsilon_2*(1+kappa*rI)*r))
+        loss = tf.reduce_mean(tf.square(upred-u))
+
+        return loss
+    
+
+    def analytic(self,x,y,z):
+        rI = self.problem['rI']
+        epsilon_1 = self.problem['epsilon_1']
+        epsilon_2 = self.problem['epsilon_2']
+        kappa = self.problem['kappa']
+        q = self.q[0][0]
+
+        r = tf.sqrt(x**2+y**2+z**2)
+        upred = (q/(4*self.pi)) * (tf.exp(-kappa*(r-rI))/(epsilon_2*(1+kappa*rI)*r))
+
+        return upred
+    
+
+
 
 class Non_Linear(PDE_utils):
 

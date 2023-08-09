@@ -30,8 +30,10 @@ class PDE_utils():
         self.XD_data,self.UD_data = self.mesh.data_mesh['dirichlet']
         self.XN_data,self.UN_data,self.derN = self.mesh.data_mesh['neumann']
         self.XI_data,self.derI = self.mesh.data_mesh['interface']
+        self.X_r_P = self.mesh.data_mesh['precondition']
 
         self.x,self.y,self.z = self.mesh.get_X(self.X_r)
+        self.xP,self.yP,self.zP = self.mesh.get_X(self.X_r_P)
 
     
     def get_loss(self,model):
@@ -74,6 +76,21 @@ class PDE_utils():
             loss = tf.reduce_mean(tf.square(UN[i]-grad))
             Loss_n += loss
         return Loss_n
+
+
+    def get_loss_preconditioner(self,model):
+        L = dict()
+        L['r'] = 0
+        L['D'] = 0
+        L['N'] = 0
+        L['I'] = 0
+
+        #residual
+        X = (self.xP,self.yP,self.zP)
+        loss_r = self.preconditioner(self.mesh,model,X)
+        L['r'] += loss_r
+
+        return L
 
 
     ####################################################################################################################################################

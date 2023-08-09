@@ -3,11 +3,9 @@ import os
 import logging
 import shutil
 
-from DCM.PDE_Model_Regularized import Poisson
 from DCM.PDE_Model_Regularized import Helmholtz
-from DCM.PDE_Model_Regularized import PBE_Interface
 
-from Simulation_X import Simulation
+from Simulation_1 import Simulation
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -36,53 +34,38 @@ logger.info('================================================')
 
 def main():
 
-    Sim = Simulation(PBE_Interface)
+    Sim = Simulation(Helmholtz)
 
     # PDE
     q_list = [(1,[0,0,0])]
 
-    inputs = {'Problem': 'Main_X_REG',
-              'rmin': 0,
-              'rI': 1,
+    inputs = {'Problem': 'Main',
+              'rmin': 1,
               'rB': 10,
-              'epsilon_1':1,
-              'epsilon_2':1,
+              'rI': 1,
+              'epsilon_1':2,
+              'epsilon_2':2,
               'kappa': 0.125,
               }
     
     Sim.problem = inputs
     Sim.q = q_list
     
-    rI = inputs['rI']
     rB = inputs['rB']
 
-    Sim.domain_in = ([-rI,rI],[-rI,rI],[-rI,rI])
-    Sim.PDE_in = Poisson()
+    Sim.domain_in = ([-rB,rB],[-rB,rB],[-rB,rB])
+    Sim.PDE_in = Helmholtz()
     Sim.PDE_in.sigma = 0.04
     Sim.PDE_in.epsilon = inputs['epsilon_1']
     Sim.PDE_in.epsilon_G = inputs['epsilon_1']
     Sim.PDE_in.q = q_list
+    Sim.PDE_in.kappa = inputs['kappa']
     Sim.PDE_in.problem = inputs
 
-    lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI}
+    u_an = Sim.PDE_in.border_value(rB,0,0,rB)
+    lb = {'type':'D', 'value':u_an, 'fun':None, 'dr':None, 'r':rB}
     Sim.borders_in = {'1':lb}
-    Sim.ins_domain_in = {'rmax': rI}
-
-
-    Sim.domain_out = ([-rB,rB],[-rB,rB],[-rB,rB])
-    Sim.PDE_out = Helmholtz()
-    Sim.PDE_out.epsilon = inputs['epsilon_2']
-    Sim.PDE_out.epsilon_G = inputs['epsilon_1']
-    Sim.PDE_out.kappa = inputs['kappa']
-    Sim.PDE_out.q = q_list 
-    Sim.PDE_out.problem = inputs
-
-    u_an = Sim.PDE_out.border_value(rB,0,0,rI) - Sim.PDE_out.G_Fun(rB,0,0)
-    lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI}
-    lb2 = {'type':'D', 'value':u_an, 'fun':None, 'dr':None, 'r':rB}
-    
-    Sim.borders_out = {'1':lb,'2':lb2}
-    Sim.ins_domain_out = {'rmax': rB,'rmin':rI}
+    Sim.ins_domain_in = {'rmax': rB}
 
 
     # Mesh
@@ -99,26 +82,16 @@ def main():
 
     Sim.lr = ([3000,6000],[1e-2,5e-3,5e-4])
 
-    
     Sim.hyperparameters_in = {
                 'input_shape': (None,3),
                 'num_hidden_layers': 4,
-                'num_neurons_per_layer': 120,
+                'num_neurons_per_layer': 60,
                 'output_dim': 1,
                 'activation': 'tanh',
                 'architecture_Net': 'FCNN',
                 'kernel_initializer': 'glorot_normal'
         }
 
-    Sim.hyperparameters_out = {
-                'input_shape': (None,3),
-                'num_hidden_layers': 4,
-                'num_neurons_per_layer': 120,
-                'output_dim': 1,
-                'activation': 'tanh',
-                'architecture_Net': 'FCNN',
-                'kernel_initializer': 'glorot_normal'
-        }
 
     Sim.setup_algorithm()
 

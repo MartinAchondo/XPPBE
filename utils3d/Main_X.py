@@ -7,19 +7,18 @@ from DCM.PDE_Model import Poisson
 from DCM.PDE_Model import Helmholtz
 from DCM.PDE_Model import PBE_Interface
 
-from Simulation import Simulation
+from Simulation_X import Simulation
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
 main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'results')
-if os.path.exists(main_path):
-        shutil.rmtree(main_path)
-os.makedirs(main_path)
+#if os.path.exists(main_path):
+#        shutil.rmtree(main_path)
+#os.makedirs(main_path)
 
 folder_name = 'data'
-#folder_path = os.path.join(main_path,'data')
-folder_path = main_path
+folder_path = os.path.join(main_path,folder_name)
 if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
 os.makedirs(folder_path)
@@ -42,11 +41,12 @@ def main():
     # PDE
     q_list = [(1,[0,0,0])]
 
-    inputs = {'rmin': 0,
+    inputs = {'Problem': 'Main_X',
+              'rmin': 0,
               'rI': 1,
               'rB': 10,
-              'epsilon_1':2,
-              'epsilon_2':10,
+              'epsilon_1':1,
+              'epsilon_2':1,
               'kappa': 0.125,
               }
     
@@ -62,6 +62,7 @@ def main():
     Sim.PDE_in.epsilon = inputs['epsilon_1']
     Sim.PDE_in.epsilon_G = inputs['epsilon_1']
     Sim.PDE_in.q = q_list
+    Sim.PDE_in.problem = inputs
 
     lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI}
     Sim.borders_in = {'1':lb}
@@ -74,6 +75,7 @@ def main():
     Sim.PDE_out.epsilon_G = inputs['epsilon_1']
     Sim.PDE_out.kappa = inputs['kappa']
     Sim.PDE_out.q = q_list 
+    Sim.PDE_out.problem = inputs
 
     u_an = Sim.PDE_out.border_value(rB,0,0,rI)
     lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI}
@@ -96,20 +98,35 @@ def main():
     }
 
     Sim.lr = ([3000,6000],[1e-2,5e-3,5e-4])
-    Sim.hyperparameters = {
+
+
+    Sim.hyperparameters_in = {
                 'input_shape': (None,3),
                 'num_hidden_layers': 4,
-                'num_neurons_per_layer': 100,
+                'num_neurons_per_layer': 120,
                 'output_dim': 1,
-                'activation': 'ReLU',
+                'activation': 'tanh',
                 'architecture_Net': 'FCNN'
         }
+
+    Sim.hyperparameters_out = {
+                'input_shape': (None,3),
+                'num_hidden_layers': 4,
+                'num_neurons_per_layer': 120,
+                'output_dim': 1,
+                'activation': 'tanh',
+                'architecture_Net': 'FCNN'
+        }
+
+
 
     Sim.setup_algorithm()
 
     # Solve
-    N_iters = 15000
-    Sim.solve_algorithm(N_iters=N_iters)
+    N_iters = 1000
+    precondition = True
+    N_precond = 1000
+    Sim.solve_algorithm(N_iters=N_iters, precond=precondition, N_precond=N_precond)
     
     Sim.postprocessing(folder_path=folder_path)
 
