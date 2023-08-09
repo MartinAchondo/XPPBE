@@ -98,8 +98,12 @@ class Mesh():
         zspace = np.linspace(self.lb[2], self.ub[2], self.N_r + 1, dtype=self.DTYPE)
         X, Y, Z = np.meshgrid(xspace, yspace, zspace)
         
+        if 'rmin' in ins_domain:
+            precon_rmin = ins_domain['rmin']
+
         if 'rmin' not in ins_domain:
             ins_domain['rmin'] = -0.1
+            precon_rmin = 0.03
 
         r = np.sqrt(X**2 + Y**2 + Z**2)
         inside1 = r < ins_domain['rmax']
@@ -112,8 +116,8 @@ class Mesh():
         self.X_r = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
 
         #Avoid singularities for precondition
-        inside = r > 0.1
-        self.X_r_P = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
+        inside_P = r > precon_rmin
+        self.X_r_P = tf.constant(np.vstack([X1[inside_P].flatten(),Y1[inside_P].flatten(), Z1[inside_P].flatten()]).T)
 
 
         self.D_r = (self.X_r[:,0],self.X_r[:,1],self.X_r[:,2])

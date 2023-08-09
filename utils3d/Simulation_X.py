@@ -67,7 +67,8 @@ class Simulation():
 
     def solve_algorithm(self,N_iters, precond=False, N_precond=10):
         logger.info("> Solving XPINN")
-
+        if precond:
+            logger.info(f'Preconditioning {N_precond} iterations')
         self.XPINN_solver.solve(N=N_iters, precond=precond, N_precond=N_precond)
 
 

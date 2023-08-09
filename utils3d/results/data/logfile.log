@@ -1,20 +1,20 @@
 INFO - __main__: ================================================
-INFO - Simulation: > Starting PINN Algorithm
-INFO - Simulation: {
-    "Problem": "Main_X",
+INFO - Simulation_X: > Starting PINN Algorithm
+INFO - Simulation_X: {
+    "Problem": "Main_X_REG",
     "rmin": 0,
     "rI": 1,
     "rB": 10,
     "epsilon_1": 2,
-    "epsilon_2": 10,
+    "epsilon_2": 2,
     "kappa": 0.125
 }
-INFO - Simulation: {"q": [[1, [0, 0, 0]]]}
+INFO - Simulation_X: {"q": [[1, [0, 0, 0]]]}
 INFO - NN.PINN: > Adapting PDE
 INFO - NN.PINN: PDE adapted
 INFO - NN.PINN: > Adapting PDE
 INFO - NN.PINN: PDE adapted
-INFO - Simulation: {
+INFO - Simulation_X: {
     "Mesh": {
         "N_b": 60,
         "N_r": 1500
@@ -28,33 +28,35 @@ INFO - NN.PINN: > Creating NeuralNet
 INFO - NN.PINN: Neural Network created
 INFO - NN.PINN: > Creating NeuralNet
 INFO - NN.PINN: Neural Network created
-INFO - Simulation: {
+INFO - Simulation_X: {
     "hyperparameters in": {
         "input_shape": [
             null,
             3
         ],
-        "num_hidden_layers": 4,
-        "num_neurons_per_layer": 10,
+        "num_hidden_layers": 3,
+        "num_neurons_per_layer": 50,
         "output_dim": 1,
-        "activation": "ReLU",
-        "architecture_Net": "FCNN"
+        "activation": "tanh",
+        "architecture_Net": "FCNN",
+        "kernel_initializer": "glorot_normal"
     }
 }
-INFO - Simulation: {
+INFO - Simulation_X: {
     "hyperparameters out": {
         "input_shape": [
             null,
             3
         ],
         "num_hidden_layers": 4,
-        "num_neurons_per_layer": 10,
+        "num_neurons_per_layer": 60,
         "output_dim": 1,
         "activation": "tanh",
-        "architecture_Net": "FCNN"
+        "architecture_Net": "FCNN",
+        "kernel_initializer": "glorot_normal"
     }
 }
-INFO - Simulation: {
+INFO - Simulation_X: {
     "weights": {
         "w_r": 1,
         "w_d": 1,
@@ -62,12 +64,13 @@ INFO - Simulation: {
         "w_i": 1
     }
 }
-INFO - Simulation: {"Learning Rate": [[3000, 6000], [0.01, 0.005, 0.0005]]}
-INFO - Simulation: > Solving XPINN
-INFO - NN.XPINN:  Iterations: 10
-INFO - NN.XPINN:  Loss: 2.1482e+01
-INFO - NN.XPINN: Computation time: 0 minutes
-INFO - Simulation: > Ploting Solution
+INFO - Simulation_X: {"Learning Rate": [[3000, 6000], [0.01, 0.005, 0.0005]]}
+INFO - Simulation_X: > Solving XPINN
+INFO - Simulation_X: Preconditioning 1000 iterations
+INFO - NN.XPINN:  Iterations: 1000
+INFO - NN.XPINN:  Loss: 1.4351e-07
+INFO - NN.XPINN: Computation time: 1 minutes
+INFO - Simulation_X: > Ploting Solution
 INFO - matplotlib.mathtext: Substituting symbol L from STIXNonUnicode
 INFO - DCM.Postprocessing: Loss history Plot saved: loss_history.png
 INFO - DCM.Postprocessing: Solution Plot saved: solution.png
@@ -75,4 +78,4 @@ INFO - DCM.Postprocessing: Contour Plot saved: contour.png
 INFO - DCM.Postprocessing: Analytic Plot saved: analytic.png
 INFO - DCM.Postprocessing: Interface Plot saved: interface.png
 INFO - DCM.Postprocessing: Excel created: results.xlsx
-INFO - Simulation: ================================================
+INFO - Simulation_X: ================================================

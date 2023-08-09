@@ -7,7 +7,7 @@ from DCM.PDE_Model_Regularized import Poisson
 from DCM.PDE_Model_Regularized import Helmholtz
 from DCM.PDE_Model_Regularized import PBE_Interface
 
-from Simulation import Simulation
+from Simulation_X import Simulation
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -45,8 +45,8 @@ def main():
               'rmin': 0,
               'rI': 1,
               'rB': 10,
-              'epsilon_1':2,
-              'epsilon_2':10,
+              'epsilon_1':1,
+              'epsilon_2':1,
               'kappa': 0.125,
               }
     
@@ -106,7 +106,8 @@ def main():
                 'num_neurons_per_layer': 120,
                 'output_dim': 1,
                 'activation': 'tanh',
-                'architecture_Net': 'FCNN'
+                'architecture_Net': 'FCNN',
+                'kernel_initializer': 'glorot_normal'
         }
 
     Sim.hyperparameters_out = {
@@ -115,15 +116,16 @@ def main():
                 'num_neurons_per_layer': 120,
                 'output_dim': 1,
                 'activation': 'tanh',
-                'architecture_Net': 'FCNN'
+                'architecture_Net': 'FCNN',
+                'kernel_initializer': 'glorot_normal'
         }
 
     Sim.setup_algorithm()
 
     # Solve
-    N_iters = 15000
+    N_iters = 1000
     precondition = True
-    N_precond = 1500
+    N_precond = 1000
     Sim.solve_algorithm(N_iters=N_iters, precond=precondition, N_precond=N_precond)
     
     Sim.postprocessing(folder_path=folder_path)

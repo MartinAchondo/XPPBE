@@ -15,3 +15,5 @@ PLAN.txt
 *saved_models
 /tests
 *PLAN
+/results
+/results_main

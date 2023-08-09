@@ -86,26 +86,30 @@ class PINN():
             loss += L[t]*self.w[t]
         return loss,L
         
-    def get_grad(self):
+    def get_grad(self, precond=False):
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(self.model.trainable_variables)
-            loss,L = self.loss_fn()
+            loss,L = self.loss_fn(precond)
         g = tape.gradient(loss, self.model.trainable_variables)
         del tape
         return loss, L, g
     
-    def solve_with_TFoptimizer(self, optimizer, N=1001):
+    def solve_with_TFoptimizer(self, optimizer, N=1001, N_precond=10):
         @tf.function
-        def train_step():
-            loss, L_loss, grad_theta = self.get_grad()
+        def train_step(precond=False):
+            loss, L_loss, grad_theta = self.get_grad(precond)
             optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
             return loss, L_loss
         
         pbar = log_progress(range(N))
         pbar.set_description("Loss: %s " % 100)
         for i in pbar:
-            loss,L_loss = train_step()
+            loss,L_loss = train_step(self.precondition)
             self.callback(loss,L_loss)
+
+            if self.iter>N_precond:
+                self.precondition = False
+
             if self.iter % 10 == 0:
                 pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
         logger.info(f' Iterations: {N}')
@@ -120,14 +124,15 @@ class PINN():
         self.loss_hist.append(self.current_loss)
         self.iter+=1
 
-    def solve(self,N=1000,flag_time=True):
+    def solve(self,N=1000, precond=False, N_precond=10, flag_time=True):
         self.flag_time = flag_time
+        self.precondition = precond
         optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
 
         self.N_iters = N
 
         t0 = time()
-        self.solve_with_TFoptimizer(optim, N)
+        self.solve_with_TFoptimizer(optim, N, N_precond)
         #print('\nComputation time: {6.4e} seconds'.format(time()-t0))
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
 

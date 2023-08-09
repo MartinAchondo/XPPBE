@@ -66,7 +66,7 @@ class XPINN():
         return loss,L
 
 
-    def get_grad(self,solver,solver_ex, precond):
+    def get_grad(self,solver,solver_ex, precond=False):
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(solver.model.trainable_variables)
             loss,L = self.get_loss(solver,solver_ex, precond)
@@ -79,7 +79,7 @@ class XPINN():
         optimizer1,optimizer2 = optimizer
 
         @tf.function
-        def train_step(precond):
+        def train_step(precond=False):
             loss1, L_loss1, grad_theta1 = self.get_grad(self.solver1,self.solver2, precond)
             loss2, L_loss2, grad_theta2 = self.get_grad(self.solver2,self.solver1, precond)
 
