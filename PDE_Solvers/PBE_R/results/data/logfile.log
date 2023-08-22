@@ -1,0 +1,71 @@
+INFO - __main__: ================================================
+INFO - Simulation_X: > Starting PINN Algorithm
+INFO - Simulation_X: {
+    "Problem": "Main_X_REG",
+    "rmin": 0,
+    "rI": 1,
+    "rB": 10,
+    "epsilon_1": 1,
+    "epsilon_2": 80,
+    "kappa": 0.125
+}
+INFO - Simulation_X: {"q": [[1000, [0, 0, 0]]]}
+INFO - NN.PINN: > Adapting PDE
+INFO - NN.PINN: PDE adapted
+INFO - NN.PINN: > Adapting PDE
+INFO - NN.PINN: PDE adapted
+INFO - Simulation_X: {
+    "Mesh": {
+        "N_r": 40,
+        "N_r_P": 40
+    }
+}
+INFO - NN.PINN: > Adapting Mesh
+INFO - NN.PINN: Mesh adapted
+INFO - NN.PINN: > Adapting Mesh
+INFO - NN.PINN: Mesh adapted
+INFO - NN.PINN: > Creating NeuralNet
+INFO - NN.PINN: Neural Network created
+INFO - NN.PINN: > Creating NeuralNet
+INFO - NN.PINN: Neural Network created
+INFO - Simulation_X: {
+    "hyperparameters in": {
+        "input_shape": [
+            null,
+            3
+        ],
+        "num_hidden_layers": 2,
+        "num_neurons_per_layer": 12,
+        "output_dim": 1,
+        "activation": "tanh",
+        "architecture_Net": "FCNN",
+        "kernel_initializer": "glorot_normal"
+    }
+}
+INFO - Simulation_X: {
+    "hyperparameters out": {
+        "input_shape": [
+            null,
+            3
+        ],
+        "num_hidden_layers": 2,
+        "num_neurons_per_layer": 12,
+        "output_dim": 1,
+        "activation": "tanh",
+        "architecture_Net": "FCNN",
+        "kernel_initializer": "glorot_normal"
+    }
+}
+INFO - Simulation_X: {
+    "weights": {
+        "w_r": 1,
+        "w_d": 1,
+        "w_n": 1,
+        "w_i": 1,
+        "w_k": 1
+    }
+}
+INFO - Simulation_X: {"Learning Rate": [[3000, 6000], [0.01, 0.005, 0.0005]]}
+INFO - Simulation_X: > Solving XPINN
+INFO - Simulation_X: Preconditioning 100 iterations
+INFO - Simulation_X: Number Batches: 40
