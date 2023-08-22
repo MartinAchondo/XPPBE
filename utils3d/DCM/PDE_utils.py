@@ -30,20 +30,24 @@ class PDE_utils():
         self.XD_data,self.UD_data = self.mesh.data_mesh['dirichlet']
         self.XN_data,self.UN_data,self.derN = self.mesh.data_mesh['neumann']
         self.XI_data,self.derI = self.mesh.data_mesh['interface']
+        self.XK_data,self.UK_data = self.mesh.data_mesh['data_known']
         self.X_r_P = self.mesh.data_mesh['precondition']
 
         self.x,self.y,self.z = self.mesh.get_X(self.X_r)
-        self.xP,self.yP,self.zP = self.mesh.get_X(self.X_r_P)
+        if self.X_r_P != None:
+            self.xP,self.yP,self.zP = self.mesh.get_X(self.X_r_P)
 
     
-    def get_loss(self,model):
+    def get_loss(self, X_batch, model):
         L = dict()
         L['r'] = 0
         L['D'] = 0
         L['N'] = 0
+        L['K'] = 0
 
         #residual
-        X = (self.x,self.y,self.z)
+        #X = (self.x,self.y,self.z)
+        X = self.mesh.get_X(X_batch)
         loss_r = self.residual_loss(self.mesh,model,X)
         L['r'] += loss_r
 
@@ -53,7 +57,11 @@ class PDE_utils():
 
         #neumann
         loss_n = self.neumann_loss(self.mesh,model,self.XN_data,self.UN_data)
-        L['N'] += loss_n    
+        L['N'] += loss_n
+
+        # data known
+        loss_k = self.data_known_loss(self.mesh,model,self.XK_data,self.UK_data)
+        L['K'] += loss_k    
 
         return L
 
@@ -76,17 +84,27 @@ class PDE_utils():
             loss = tf.reduce_mean(tf.square(UN[i]-grad))
             Loss_n += loss
         return Loss_n
+    
+        # Dirichlet
+    def data_known_loss(self,mesh,model,XK,UK):
+        Loss_d = 0
+        for i in range(len(XK)):
+            u_pred = model(XK[i])
+            loss = tf.reduce_mean(tf.square(UK[i] - u_pred)) 
+            Loss_d += loss
+        return Loss_d
 
 
-    def get_loss_preconditioner(self,model):
+    def get_loss_preconditioner(self, X_batch, model):
         L = dict()
         L['r'] = 0
         L['D'] = 0
         L['N'] = 0
         L['I'] = 0
+        L['K'] = 0
 
         #residual
-        X = (self.xP,self.yP,self.zP)
+        X = self.mesh.get_X(X_batch)
         loss_r = self.preconditioner(self.mesh,model,X)
         L['r'] += loss_r
 

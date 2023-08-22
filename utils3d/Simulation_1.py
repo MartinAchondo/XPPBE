@@ -21,6 +21,7 @@ class Simulation():
           self.lr = None
           self.hyperparameters = None
           self.PDE_EQ = PDE
+          self.precondition = False
 
     def setup_algorithm(self):
         
@@ -30,15 +31,16 @@ class Simulation():
         
         PDE_in = self.PDE_in
         domain_in = PDE_in.set_domain(self.domain_in)
-
-        self.N_b = self.mesh['N_b']
-        self.N_r = self.mesh['N_r']        
-        mesh_in = Mesh(domain_in, N_b=self.N_b, N_r=self.N_r)
+      
+        mesh_in = Mesh(domain_in, mesh_N=self.mesh, precondition=self.precondition)
         mesh_in.create_mesh(self.borders_in, self.ins_domain_in)
+        mesh_in.plot_points_2d(self.folder_path, 'Mesh_2d_in')
+        mesh_in.plot_points_3d(self.folder_path, 'Mesh_3d_in')
 
         PDE = self.PDE_EQ()
         PDE.epsilon_G = PDE_in.epsilon_G
         PDE.q = PDE_in.q
+        PDE.kappa = PDE_in.kappa
         PDE.problem = self.problem
 
         self.PINN_solver = PINN()
@@ -54,12 +56,15 @@ class Simulation():
         logger.info(json.dumps({'weights': self.weights}, indent=4))
         logger.info(json.dumps({'Learning Rate': self.lr}))
 
+        self.PINN_solver.folder_path = self.folder_path
 
-    def solve_algorithm(self,N_iters, precond=False, N_precond=10):
+
+    def solve_algorithm(self,N_iters, precond=False, N_precond=10, N_batches=1, save_model=0):
         logger.info("> Solving PINN")
         if precond:
             logger.info(f'Preconditioning {N_precond} iterations')
-        self.PINN_solver.solve(N=N_iters, precond=precond, N_precond=N_precond)
+        logger.info(f'Number Batches: {N_batches}')
+        self.PINN_solver.solve(N=N_iters, precond=precond, N_precond=N_precond, N_batches=N_batches, save_model=save_model)
 
 
     def postprocessing(self,folder_path):

@@ -39,14 +39,14 @@ def main():
     Sim = Simulation(PBE_Interface)
 
     # PDE
-    q_list = [(1,[0,0,0])]
+    q_list = [(1000,[0,0,0])]
 
     inputs = {'Problem': 'Main_X',
               'rmin': 0,
               'rI': 1,
               'rB': 10,
               'epsilon_1':1,
-              'epsilon_2':1,
+              'epsilon_2':80,
               'kappa': 0.125,
               }
     
@@ -64,8 +64,8 @@ def main():
     Sim.PDE_in.q = q_list
     Sim.PDE_in.problem = inputs
 
-    lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI}
-    Sim.borders_in = {'1':lb}
+    inner_interface = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI, 'N': 40}
+    Sim.borders_in = {'1':inner_interface}
     Sim.ins_domain_in = {'rmax': rI}
 
 
@@ -78,23 +78,24 @@ def main():
     Sim.PDE_out.problem = inputs
 
     u_an = Sim.PDE_out.border_value(rB,0,0,rI)
-    lb = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI}
-    lb2 = {'type':'D', 'value':u_an, 'fun':None, 'dr':None, 'r':rB}
+    outer_interface = {'type':'I', 'value':None, 'fun':None, 'dr':None, 'r':rI, 'N':50}
+    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'dr':None, 'r':rB, 'N': 50}
     
-    Sim.borders_out = {'1':lb,'2':lb2}
+    Sim.borders_out = {'1':outer_interface,'2':outer_dirichlet}
     Sim.ins_domain_out = {'rmax': rB,'rmin':rI}
 
 
     # Mesh
-    Sim.mesh = {'N_b': 60,
-                'N_r': 1500}
+    Sim.mesh = {'N_r': 40,
+                'N_r_P': 40}
 
     # Neural Network
     Sim.weights = {
         'w_r': 1,
         'w_d': 1,
         'w_n': 1,
-        'w_i': 1
+        'w_i': 1,
+        'w_k': 1
     }
 
     Sim.lr = ([3000,6000],[1e-2,5e-3,5e-4])
@@ -102,8 +103,8 @@ def main():
 
     Sim.hyperparameters_in = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 4,
-                'num_neurons_per_layer': 120,
+                'num_hidden_layers': 2,
+                'num_neurons_per_layer': 12,
                 'output_dim': 1,
                 'activation': 'tanh',
                 'architecture_Net': 'FCNN'
@@ -111,22 +112,25 @@ def main():
 
     Sim.hyperparameters_out = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 4,
-                'num_neurons_per_layer': 120,
+                'num_hidden_layers': 2,
+                'num_neurons_per_layer': 12,
                 'output_dim': 1,
                 'activation': 'tanh',
                 'architecture_Net': 'FCNN'
         }
 
 
+    Sim.N_iters = 10
+    Sim.precondition = True
+    Sim.N_precond = 10
+    Sim.N_batches = 40
+
+    Sim.folder_path = folder_path
 
     Sim.setup_algorithm()
 
     # Solve
-    N_iters = 1000
-    precondition = True
-    N_precond = 1000
-    Sim.solve_algorithm(N_iters=N_iters, precond=precondition, N_precond=N_precond)
+    Sim.solve_algorithm(N_iters=Sim.N_iters, precond=Sim.precondition, N_precond=Sim.N_precond, N_batches=Sim.N_batches, save_model=5)
     
     Sim.postprocessing(folder_path=folder_path)
 

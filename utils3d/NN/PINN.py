@@ -18,16 +18,19 @@ class PINN():
         self.loss_r = list()
         self.loss_bD = list()
         self.loss_bN = list()
+        self.loss_bK = list()
         self.loss_P = list()
         self.loss_bI = list()
         self.iter = 0
         self.lr = None
+ 
 
     def adapt_mesh(self, mesh,
         w_r=1,
         w_d=1,
         w_n=1,
-        w_i=1):
+        w_i=1,
+        w_k=1):
 
         logger.info("> Adapting Mesh")
         
@@ -40,10 +43,11 @@ class PINN():
         self.w = {
             'r': w_r,
             'D': w_d,
-            'N': w_n
+            'N': w_n,
+            'K': w_k
         }
         
-        self.L_names = ['r','D','N']
+        self.L_names = ['r','D','N', 'K']
 
         logger.info("Mesh adapted")
         
@@ -76,35 +80,50 @@ class PINN():
         self.model.save(os.path.join(dir_path,name))
  
 
-    def loss_fn(self, precond=False):
+    def loss_fn(self, X_batch, precond=False):
         if precond:
-            L = self.PDE.get_loss_preconditioner(self.model)
+            L = self.PDE.get_loss_preconditioner(X_batch, self.model)
         else:
-            L = self.PDE.get_loss(self.model)
+            L = self.PDE.get_loss(X_batch, self.model)
         loss = 0
         for t in self.L_names:
             loss += L[t]*self.w[t]
         return loss,L
         
-    def get_grad(self, precond=False):
+    def get_grad(self, X_batch, precond=False):
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(self.model.trainable_variables)
-            loss,L = self.loss_fn(precond)
+            loss,L = self.loss_fn(X_batch, precond)
         g = tape.gradient(loss, self.model.trainable_variables)
         del tape
         return loss, L, g
     
-    def solve_with_TFoptimizer(self, optimizer, N=1001, N_precond=10):
+    def solve_TF_optimizer(self, optimizer, N=1001, N_precond=10, N_batches=1):
         @tf.function
-        def train_step(precond=False):
-            loss, L_loss, grad_theta = self.get_grad(precond)
+        def train_step(X_batch, precond=False):
+            loss, L_loss, grad_theta = self.get_grad(X_batch, precond)
             optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
             return loss, L_loss
         
+        batches_X_r, batches_X_r_P = self.create_batches(N_batches)
+
+        N_j = 0
         pbar = log_progress(range(N))
         pbar.set_description("Loss: %s " % 100)
         for i in pbar:
-            loss,L_loss = train_step(self.precondition)
+
+            if not self.precondition:
+                shuffled_batches_X_r = batches_X_r.shuffle(buffer_size=len(self.PDE.X_r))
+                for X_batch in shuffled_batches_X_r:
+                    N_j += 1
+                    loss,L_loss = train_step(X_batch, self.precondition)
+            
+            if self.precondition:
+                shuffled_batches_X_r_P = batches_X_r_P.shuffle(buffer_size=len(self.PDE.X_r_P))
+                for X_batch in shuffled_batches_X_r_P:
+                    N_j += 1
+                    loss,L_loss = train_step(X_batch, self.precondition)
+
             self.callback(loss,L_loss)
 
             if self.iter>N_precond:
@@ -112,80 +131,55 @@ class PINN():
 
             if self.iter % 10 == 0:
                 pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
+
+            if self.save_model_iter > 0:
+                if self.iter % self.save_model_iter == 0:
+                    self.save_model(self.folder_path, f'model_{self.iter}')
+            
         logger.info(f' Iterations: {N}')
+        logger.info(f' Total steps: {N_j}')
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
 
+
+    def create_batches(self, N_batches):
+
+        number_batches = N_batches
+
+        dataset_X_r = tf.data.Dataset.from_tensor_slices(self.PDE.X_r)
+        dataset_X_r = dataset_X_r.shuffle(buffer_size=len(self.PDE.X_r))
+
+        batch_size = int(len(self.PDE.X_r)/number_batches)
+        batches_X_r = dataset_X_r.batch(batch_size)
+
+
+        dataset_X_r_P = tf.data.Dataset.from_tensor_slices(self.PDE.X_r_P)
+        dataset_X_r_P = dataset_X_r_P.shuffle(buffer_size=len(self.PDE.X_r_P))
+
+        batch_size = int(len(self.PDE.X_r_P)/number_batches)
+        batches_X_r_P = dataset_X_r_P.batch(batch_size)
+
+        return batches_X_r, batches_X_r_P
+ 
 
     def callback(self,loss,L_loss):
         self.loss_r.append(L_loss['r'])
         self.loss_bD.append(L_loss['D'])
+        self.loss_bK.append(L_loss['K'])
         self.loss_bN.append(L_loss['N'])
         self.current_loss = loss.numpy()
         self.loss_hist.append(self.current_loss)
         self.iter+=1
 
-    def solve(self,N=1000, precond=False, N_precond=10, flag_time=True):
-        self.flag_time = flag_time
+    def solve(self,N=1000, precond=False, N_precond=10, N_batches=1, save_model=0):
+        
         self.precondition = precond
+        self.save_model_iter = save_model
         optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
-
         self.N_iters = N
 
         t0 = time()
-        self.solve_with_TFoptimizer(optim, N, N_precond)
-        #print('\nComputation time: {6.4e} seconds'.format(time()-t0))
+        self.solve_TF_optimizer(optim, N, N_precond, N_batches=N_batches)
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
 
-
-
-
-
-class PINN_Precond(PINN):
-
-    def __init__(self):
-        super().__init__()
-
-    def load_preconditioner(self,precond):
-        self.precond = precond
-        self.precond.X_r = self.X_r
-        self.precond.x = self.x
-        self.precond.y = self.y
-        self.precond.z = self.z
-
-    def get_precond_grad(self):
-        with tf.GradientTape(persistent=True) as tape:
-            tape.watch(self.model.trainable_variables)
-            loss = self.precond.loss_fn(self.model,self.mesh)
-        g = tape.gradient(loss, self.model.trainable_variables)
-        del tape
-        return loss, g
-
-    def precond_with_TFoptimizer(self, optimizer, N=1001):
-        @tf.function
-        def train_step_precond():
-            loss, grad_theta = self.get_precond_grad()
-            optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
-            return loss
-
-        pbar = log_progress(range(N))
-        pbar.set_description("Loss: %s " % 100)
-        for i in pbar:
-            loss = train_step_precond()
-            self.callback(loss)
-
-            if self.iter % 10 == 0:
-                pbar.set_description("Loss: %s" % self.current_loss)
-
-    def callback(self,loss):
-        self.current_loss = loss.numpy()
-        self.loss_hist.append(self.current_loss)
-        self.iter+=1
-
-    def preconditionate(self,N=2000):
-        optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
-
-        t0 = time()
-        self.precond_with_TFoptimizer(optim, N)
-        print('\nComputation time: {} seconds'.format(time()-t0))
 
 
