@@ -37,14 +37,14 @@ def main():
     Sim = Simulation(Helmholtz)
 
     # PDE
-    q_list = [(1,[0,0,0])]
+    q_list = [(1000,[0,0,0])]
 
     inputs = {'Problem': 'Main',
               'rmin': 1,
               'rB': 10,
               'rI': 1,
-              'epsilon_1':2,
-              'epsilon_2':2,
+              'epsilon_1':1,
+              'epsilon_2':80,
               'kappa': 0.125,
               }
     
@@ -63,29 +63,31 @@ def main():
     Sim.PDE_in.problem = inputs
 
     u_an = Sim.PDE_in.border_value(rB,0,0,rB)
-    lb = {'type':'D', 'value':u_an, 'fun':None, 'dr':None, 'r':rB}
-    Sim.borders_in = {'1':lb}
+    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'dr':None, 'r':rB, 'N': 60}
+    interior_known = {'type': 'K', 'fun': lambda x,y,z: Sim.PDE_in.analytic(x,y,z) , 'N': 12, 'value': None, 'dr': None, 'r': 5}
+
+    Sim.borders_in = {'1':outer_dirichlet, '2': interior_known}
     Sim.ins_domain_in = {'rmax': rB}
 
-
     # Mesh
-    Sim.mesh = {'N_b': 60,
-                'N_r': 1500}
+    Sim.mesh = {'N_r': 40,
+                'N_r_P': 40}
 
     # Neural Network
     Sim.weights = {
         'w_r': 1,
         'w_d': 1,
         'w_n': 1,
-        'w_i': 1
+        'w_i': 1,
+        'w_k': 1
     }
 
     Sim.lr = ([3000,6000],[1e-2,5e-3,5e-4])
 
     Sim.hyperparameters_in = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 4,
-                'num_neurons_per_layer': 60,
+                'num_hidden_layers': 2,
+                'num_neurons_per_layer': 12,
                 'output_dim': 1,
                 'activation': 'tanh',
                 'architecture_Net': 'FCNN',
@@ -93,13 +95,17 @@ def main():
         }
 
 
+    Sim.N_iters = 20
+    Sim.precondition = True
+    Sim.N_precond = 20
+    Sim.N_batches = 20
+
+    Sim.folder_path = folder_path
+
     Sim.setup_algorithm()
 
     # Solve
-    N_iters = 1000
-    precondition = True
-    N_precond = 1000
-    Sim.solve_algorithm(N_iters=N_iters, precond=precondition, N_precond=N_precond)
+    Sim.solve_algorithm(N_iters=Sim.N_iters, precond=Sim.precondition, N_precond=Sim.N_precond, N_batches=Sim.N_batches, save_model=5)
     
     Sim.postprocessing(folder_path=folder_path)
 

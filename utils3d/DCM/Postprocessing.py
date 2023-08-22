@@ -47,6 +47,7 @@ class View_results():
             ax.semilogy(range(len(self.NN.loss_r)), self.NN.loss_r, 'r-', label='Loss_r')
             ax.semilogy(range(len(self.NN.loss_bD)), self.NN.loss_bD, 'b-', label='Loss_bD')
             ax.semilogy(range(len(self.NN.loss_bN)), self.NN.loss_bN, 'g-', label='Loss_bN')
+            ax.semilogy(range(len(self.NN.loss_bK)), self.NN.loss_bK, 'm-', label='Loss_bK')
 
         ax.legend()
         ax.set_xlabel('$n: iterations$')
@@ -273,7 +274,7 @@ class View_results():
 
 class View_results_X():
 
-    def __init__(self,XPINN,Post, save=False,directory=None, data=False):
+    def __init__(self,XPINN,Post, save=False,directory=None, data=False, last=False):
 
         self.DTYPE='float32'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
@@ -288,16 +289,15 @@ class View_results_X():
         self.model = [XPINN.solver1.model,XPINN.solver2.model]
         self.mesh = [XPINN.solver1.mesh,XPINN.solver2.mesh]
 
-        self.lb = [self.model[0].lb,self.model[1].lb]
-        self.ub = [self.model[0].ub,self.model[1].ub]
-
         self.Post = list()
 
         for NN in self.NN:
             self.Post.append(Post(NN,X=True))
 
-        
-        self.loss_last = np.format_float_scientific(self.XPINN.loss_hist[-1], unique=False, precision=3)
+        if not last:
+            self.loss_last = np.format_float_scientific(self.XPINN.loss_hist[-1], unique=False, precision=3)
+        else:
+            self.loss_last = 0
 
     def close_file(self):
         self.Excel_writer.close()
@@ -344,17 +344,22 @@ class View_results_X():
                 df.to_excel(self.Excel_writer, sheet_name='Losses', index=False)
 
 
-    def plot_u_plane(self,N=200):
+    def plot_u_plane(self,N=200, theta=np.pi/2, phi=0 ):
         fig, ax = plt.subplots()
         labels = ['Inside', 'Outside']
         colr = ['r','b']
         i = 0
         df = pd.DataFrame()
         for post_obj in self.Post:
-            x = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
-            x = tf.reshape(x,[x.shape[0],1])
-            y = tf.ones((N,1), dtype=self.DTYPE)*0
-            z = tf.ones((N,1), dtype=self.DTYPE)*0
+            r = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], N, dtype=self.DTYPE))
+            r = tf.reshape(r,[r.shape[0],1])
+            theta = tf.ones((N,1), dtype=self.DTYPE)*theta
+            phi = tf.ones((N,1), dtype=self.DTYPE)*phi
+
+            x = r*np.sin(theta)*np.cos(phi)
+            y = r*np.sin(theta)*np.sin(phi)
+            z = r*np.cos(theta)
+
             X = tf.concat([x, y, z], axis=1)
             U = post_obj.model(X)
 
@@ -369,7 +374,7 @@ class View_results_X():
                 df = pd.concat(frames)
 
             
-            ax.plot(x[:,0],U[:,0], label=labels[i], c=colr[i])
+            ax.plot(r[:,0],U[:,0], label=labels[i], c=colr[i])
             i += 1
 
         ax.set_xlabel('r')
@@ -413,26 +418,31 @@ class View_results_X():
             logger.info(f'Contour Plot saved: {path}')
 
 
-    def plot_aprox_analytic(self,N=200):
+    def plot_aprox_analytic(self,N=200, theta=np.pi/2, phi=0 ):
         
         fig, ax = plt.subplots() 
         for post_obj,NN in zip(self.Post,self.NN):
             rmin = post_obj.mesh.ins_domain['rmin']
             if rmin < 0:
                 rmin = 0.05
-            x = tf.constant(np.linspace(rmin, post_obj.mesh.ins_domain['rmax'], 200, dtype=self.DTYPE))
-            x = tf.reshape(x,[x.shape[0],1])
-            y = tf.ones((N,1), dtype=self.DTYPE)*0
-            z = tf.ones((N,1), dtype=self.DTYPE)*0
+            r = tf.constant(np.linspace(rmin, post_obj.mesh.ins_domain['rmax'], N, dtype=self.DTYPE))
+            r = tf.reshape(r,[r.shape[0],1])
+            theta = tf.ones((N,1), dtype=self.DTYPE)*theta
+            phi = tf.ones((N,1), dtype=self.DTYPE)*phi
+
+            x = r*np.sin(theta)*np.cos(phi)
+            y = r*np.sin(theta)*np.sin(phi)
+            z = r*np.cos(theta)
+
             X = tf.concat([x, y, z], axis=1)
             U = post_obj.model(X)
 
-            ax.plot(x[:,0],U[:,0], c='b', label='Aprox')
+            ax.plot(r[:,0],U[:,0], c='b', label='Aprox')
 
-        x = np.linspace(self.Post[0].mesh.ins_domain['rmax']/10, self.Post[-1].mesh.ins_domain['rmax'], 200, dtype=self.DTYPE)
+        r = np.linspace(self.Post[0].mesh.ins_domain['rmax']/10, self.Post[-1].mesh.ins_domain['rmax'], 200, dtype=self.DTYPE)
 
-        U2 = self.XPINN.PDE.analytic(x)
-        ax.plot(x,U2, c='r', label='Analytic')
+        U2 = self.XPINN.PDE.analytic(r)
+        ax.plot(r,U2, c='r', label='Analytic')
             
         ax.set_xlabel('r')
         ax.set_ylabel(r'$\phi_{\theta}$')

@@ -5,19 +5,19 @@ INFO - Simulation_X: {
     "rmin": 0,
     "rI": 1,
     "rB": 10,
-    "epsilon_1": 2,
-    "epsilon_2": 2,
+    "epsilon_1": 1,
+    "epsilon_2": 80,
     "kappa": 0.125
 }
-INFO - Simulation_X: {"q": [[1, [0, 0, 0]]]}
+INFO - Simulation_X: {"q": [[1000, [0, 0, 0]]]}
 INFO - NN.PINN: > Adapting PDE
 INFO - NN.PINN: PDE adapted
 INFO - NN.PINN: > Adapting PDE
 INFO - NN.PINN: PDE adapted
 INFO - Simulation_X: {
     "Mesh": {
-        "N_b": 60,
-        "N_r": 1500
+        "N_r": 40,
+        "N_r_P": 40
     }
 }
 INFO - NN.PINN: > Adapting Mesh
@@ -34,8 +34,8 @@ INFO - Simulation_X: {
             null,
             3
         ],
-        "num_hidden_layers": 3,
-        "num_neurons_per_layer": 50,
+        "num_hidden_layers": 2,
+        "num_neurons_per_layer": 12,
         "output_dim": 1,
         "activation": "tanh",
         "architecture_Net": "FCNN",
@@ -48,8 +48,8 @@ INFO - Simulation_X: {
             null,
             3
         ],
-        "num_hidden_layers": 4,
-        "num_neurons_per_layer": 60,
+        "num_hidden_layers": 2,
+        "num_neurons_per_layer": 12,
         "output_dim": 1,
         "activation": "tanh",
         "architecture_Net": "FCNN",
@@ -61,15 +61,18 @@ INFO - Simulation_X: {
         "w_r": 1,
         "w_d": 1,
         "w_n": 1,
-        "w_i": 1
+        "w_i": 1,
+        "w_k": 1
     }
 }
 INFO - Simulation_X: {"Learning Rate": [[3000, 6000], [0.01, 0.005, 0.0005]]}
 INFO - Simulation_X: > Solving XPINN
-INFO - Simulation_X: Preconditioning 1000 iterations
-INFO - NN.XPINN:  Iterations: 1000
-INFO - NN.XPINN:  Loss: 1.4351e-07
-INFO - NN.XPINN: Computation time: 1 minutes
+INFO - Simulation_X: Preconditioning 100 iterations
+INFO - Simulation_X: Number Batches: 40
+INFO - NN.XPINN:  Iterations: 100
+INFO - NN.XPINN:  Total steps: 4100
+INFO - NN.XPINN:  Loss: 1.5408e+01
+INFO - NN.XPINN: Computation time: 0 minutes
 INFO - Simulation_X: > Ploting Solution
 INFO - matplotlib.mathtext: Substituting symbol L from STIXNonUnicode
 INFO - DCM.Postprocessing: Loss history Plot saved: loss_history.png
