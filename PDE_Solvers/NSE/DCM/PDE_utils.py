@@ -10,13 +10,13 @@ class PDE_utils():
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
     
     def set_domain(self,X):
-        x,y,z = X
+        x,y,t = X
         self.xmin,self.xmax = x
         self.ymin,self.ymax = y
-        self.zmin,self.zmax = z
+        self.tmin,self.tmax = t
 
-        lb = tf.constant([self.xmin, self.ymin,self.zmin], dtype=self.DTYPE)
-        ub = tf.constant([self.xmax, self.ymax,self.zmax], dtype=self.DTYPE)
+        lb = tf.constant([self.xmin, self.ymin,self.tmin], dtype=self.DTYPE)
+        ub = tf.constant([self.xmax, self.ymax,self.tmax], dtype=self.DTYPE)
 
         return (lb,ub)
     
@@ -33,9 +33,9 @@ class PDE_utils():
         self.XK_data,self.UK_data = self.mesh.data_mesh['data_known']
         self.X_r_P = self.mesh.data_mesh['precondition']
 
-        self.x,self.y,self.z = self.mesh.get_X(self.X_r)
+        self.x,self.y,self.t = self.mesh.get_X(self.X_r)
         if self.X_r_P != None:
-            self.xP,self.yP,self.zP = self.mesh.get_X(self.X_r_P)
+            self.xP,self.yP,self.tP = self.mesh.get_X(self.X_r_P)
 
     
     def get_loss(self, X_batch, model):
@@ -46,8 +46,8 @@ class PDE_utils():
         L['K'] = 0
 
         #residual
-        #X = (self.x,self.y,self.z)
-        X = self.mesh.get_X(X_batch)
+        X = (self.x,self.y,self.t)
+        #X = self.mesh.get_X(X_batch)
         loss_r = self.residual_loss(self.mesh,model,X)
         L['r'] += loss_r
 
@@ -70,8 +70,11 @@ class PDE_utils():
     def dirichlet_loss(self,mesh,model,XD,UD):
         Loss_d = 0
         for i in range(len(XD)):
-            u_pred = model(XD[i])
-            loss = tf.reduce_mean(tf.square(UD[i] - u_pred)) 
+            O = model(XD[i])
+            u = O[:,0]
+            v = O[:,1]
+            p = O[:,2]
+            loss = tf.reduce_mean(tf.square(UD[i][:,0] - u)) + tf.reduce_mean(tf.square(UD[i][:,1] - v)) + tf.reduce_mean(tf.square(UD[i][:,2] - p)) 
             Loss_d += loss
         return Loss_d
 
@@ -114,77 +117,17 @@ class PDE_utils():
     ####################################################################################################################################################
 
     # Define boundary condition
-    def fun_u_b(self,x, y, z, value):
+    def fun_u_b(self,x, y, t, value):
         n = x.shape[0]
-        return tf.ones((n,1), dtype=self.DTYPE)*value
+        v1,v2,v3 = value
+        u = tf.ones((n,1), dtype=self.DTYPE)*v1
+        v = tf.ones((n,1), dtype=self.DTYPE)*v2
+        p = tf.ones((n,1), dtype=self.DTYPE)*v3
+        return u,v,p
 
-    def fun_ux_b(self,x, y, z, value):
+    def fun_ux_b(self,x, y, t, value):
         n = x.shape[0]
         return tf.ones((n,1), dtype=self.DTYPE)*value
 
 
     ####################################################################################################################################################
-
-
-    # Boundary Surface
-
-    def surface(r,theta,phi):
-        x = r*np.sin(theta)*np.cos(phi)
-        y = r*np.sin(theta)*np.sin(phi)
-        z = r*np.cos(theta)
-
-        return (x,y,z)
-    
-
-    def normal_vector(self,X):
-        x,y,z = X
-        norm_vn = tf.sqrt(x**2+y**2+z**2)
-        n = X/norm_vn
-        return n
-
-    # Differential operators
-
-    def laplacian(self,mesh,model,X):
-        x,y,z = X
-        with tf.GradientTape(persistent=True) as tape:
-            tape.watch(x)
-            tape.watch(y)
-            tape.watch(z)
-            R = mesh.stack_X(x,y,z)
-            u = model(R)
-            u_x = tape.gradient(u,x)
-            u_y = tape.gradient(u,y)
-            u_z = tape.gradient(u,z)
-        u_xx = tape.gradient(u_x,x)
-        u_yy = tape.gradient(u_y,y)
-        u_zz = tape.gradient(u_z,z)
-        del tape
-
-        return u_xx + u_yy + u_zz
-
-    def gradient(self,mesh,model,X):
-        x,y,z = X
-        with tf.GradientTape(persistent=True,watch_accessed_variables=False) as tape:
-            tape.watch(x)
-            tape.watch(y)
-            tape.watch(z)
-            R = mesh.stack_X(x,y,z)
-            u = model(R)
-        u_x = tape.gradient(u,x)
-        u_y = tape.gradient(u,y)
-        u_z = tape.gradient(u,z)
-        del tape
-
-        return (u_x,u_y,u_z)
-    
-    def directional_gradient(self,mesh,model,X,n):
-        gradient = self.gradient(mesh,model,X)
-        dir_deriv = 0
-        norm = 0
-        for j in range(3):
-            dir_deriv += n[j]*gradient[j]
-            norm += n[j]**2
-        norm = tf.sqrt(norm)
-        dir_deriv *= (1/norm)
-
-        return dir_deriv

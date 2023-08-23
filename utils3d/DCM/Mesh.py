@@ -164,7 +164,10 @@ class Mesh():
         zspace = np.linspace(self.lb[2], self.ub[2], N_r, dtype=self.DTYPE)
         X, Y, Z = np.meshgrid(xspace, yspace, zspace)
         
-        precon_rmin = 0.02
+        if 'rmin' not in self.ins_domain:
+            precon_rmin = -0.02
+        else:
+            precon_rmin = 0.5*self.ins_domain['rmin']
 
         r = np.sqrt(X**2 + Y**2 + Z**2)
         inside1 = r < self.ins_domain['rmax']

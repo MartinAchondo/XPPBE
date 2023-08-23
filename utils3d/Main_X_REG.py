@@ -39,7 +39,7 @@ def main():
     Sim = Simulation(PBE_Interface)
 
     # PDE
-    q_list = [(1000,[0,0,0])]
+    q_list = [(1,[0,0,0])]
 
     inputs = {'Problem': 'Main_X_REG',
               'rmin': 0,
@@ -103,7 +103,7 @@ def main():
     
     Sim.hyperparameters_in = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 2,
+                'num_hidden_layers': 4,
                 'num_neurons_per_layer': 12,
                 'output_dim': 1,
                 'activation': 'tanh',
@@ -113,7 +113,7 @@ def main():
 
     Sim.hyperparameters_out = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 2,
+                'num_hidden_layers': 4,
                 'num_neurons_per_layer': 12,
                 'output_dim': 1,
                 'activation': 'tanh',
@@ -122,12 +122,12 @@ def main():
         }
 
 
-    Sim.N_iters = 100
+    Sim.N_iters = 2101
     Sim.precondition = True
-    Sim.N_precond = 100
-    Sim.N_batches = 40
+    Sim.N_precond = 2000
+    Sim.N_batches = 50
 
-    Sim.iters_save_model = 10
+    Sim.iters_save_model = 100
 
     Sim.folder_path = folder_path
 

@@ -9,7 +9,7 @@ class Mesh():
         N_b=50,
         N_r=200
         ):
-        self.DTYPE='float32'
+        self.DTYPE='float64'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
         self.N_b = N_b
         self.N_r = int(np.sqrt(N_r))
@@ -19,7 +19,7 @@ class Mesh():
 
     def create_sphere(self):
         self.grid = bempp.api.shapes.sphere(h=0.1)
-        self.X_r = tf.constant(np.transpose(np.array(self.grid.vertices)),  dtype=tf.float32)
+        self.X_r = tf.constant(np.transpose(np.array(self.grid.vertices)),  dtype=tf.float64)
 
 
     def create_mesh(self,borders,ins_domain):
@@ -78,8 +78,8 @@ def set_domain(X):
     zmin = z[0]
     zmax = z[1]
 
-    lb = tf.constant([xmin, ymin,zmin], dtype='float32')
-    ub = tf.constant([xmax, ymax,zmax], dtype='float32')
+    lb = tf.constant([xmin, ymin,zmin], dtype='float64')
+    ub = tf.constant([xmax, ymax,zmax], dtype='float64')
 
     return (lb,ub)
 

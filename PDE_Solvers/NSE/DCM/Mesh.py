@@ -27,10 +27,9 @@ class Mesh():
         return R
 
 
-    def create_mesh(self,borders,ins_domain):
+    def create_mesh(self,borders):
 
         self.borders = borders
-        self.ins_domain = ins_domain
         self.XD_data = list()
         self.UD_data = list()
         self.XN_data = list()
@@ -63,33 +62,72 @@ class Mesh():
         #estan a bases de radios (fijar un radio)
         for bl in self.borders.values():
             
-            R = bl['r']
+            r = bl['r']
             N_b = bl['N']
-            
-            if R != None:
-        
-                r_bl = np.linspace(R, R, N_b, dtype=self.DTYPE)
-                theta_bl = np.linspace(0, self.pi, N_b, dtype=self.DTYPE)
-                phi_bl = np.linspace(0, 2*self.pi, N_b, dtype=self.DTYPE)
+
+            if r=='x':
+                xmin = bl['xmin']
+                xmax = bl['xmax']
+                yv = bl['y']
+
+                x_bl = np.linspace(xmin, xmax, N_b, dtype=self.DTYPE)
+                y_bl = np.linspace(yv, yv, dtype=self.DTYPE)
+                t_bl = np.linspace(self.lb[2], self.ub[2], N_b, dtype=self.DTYPE)
                 
-                R_bl, Theta_bl, Phi_bl = np.meshgrid(r_bl, theta_bl, phi_bl)
-                X_bl = R_bl*np.sin(Theta_bl)*np.cos(Phi_bl)
-                Y_bl = R_bl*np.sin(Theta_bl)*np.sin(Phi_bl)
-                Z_bl = R_bl*np.cos(Theta_bl)
-                
+                X_bl, Y_bl, T_bl = np.meshgrid(x_bl, y_bl, t_bl)
+
                 x_bl = tf.constant(X_bl.flatten())
                 x_bl = tf.reshape(x_bl,[x_bl.shape[0],1])
                 y_bl = tf.constant(Y_bl.flatten())
                 y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])
-                z_bl = tf.constant(Z_bl.flatten())
-                z_bl = tf.reshape(z_bl,[z_bl.shape[0],1])
+                t_bl = tf.constant(T_bl.flatten())
+                t_bl = tf.reshape(t_bl,[t_bl.shape[0],1])
             
-                XX_bl = tf.concat([x_bl, y_bl, z_bl], axis=1)
-                self.add_data_borders(bl,x_bl,y_bl,z_bl,XX_bl)
-                self.BP.append((x_bl,y_bl,z_bl))
+                XX_bl = tf.concat([x_bl, y_bl, t_bl], axis=1)
+                self.add_data_borders(bl,x_bl,y_bl,t_bl,XX_bl)
+                self.BP.append((x_bl,y_bl,t_bl))
+            
+            elif r=='y':
+                ymin = bl['ymin']
+                ymax = bl['ymax']
+                xv = bl['x']
 
-            else:
-                pass
+                x_bl = np.linspace(xv, xv, N_b, dtype=self.DTYPE)
+                y_bl = np.linspace(ymin, ymax, dtype=self.DTYPE)
+                t_bl = np.linspace(self.lb[2], self.ub[2], N_b, dtype=self.DTYPE)
+                
+                X_bl, Y_bl, T_bl = np.meshgrid(x_bl, y_bl, t_bl)
+
+                x_bl = tf.constant(X_bl.flatten())
+                x_bl = tf.reshape(x_bl,[x_bl.shape[0],1])
+                y_bl = tf.constant(Y_bl.flatten())
+                y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])
+                t_bl = tf.constant(T_bl.flatten())
+                t_bl = tf.reshape(t_bl,[t_bl.shape[0],1])
+            
+                XX_bl = tf.concat([x_bl, y_bl, t_bl], axis=1)
+                self.add_data_borders(bl,x_bl,y_bl,t_bl,XX_bl)
+                self.BP.append((x_bl,y_bl,t_bl))
+            
+            if bl['type'] == '0':
+                N_r = self.mesh_N['N_r']
+                xspace = np.linspace(self.lb[0], self.ub[0], N_r, dtype=self.DTYPE)
+                yspace = np.linspace(self.lb[1], self.ub[1], N_r, dtype=self.DTYPE)
+                tspace = np.linspace(0, 0, N_r, dtype=self.DTYPE)
+                X, Y, time = np.meshgrid(xspace, yspace, tspace)
+
+                x_bl = tf.constant(X.flatten())
+                x_bl = tf.reshape(x_bl,[x_bl.shape[0],1])
+                y_bl = tf.constant(Y.flatten())
+                y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])
+                t_bl = tf.constant(time.flatten())
+                t_bl = tf.reshape(t_bl,[t_bl.shape[0],1])
+            
+                XX_bl = tf.concat([x_bl, y_bl, t_bl], axis=1)
+                self.add_data_borders(bl,x_bl,y_bl,t_bl,XX_bl)
+                self.BP.append((x_bl,y_bl,t_bl))
+
+
 
 
     def add_data_borders(self,border,x1,x2,x3,X):
@@ -97,11 +135,12 @@ class Mesh():
         value = border['value']
         fun = border['fun']
         deriv = border['dr']
+        n = x1.shape[0]
         if type_b == 'D':
             if fun == None:
                 u_b = self.value_u_b(x1, x2, x3, value=value)
             else:
-                u_b = fun(x1, x2, x3)
+                u_b = fun(x1, x2, x3, n)
             self.XD_data.append(X)
             self.UD_data.append(u_b)
         elif type_b == 'N':
@@ -121,7 +160,13 @@ class Mesh():
                 u_b = fun(x1, x2, x3)
             self.XK_data.append(X)
             self.UK_data.append(u_b)
-        
+        elif type_b == '0':
+            if fun == None:
+                u_b = self.value_u_b(x1, x2, x3, value=value)
+            else:
+                u_b = fun(x1, x2, x3, n)
+            self.XD_data.append(X)
+            self.UD_data.append(u_b)      
 
 
     def value_u_b(self,x, y, z, value):
@@ -138,21 +183,10 @@ class Mesh():
         N_r = self.mesh_N['N_r']
         xspace = np.linspace(self.lb[0], self.ub[0], N_r, dtype=self.DTYPE)
         yspace = np.linspace(self.lb[1], self.ub[1], N_r, dtype=self.DTYPE)
-        zspace = np.linspace(self.lb[2], self.ub[2], N_r, dtype=self.DTYPE)
-        X, Y, Z = np.meshgrid(xspace, yspace, zspace)
+        tspace = np.linspace(self.lb[2], self.ub[2], N_r, dtype=self.DTYPE)
+        X, Y, time = np.meshgrid(xspace, yspace, tspace)
 
-        if 'rmin' not in self.ins_domain:
-            self.ins_domain['rmin'] = -0.1
-
-        r = np.sqrt(X**2 + Y**2 + Z**2)
-        inside1 = r < self.ins_domain['rmax']
-        X1 = X[inside1]
-        Y1 = Y[inside1]
-        Z1 = Z[inside1]
-        r = np.sqrt(X1**2 + Y1**2 + Z1**2)
-        inside = r > self.ins_domain['rmin']
-
-        self.X_r = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
+        self.X_r = tf.constant(np.vstack([X.flatten(),Y.flatten(), time.flatten()]).T)
 
 
 
@@ -161,21 +195,10 @@ class Mesh():
         N_r = self.mesh_N['N_r_P']
         xspace = np.linspace(self.lb[0], self.ub[0], N_r, dtype=self.DTYPE)
         yspace = np.linspace(self.lb[1], self.ub[1], N_r, dtype=self.DTYPE)
-        zspace = np.linspace(self.lb[2], self.ub[2], N_r, dtype=self.DTYPE)
-        X, Y, Z = np.meshgrid(xspace, yspace, zspace)
-        
-        precon_rmin = 0.02
+        tspace = np.linspace(self.lb[2], self.ub[2], N_r, dtype=self.DTYPE)
+        X, Y, time = np.meshgrid(xspace, yspace, tspace)
 
-        r = np.sqrt(X**2 + Y**2 + Z**2)
-        inside1 = r < self.ins_domain['rmax']
-        X1 = X[inside1]
-        Y1 = Y[inside1]
-        Z1 = Z[inside1]
-        r = np.sqrt(X1**2 + Y1**2 + Z1**2)
-   
-        inside_P = r > precon_rmin
-        self.X_r_P = tf.constant(np.vstack([X1[inside_P].flatten(),Y1[inside_P].flatten(), Z1[inside_P].flatten()]).T)
-  
+        self.X_r_P = tf.constant(np.vstack([X.flatten(),Y.flatten(), time.flatten()]).T)
 
     def plot_points_2d(self, directory, file_name):
 

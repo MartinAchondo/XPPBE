@@ -112,6 +112,9 @@ class PINN():
         pbar.set_description("Loss: %s " % 100)
         for i in pbar:
 
+            if self.iter>N_precond:
+                self.precondition = False
+
             if not self.precondition:
                 shuffled_batches_X_r = batches_X_r.shuffle(buffer_size=len(self.PDE.X_r))
                 for X_batch in shuffled_batches_X_r:
@@ -126,8 +129,6 @@ class PINN():
 
             self.callback(loss,L_loss)
 
-            if self.iter>N_precond:
-                self.precondition = False
 
             if self.iter % 10 == 0:
                 pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
