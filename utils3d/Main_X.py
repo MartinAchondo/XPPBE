@@ -39,7 +39,7 @@ def main():
     Sim = Simulation(PBE_Interface)
 
     # PDE
-    q_list = [(1000,[0,0,0])]
+    q_list = [(1,[0,0,0])]
 
     inputs = {'Problem': 'Main_X',
               'rmin': 0,
@@ -120,17 +120,18 @@ def main():
         }
 
 
-    Sim.N_iters = 10
+    Sim.N_iters = 15
     Sim.precondition = True
     Sim.N_precond = 10
     Sim.N_batches = 40
 
+    Sim.iters_save_model = 0
     Sim.folder_path = folder_path
 
     Sim.setup_algorithm()
 
     # Solve
-    Sim.solve_algorithm(N_iters=Sim.N_iters, precond=Sim.precondition, N_precond=Sim.N_precond, N_batches=Sim.N_batches, save_model=5)
+    Sim.solve_algorithm(N_iters=Sim.N_iters, precond=Sim.precondition, N_precond=Sim.N_precond, N_batches=Sim.N_batches, save_model=Sim.iters_save_model)
     
     Sim.postprocessing(folder_path=folder_path)
 
