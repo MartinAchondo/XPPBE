@@ -120,7 +120,6 @@ class XPINN():
                     N_j += 1
                     L1,L2 = train_step((X_b1,X_b2), self.precondition)
 
-
             self.callback(L1,L2)
 
             if self.iter>N_precond:
@@ -137,6 +136,21 @@ class XPINN():
         logger.info(f' Total steps: {N_j}')
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
     
+
+    def solve(self,N=1000, precond=False, N_precond=10, N_batches=1, save_model=0):
+
+        self.precondition = precond
+        self.save_model_iter = save_model
+        optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
+        optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
+        optim = [optim1,optim2]
+
+        t0 = time()
+        self.solve_TF_optimizer(optim, N, N_precond, N_batches=N_batches)
+        logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
+
+        self.add_losses_NN()
+
 
     def create_batches(self, N_batches):
 
@@ -199,20 +213,6 @@ class XPINN():
         self.solver2.loss_bI = self.loss_bI2
         self.solver2.loss_bK = self.loss_bK2
 
-
-    def solve(self,N=1000, precond=False, N_precond=10, N_batches=1, save_model=0):
-
-        self.precondition = precond
-        self.save_model_iter = save_model
-        optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
-        optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
-        optim = [optim1,optim2]
-
-        t0 = time()
-        self.solve_TF_optimizer(optim, N, N_precond, N_batches=N_batches)
-        logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
-
-        self.add_losses_NN()
 
 
 if __name__=='__main__':
