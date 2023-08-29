@@ -180,11 +180,7 @@ class PDE_utils():
     def directional_gradient(self,mesh,model,X,n):
         gradient = self.gradient(mesh,model,X)
         dir_deriv = 0
-        norm = 0
         for j in range(3):
             dir_deriv += n[j]*gradient[j]
-            norm += n[j]**2
-        norm = tf.sqrt(norm)
-        dir_deriv *= (1/norm)
 
         return dir_deriv
