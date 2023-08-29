@@ -78,7 +78,7 @@ class XPINN():
         return loss, L, g
     
     
-    def solve_TF_optimizer(self, optimizer, N=1000, N_precond=10, N_batches=1):
+    def main_loop(self, optimizer, N=1000, N_precond=10, N_batches=1):
         optimizer1,optimizer2 = optimizer
 
         @tf.function
@@ -125,7 +125,7 @@ class XPINN():
             if self.iter>N_precond:
                 self.precondition = False
             
-            if self.iter % 10 == 0:
+            if self.iter % 5 == 0:
                 pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
 
             if self.save_model_iter > 0:
@@ -146,7 +146,7 @@ class XPINN():
         optim = [optim1,optim2]
 
         t0 = time()
-        self.solve_TF_optimizer(optim, N, N_precond, N_batches=N_batches)
+        self.main_loop(optim, N, N_precond, N_batches=N_batches)
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
 
         self.add_losses_NN()
