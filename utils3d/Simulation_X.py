@@ -7,8 +7,8 @@ from NN.NeuralNet import PINN_NeuralNet
 from NN.PINN import PINN
 from NN.XPINN import XPINN
 
-from DCM.Postprocessing import View_results
-from DCM.Postprocessing import View_results_X
+from Post import View_results
+from Post import View_results_X
 
 logger = logging.getLogger(__name__)
 

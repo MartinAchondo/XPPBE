@@ -1,4 +1,0 @@
-
-check plane condition
-
-view_results_x
