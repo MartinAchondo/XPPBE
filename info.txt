@@ -8,5 +8,11 @@
 
 -   REVISAR ECUACIONES Y GREEN FUNCTIONS
 
+- Save neural net (guardar loss)
+- Load neural net (cargar loss)
+- Será mejor guardar solo los parámetros?
+
+- Probar reiniciando el optimizador Adam
+
 
 git reset --hard HEAD~20

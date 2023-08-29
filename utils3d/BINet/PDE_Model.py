@@ -7,7 +7,7 @@ class PDE_Model():
 
     def __init__(self):
 
-        self.DTYPE='float32'
+        self.DTYPE='float64'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
         self.sigma = 0.04
         self.epsilon = None

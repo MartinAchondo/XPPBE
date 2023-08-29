@@ -78,7 +78,7 @@ class XPINN():
         return loss, L, g
     
     
-    def solve_TF_optimizer(self, optimizer, N=1000, N_precond=10, N_batches=1):
+    def main_loop(self, optimizer, N=1000, N_precond=10, N_batches=1):
         optimizer1,optimizer2 = optimizer
 
         @tf.function
@@ -120,13 +120,12 @@ class XPINN():
                     N_j += 1
                     L1,L2 = train_step((X_b1,X_b2), self.precondition)
 
-
             self.callback(L1,L2)
 
             if self.iter>N_precond:
                 self.precondition = False
             
-            if self.iter % 10 == 0:
+            if self.iter % 5 == 0:
                 pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
 
             if self.save_model_iter > 0:
@@ -138,9 +137,24 @@ class XPINN():
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
     
 
+    def solve(self,N=1000, precond=False, N_precond=10, N_batches=1, save_model=0):
+
+        self.precondition = precond
+        self.save_model_iter = save_model
+        optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
+        optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
+        optim = [optim1,optim2]
+
+        t0 = time()
+        self.main_loop(optim, N, N_precond, N_batches=N_batches)
+        logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
+
+        self.add_losses_NN()
+
+
     def create_batches(self, N_batches):
 
-        number_batches = N_batches
+        number_batches = 1
 
         dataset_X_r_1 = tf.data.Dataset.from_tensor_slices(self.solver1.PDE.X_r)
         dataset_X_r_1 = dataset_X_r_1.shuffle(buffer_size=len(self.solver1.PDE.X_r))
@@ -152,6 +166,8 @@ class XPINN():
         batch_size = int(len(self.solver2.PDE.X_r)/number_batches)
         batches_X_r_2 = dataset_X_r_2.batch(batch_size)
 
+
+        number_batches = N_batches
 
         dataset_X_r_P_1 = tf.data.Dataset.from_tensor_slices(self.solver1.PDE.X_r_P)
         dataset_X_r_P_1 = dataset_X_r_P_1.shuffle(buffer_size=len(self.solver1.PDE.X_r_P))
@@ -197,20 +213,6 @@ class XPINN():
         self.solver2.loss_bI = self.loss_bI2
         self.solver2.loss_bK = self.loss_bK2
 
-
-    def solve(self,N=1000, precond=False, N_precond=10, N_batches=1, save_model=0):
-
-        self.precondition = precond
-        self.save_model_iter = save_model
-        optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
-        optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
-        optim = [optim1,optim2]
-
-        t0 = time()
-        self.solve_TF_optimizer(optim, N, N_precond, N_batches=N_batches)
-        logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
-
-        self.add_losses_NN()
 
 
 if __name__=='__main__':
