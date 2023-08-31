@@ -121,7 +121,7 @@ def main():
 
 
     Sim.N_iters = 15
-    Sim.precondition = True
+    Sim.precondition = False
     Sim.N_precond = 10
     Sim.N_batches = 40
 

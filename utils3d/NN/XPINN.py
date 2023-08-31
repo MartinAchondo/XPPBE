@@ -166,13 +166,17 @@ class XPINN():
         batch_size = int(len(self.solver2.PDE.X_r)/number_batches)
         batches_X_r_2 = dataset_X_r_2.batch(batch_size)
 
+        if not self.precondition:
+            return (batches_X_r_1, batches_X_r_2), (None,None)
 
+    
         number_batches = N_batches
 
         dataset_X_r_P_1 = tf.data.Dataset.from_tensor_slices(self.solver1.PDE.X_r_P)
         dataset_X_r_P_1 = dataset_X_r_P_1.shuffle(buffer_size=len(self.solver1.PDE.X_r_P))
         batch_size = int(len(self.solver1.PDE.X_r_P)/number_batches)
         batches_X_r_P_1 = dataset_X_r_P_1.batch(batch_size)
+        
         dataset_X_r_P_2 = tf.data.Dataset.from_tensor_slices(self.solver2.PDE.X_r_P)
         dataset_X_r_P_2 = dataset_X_r_P_2.shuffle(buffer_size=len(self.solver2.PDE.X_r_P))
         batch_size = int(len(self.solver2.PDE.X_r_P)/number_batches)

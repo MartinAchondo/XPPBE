@@ -191,11 +191,13 @@ class PBE_Interface(PDE_utils):
             n_v = self.normal_vector(X)
             du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
             du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
+            dG = self.dG_n(x_i,y_i,z_i)
 
             u_prom = (u_1+u_2)/2
+            dun_prom = (solver.un*(du_1+dG) + solver_ex.un*(du_2+dG))/2
             
             loss += tf.reduce_mean(tf.square(u_1 - u_prom)) 
-            loss += tf.reduce_mean(tf.square((du_1*solver.un - du_2*solver_ex.un)-(solver_ex.un-solver.un)*self.dG_n(x_i,y_i,z_i)))
+            loss += tf.reduce_mean(tf.square(solver.un*(du_1+dG)-dun_prom))
             
         return loss
     

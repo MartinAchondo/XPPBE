@@ -191,9 +191,10 @@ class PBE_Interface(PDE_utils):
             du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
 
             u_prom = (u_1+u_2)/2
+            dun_prom = (du_1*solver.un + du_2*solver_ex.un)/2
             
             loss += tf.reduce_mean(tf.square(u_1 - u_prom)) 
-            loss += tf.reduce_mean(tf.square(du_1*solver.un - du_2*solver_ex.un))
+            loss += tf.reduce_mean(tf.square(du_1*solver.un - dun_prom))
             
         return loss
     
