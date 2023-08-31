@@ -80,7 +80,7 @@ class XPINN():
         
         optimizer1,optimizer2 = self.create_optimizers()
         if self.precondition:
-            optimizer1P,optimizer2P = self.create_optimizers()
+            optimizer1P,optimizer2P = self.create_optimizers(precond=True)
 
         @tf.function
         def train_step(X_batch, precond=False):
@@ -152,9 +152,14 @@ class XPINN():
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
     
 
-    def create_optimizers(self):
-        optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
-        optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
+    def create_optimizers(self, precond=False):
+        if not precond:
+            optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
+            optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
+        elif precond:           
+            lr = 0.001
+            optim1 = tf.keras.optimizers.Adam(learning_rate=lr)
+            optim2 = tf.keras.optimizers.Adam(learning_rate=lr)
         optimizers = [optim1,optim2]
         return optimizers
 
