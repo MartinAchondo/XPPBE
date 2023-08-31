@@ -78,7 +78,7 @@ class Simulation():
 
     def postprocessing(self,folder_path):
         
-        Post = View_results_X(self.XPINN_solver, View_results, save=True, directory=folder_path, data=True)
+        Post = View_results_X(self.XPINN_solver, View_results, save=True, directory=folder_path, data=False)
 
         logger.info("> Ploting Solution")
 

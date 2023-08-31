@@ -83,7 +83,7 @@ class PINN():
     def loss_fn(self, X_batch, precond=False):
         if precond:
             L = self.PDE.get_loss_preconditioner(X_batch, self.model)
-        else:
+        elif not precond:
             L = self.PDE.get_loss(X_batch, self.model)
         loss = 0
         for t in self.L_names:

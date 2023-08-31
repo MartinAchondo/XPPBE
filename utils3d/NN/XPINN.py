@@ -59,10 +59,8 @@ class XPINN():
 
     
     def get_loss(self,X_batch, s1,s2, precond):
-        if precond:
-            loss,L = s1.loss_fn(X_batch,precond=True)
-        else:
-            loss,L = s1.loss_fn(X_batch,precond=False)
+        loss,L = s1.loss_fn(X_batch,precond=precond)
+        if not precond:    
             loss_I = self.PDE.loss_I(s1,s2)
             L['I'] = loss_I
             loss += s1.w_i*loss_I
@@ -78,8 +76,11 @@ class XPINN():
         return loss, L, g
     
     
-    def main_loop(self, optimizer, N=1000, N_precond=10, N_batches=1):
-        optimizer1,optimizer2 = optimizer
+    def main_loop(self, N=1000, N_precond=10, N_batches=1):
+        
+        optimizer1,optimizer2 = self.create_optimizers()
+        if self.precondition:
+            optimizer1P,optimizer2P = self.create_optimizers()
 
         @tf.function
         def train_step(X_batch, precond=False):
@@ -93,6 +94,20 @@ class XPINN():
             L1 = [loss1,L_loss1]
             L2 = [loss2,L_loss2]
             return L1,L2
+
+        @tf.function
+        def train_step_precond(X_batch, precond=True):
+            X_batch1, X_batch2 = X_batch
+            loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1, self.solver1,self.solver2, precond)
+            loss2, L_loss2, grad_theta2 = self.get_grad(X_batch2, self.solver2,self.solver1, precond)
+
+            optimizer1P.apply_gradients(zip(grad_theta1, self.solver1.model.trainable_variables))
+            optimizer2P.apply_gradients(zip(grad_theta2, self.solver2.model.trainable_variables))
+
+            L1 = [loss1,L_loss1]
+            L2 = [loss2,L_loss2]
+            return L1,L2
+    
         
         batches_r, batches_r_P = self.create_batches(N_batches)
         
@@ -118,11 +133,11 @@ class XPINN():
                 
                 for X_b1, X_b2 in zip(shuff_b1,shuff_b2):
                     N_j += 1
-                    L1,L2 = train_step((X_b1,X_b2), self.precondition)
+                    L1,L2 = train_step_precond((X_b1,X_b2), self.precondition)
 
             self.callback(L1,L2)
 
-            if self.iter>N_precond:
+            if self.iter>N_precond and self.precondition:
                 self.precondition = False
             
             if self.iter % 5 == 0:
@@ -137,16 +152,20 @@ class XPINN():
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
     
 
+    def create_optimizers(self):
+        optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
+        optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
+        optimizers = [optim1,optim2]
+        return optimizers
+
+
     def solve(self,N=1000, precond=False, N_precond=10, N_batches=1, save_model=0):
 
         self.precondition = precond
         self.save_model_iter = save_model
-        optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
-        optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
-        optim = [optim1,optim2]
 
         t0 = time()
-        self.main_loop(optim, N, N_precond, N_batches=N_batches)
+        self.main_loop(N, N_precond, N_batches=N_batches)
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
 
         self.add_losses_NN()
