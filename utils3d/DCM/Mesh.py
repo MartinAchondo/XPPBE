@@ -67,7 +67,7 @@ class Mesh():
             R = bl['r']
             N_b = bl['N']
             
-            if R != None:
+            if isinstance(R,(int,float,complex)):
         
                 r_bl = np.linspace(R, R, N_b, dtype=self.DTYPE)
                 theta_bl = np.linspace(0, self.pi, N_b, dtype=self.DTYPE)
@@ -89,7 +89,7 @@ class Mesh():
                 self.add_data_meshes(bl,x_bl,y_bl,z_bl,XX_bl)
                 self.BP.append((x_bl,y_bl,z_bl))
 
-            else:
+            elif R == 'Random':
                 xspace = tf.constant(np.random.uniform(low=self.lb[0], high=self.ub[0], size=(N_b)), dtype=self.DTYPE)
                 yspace = tf.constant(np.random.uniform(low=self.lb[1], high=self.ub[1], size=(N_b)), dtype=self.DTYPE)
                 zspace = tf.constant(np.random.uniform(low=self.lb[2], high=self.ub[2], size=(N_b)), dtype=self.DTYPE)
@@ -119,7 +119,8 @@ class Mesh():
         type_b = border['type']
         value = border['value']
         fun = border['fun']
-        deriv = border['dr']
+        if 'dr' in border:
+            deriv = border['dr']
         if type_b == 'D':
             if fun == None:
                 u_b = self.value_u_b(x1, x2, x3, value=value)
