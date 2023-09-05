@@ -97,6 +97,8 @@ class Mesh():
 
                 if 'rmin' not in self.ins_domain:
                     rmin = 0.03
+                else:
+                    rmin = self.ins_domain['rmin']
 
                 r = np.sqrt(X**2 + Y**2 + Z**2)
                 inside1 = r < self.ins_domain['rmax']
