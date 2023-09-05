@@ -30,3 +30,5 @@ PLAN_Q.txt
 /PDE_Solvers_Q
 /PDE_Solvers
 utils3d/results/
+utils3d/Post/DCM/
+utils3d/Post/NN/

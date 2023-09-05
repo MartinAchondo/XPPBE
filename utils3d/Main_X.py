@@ -122,10 +122,10 @@ def main():
 
     Sim.N_iters = 15
     Sim.precondition = True
-    Sim.N_precond = 10
+    Sim.N_precond = 1
     Sim.N_batches = 40
 
-    Sim.iters_save_model = 0
+    Sim.iters_save_model = 5
     Sim.folder_path = folder_path
 
     Sim.setup_algorithm()

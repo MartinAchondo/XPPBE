@@ -4,6 +4,7 @@ from time import time
 from tqdm import tqdm as log_progress
 import logging
 import os
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -49,14 +50,45 @@ class XPINN():
         for solver,lr,hyperparameter in zip(self.solvers,lrs,hyperparameters):
             solver.create_NeuralNet(NN_class,lr,**hyperparameter)
 
-    def load_NeuralNets(self,dirs,names,lrs):   
+    def load_NeuralNets(self,dir_load,names,lrs):   
         for solver,lr,name in zip(self.solvers,lrs,names):
-            solver.load_NeuralNet(dirs,name,lr)  
+            solver.load_NeuralNet(dir_load,name,lr)  
+        path_load = os.path.join(dir_load,'loss.csv')
+        df = pd.read_csv(path_load)
+        self.loss_hist = list(df['TL'])
+        self.loss_r1 = list(df['R1'])
+        self.loss_bD1 = list(df['D1'])
+        self.loss_bN1 = list(df['N1'])
+        self.loss_bI1 = list(df['I1'])
+        self.loss_bK1 = list(df['K1'])
+        self.loss_r2 = list(df['R2'])
+        self.loss_bD2 = list(df['D2'])
+        self.loss_bN2 = list(df['N2'])
+        self.loss_bI2 = list(df['I2'])
+        self.loss_bK2 = list(df['K2'])
+        self.iter = len(self.loss_hist) 
+        self.add_losses_NN()
 
-    def save_models(self,dirs,names):
+
+    def save_models(self,dir_save,names):
         for solver,name in zip(self.solvers,names):
-            solver.save_model(dirs,name)   
-
+            solver.save_model(dir_save,name)  
+        df_dict = {'TL': self.loss_hist,
+                   'R1': list(map(lambda tensor: tensor.numpy(),self.loss_r1)),
+                   'D1': list(map(lambda tensor: tensor.numpy(),self.loss_bD1)),
+                   'N1': list(map(lambda tensor: tensor.numpy(),self.loss_bN1)),
+                   'K1': list(map(lambda tensor: tensor.numpy(),self.loss_bK1)),
+                   'I1': list(map(lambda tensor: tensor.numpy(),self.loss_bI1)),
+                   'R2': list(map(lambda tensor: tensor.numpy(),self.loss_r2)),
+                   'D2': list(map(lambda tensor: tensor.numpy(),self.loss_bD2)),
+                   'N2': list(map(lambda tensor: tensor.numpy(),self.loss_bN2)),
+                   'K2': list(map(lambda tensor: tensor.numpy(),self.loss_bK2)),
+                   'I2': list(map(lambda tensor: tensor.numpy(),self.loss_bI2))
+                }
+        df = pd.DataFrame.from_dict(df_dict)
+        path_save = os.path.join(dir_save,'loss.csv')
+        df.to_csv(path_save)
+        
     
     def get_loss(self,X_batch, s1,s2, precond):
         loss,L = s1.loss_fn(X_batch,precond=precond)
@@ -126,7 +158,7 @@ class XPINN():
                     N_j += 1
                     L1,L2 = train_step((X_b1,X_b2), self.precondition)
             
-            if self.precondition:
+            elif self.precondition:
                 b1,b2 = batches_r_P
                 shuff_b1 = b1.shuffle(buffer_size=len(self.solver1.PDE.X_r_P))
                 shuff_b2 = b2.shuffle(buffer_size=len(self.solver2.PDE.X_r_P))
@@ -145,7 +177,8 @@ class XPINN():
 
             if self.save_model_iter > 0:
                 if self.iter % self.save_model_iter == 0:
-                    self.save_models(self.folder_path, [f'model_1_{self.iter}',f'model_2_{self.iter}'])
+                    dir_save = os.path.join(self.folder_path,f'iter_{self.iter}')
+                    self.save_models(dir_save, [f'model_1',f'model_2'])
         
         logger.info(f' Iterations: {N}')
         logger.info(f' Total steps: {N_j}')
@@ -156,12 +189,14 @@ class XPINN():
         if not precond:
             optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
             optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
+            optimizers = [optim1,optim2]
+            return optimizers
         elif precond:           
             lr = 0.001
-            optim1 = tf.keras.optimizers.Adam(learning_rate=lr)
-            optim2 = tf.keras.optimizers.Adam(learning_rate=lr)
-        optimizers = [optim1,optim2]
-        return optimizers
+            optim1P = tf.keras.optimizers.Adam(learning_rate=lr)
+            optim2P = tf.keras.optimizers.Adam(learning_rate=lr)
+            optimizers_p = [optim1P,optim2P]
+            return optimizers_p
 
 
     def solve(self,N=1000, precond=False, N_precond=10, N_batches=1, save_model=0):

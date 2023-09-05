@@ -266,12 +266,6 @@ class View_results():
         plt.yscale('log');
 
 
-
-
-
-
-
-
 class View_results_X():
 
     def __init__(self,XPINN,Post, save=False,directory=None, data=False, last=False):
@@ -310,11 +304,12 @@ class View_results_X():
         ax.semilogy(range(len(self.XPINN.loss_hist)), self.XPINN.loss_hist,'k-',label='Loss')
         if flag: 
             iter = 1
-            c = [['r','b','g'],['salmon','royalblue','springgreen']]
+            c = [['r','b','g','c'],['salmon','royalblue','springgreen','pink']]
             for NN in self.NN:
                 ax.semilogy(range(len(NN.loss_r)), NN.loss_r,c[iter-1][0],label='Loss_r_NN_'+str(iter))
                 ax.semilogy(range(len(NN.loss_bD)), NN.loss_bD,c[iter-1][1],label='Loss_bD_NN_'+str(iter))
                 ax.semilogy(range(len(NN.loss_bN)), NN.loss_bN,c[iter-1][2],label='Loss_bN_NN_'+str(iter))
+                ax.semilogy(range(len(NN.loss_bK)), NN.loss_bK,c[iter-1][3],label='Loss_bK_NN_'+str(iter))
                 iter += 1
             ax.semilogy(range(len(NN.loss_bI)), NN.loss_bI,'m',label='Loss_bI')
 

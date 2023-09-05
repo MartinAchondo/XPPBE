@@ -8,6 +8,7 @@ class PDE_utils():
 
         self.DTYPE='float32'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
+        self.maintain_precond = False
     
     def set_domain(self,X):
         x,y,z = X
@@ -40,10 +41,10 @@ class PDE_utils():
     
     def get_loss(self, X_batch, model):
         L = dict()
-        L['r'] = 0
-        L['D'] = 0
-        L['N'] = 0
-        L['K'] = 0
+        L['r'] = 0.0
+        L['D'] = 0.0
+        L['N'] = 0.0
+        L['K'] = 0.0
 
         #residual
         #X = (self.x,self.y,self.z)
@@ -60,7 +61,11 @@ class PDE_utils():
         L['N'] += loss_n
 
         # data known
-        loss_k = self.data_known_loss(self.mesh,model,self.XK_data,self.UK_data)
+        if self.maintain_precond:
+            X = (self.xP,self.yP,self.zP)
+            loss_k = self.preconditioner(self.mesh,model,X)
+        else:
+            loss_k = self.data_known_loss(self.mesh,model,self.XK_data,self.UK_data)
         L['K'] += loss_k    
 
         return L
@@ -97,16 +102,16 @@ class PDE_utils():
 
     def get_loss_preconditioner(self, X_batch, model):
         L = dict()
-        L['r'] = 0
-        L['D'] = 0
-        L['N'] = 0
-        L['I'] = 0
-        L['K'] = 0
+        L['r'] = 0.0
+        L['D'] = 0.0
+        L['N'] = 0.0
+        L['I'] = 0.0
+        L['K'] = 0.0
 
         #residual
         X = self.mesh.get_X(X_batch)
-        loss_r = self.preconditioner(self.mesh,model,X)
-        L['r'] += loss_r
+        loss_k = self.preconditioner(self.mesh,model,X)
+        L['K'] += loss_k
 
         return L
 

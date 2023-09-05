@@ -154,7 +154,7 @@ class Non_Linear(PDE_utils):
             xk,yk,zk = Xk
             r_1 = 1/((x-xk)**2+(y-yk)**2+(z-zk)**2)
             sum += qk*r_1
-        return (-1/self.epsilon_G*4*self.pi)*sum
+        return (1/self.epsilon_G*4*self.pi)*sum
 
 
 
