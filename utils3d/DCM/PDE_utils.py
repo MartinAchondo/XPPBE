@@ -61,11 +61,7 @@ class PDE_utils():
         L['N'] += loss_n
 
         # data known
-        if self.maintain_precond:
-            X = (self.xP,self.yP,self.zP)
-            loss_k = self.preconditioner(self.mesh,model,X)
-        else:
-            loss_k = self.data_known_loss(self.mesh,model,self.XK_data,self.UK_data)
+        loss_k = self.data_known_loss(self.mesh,model,self.XK_data,self.UK_data)
         L['K'] += loss_k    
 
         return L

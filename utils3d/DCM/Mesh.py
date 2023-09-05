@@ -27,9 +27,9 @@ class Mesh():
         return R
 
 
-    def create_mesh(self,borders,ins_domain):
+    def create_mesh(self,extra_meshes,ins_domain):
 
-        self.borders = borders
+        self.extra_meshes = extra_meshes
         self.ins_domain = ins_domain
         self.XD_data = list()
         self.UD_data = list()
@@ -42,8 +42,9 @@ class Mesh():
         self.derI = list()
         self.BP = list()
         self.X_r_P = None
+        self.meshes_names = set()
 
-        self.create_borders_mesh()
+        self.create_extra_meshes()
 
         self.create_domain_mesh()
 
@@ -59,9 +60,9 @@ class Mesh():
             'precondition': self.X_r_P
         }
 
-    def create_borders_mesh(self):
+    def create_extra_meshes(self):
         #estan a bases de radios (fijar un radio)
-        for bl in self.borders.values():
+        for bl in self.extra_meshes.values():
             
             R = bl['r']
             N_b = bl['N']
@@ -85,14 +86,34 @@ class Mesh():
                 z_bl = tf.reshape(z_bl,[z_bl.shape[0],1])
             
                 XX_bl = tf.concat([x_bl, y_bl, z_bl], axis=1)
-                self.add_data_borders(bl,x_bl,y_bl,z_bl,XX_bl)
+                self.add_data_meshes(bl,x_bl,y_bl,z_bl,XX_bl)
                 self.BP.append((x_bl,y_bl,z_bl))
 
             else:
-                pass
+                xspace = tf.constant(np.random.uniform(low=self.lb[0], high=self.ub[0], size=(N_b)), dtype=self.DTYPE)
+                yspace = tf.constant(np.random.uniform(low=self.lb[1], high=self.ub[1], size=(N_b)), dtype=self.DTYPE)
+                zspace = tf.constant(np.random.uniform(low=self.lb[2], high=self.ub[2], size=(N_b)), dtype=self.DTYPE)
+                X, Y, Z = np.meshgrid(xspace, yspace, zspace)
+
+                if 'rmin' not in self.ins_domain:
+                    rmin = 0.03
+
+                r = np.sqrt(X**2 + Y**2 + Z**2)
+                inside1 = r < self.ins_domain['rmax']
+                X1 = X[inside1]
+                Y1 = Y[inside1]
+                Z1 = Z[inside1]
+                r = np.sqrt(X1**2 + Y1**2 + Z1**2)
+                inside = r > rmin
+
+                X_bl = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
+                x_bl,y_bl,z_bl = self.get_X(X_bl)
+                XX_bl = self.stack_X(x_bl,y_bl,z_bl)
+                self.add_data_meshes(bl,x_bl,y_bl,z_bl,XX_bl)
+                self.BP.append((x_bl,y_bl,z_bl))
 
 
-    def add_data_borders(self,border,x1,x2,x3,X):
+    def add_data_meshes(self,border,x1,x2,x3,X):
         type_b = border['type']
         value = border['value']
         fun = border['fun']
@@ -121,8 +142,7 @@ class Mesh():
                 u_b = fun(x1, x2, x3)
             self.XK_data.append(X)
             self.UK_data.append(u_b)
-        
-
+        self.meshes_names.add(type_b)
 
     def value_u_b(self,x, y, z, value):
         n = x.shape[0]
@@ -185,7 +205,6 @@ class Mesh():
         xm,ym,zm = (self.X_r[:,0],self.X_r[:,1],self.X_r[:,2])
         fig, ax = plt.subplots()
         for x,y,z in self.BP:
-            
             plane = np.abs(z)<0.5
             ax.scatter(x[plane], y[plane], marker='X')
         plane = np.abs(zm) < 0.5

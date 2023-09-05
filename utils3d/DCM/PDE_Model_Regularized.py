@@ -48,6 +48,20 @@ class Poisson(PDE_utils):
         loss = tf.reduce_mean(tf.square(upred-u))
 
         return loss
+    
+    def analytic(self,x,y,z):
+        rI = self.problem['rI']
+        epsilon_1 = self.problem['epsilon_1']
+        epsilon_2 = self.problem['epsilon_2']
+        kappa = self.problem['kappa']
+        q = self.q[0][0]
+
+        G = (q/(4*self.pi))*(1/(epsilon_1))
+
+        r = tf.sqrt(x**2+y**2+z**2)
+        upred = (q/(4*self.pi)) * ( 1/(epsilon_1*r) - 1/(epsilon_1*rI) + 1/(epsilon_2*(1+kappa*rI)*rI) ) - G/r
+
+        return upred
 
 
 class Helmholtz(PDE_utils):

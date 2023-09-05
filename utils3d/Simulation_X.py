@@ -38,11 +38,11 @@ class Simulation():
         domain_out = PDE_out.set_domain(self.domain_out)
    
         mesh_in = Mesh(domain_in, mesh_N=self.mesh, precondition=self.precondition)
-        mesh_in.create_mesh(self.borders_in, self.ins_domain_in)
+        mesh_in.create_mesh(self.extra_meshes_in, self.ins_domain_in)
         mesh_in.plot_points_2d(self.folder_path, 'Mesh_2d_in')
 
         mesh_out = Mesh(domain_out, mesh_N=self.mesh, precondition=self.precondition)
-        mesh_out.create_mesh(self.borders_out, self.ins_domain_out)
+        mesh_out.create_mesh(self.extra_meshes_out, self.ins_domain_out)
         mesh_out.plot_points_2d(self.folder_path, 'Mesh_2d_out')
 
         PDE = self.PDE_Interface()

@@ -304,15 +304,20 @@ class View_results_X():
         ax.semilogy(range(len(self.XPINN.loss_hist)), self.XPINN.loss_hist,'k-',label='Loss')
         if flag: 
             iter = 1
-            c = [['r','b','g','c'],['salmon','royalblue','springgreen','pink']]
+            c = [['r','b','g','c','m'],['salmon','royalblue','springgreen','aqua', 'lavender']]
             for NN in self.NN:
-                ax.semilogy(range(len(NN.loss_r)), NN.loss_r,c[iter-1][0],label='Loss_r_NN_'+str(iter))
-                ax.semilogy(range(len(NN.loss_bD)), NN.loss_bD,c[iter-1][1],label='Loss_bD_NN_'+str(iter))
-                ax.semilogy(range(len(NN.loss_bN)), NN.loss_bN,c[iter-1][2],label='Loss_bN_NN_'+str(iter))
-                ax.semilogy(range(len(NN.loss_bK)), NN.loss_bK,c[iter-1][3],label='Loss_bK_NN_'+str(iter))
+                ax.semilogy(range(len(NN.loss_r)), NN.loss_r,c[iter-1][0],label=f'Loss_r_{iter}')
+                meshes_names = NN.mesh.meshes_names
+                if 'D' in meshes_names:
+                    ax.semilogy(range(len(NN.loss_bD)), NN.loss_bD,c[iter-1][1],label=f'Loss_bD_{iter}')
+                if 'N' in meshes_names:
+                    ax.semilogy(range(len(NN.loss_bN)), NN.loss_bN,c[iter-1][2],label=f'Loss_bN_{iter}')
+                if 'K' in meshes_names:
+                    ax.semilogy(range(len(NN.loss_bK)), NN.loss_bK,c[iter-1][3],label=f'Loss_bK_{iter}')
+                if 'I' in meshes_names:
+                    ax.semilogy(range(len(NN.loss_bI)), NN.loss_bI,'m',label=f'Loss_bI_{iter}')
                 iter += 1
-            ax.semilogy(range(len(NN.loss_bI)), NN.loss_bI,'m',label='Loss_bI')
-
+        
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel(r'$\mathcal{L}: Losses$')
@@ -325,19 +330,6 @@ class View_results_X():
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
-
-            if self.data:
-                d = {'Residual_1': list(map(lambda tensor: tensor.numpy(), self.NN[0].loss_r)),
-                     'Residual_2': list(map(lambda tensor: tensor.numpy(), self.NN[1].loss_r)),
-                     'Dirichlet_1': list(map(lambda tensor: tensor.numpy(), self.NN[0].loss_bD)),
-                     'Dirichlet_2': list(map(lambda tensor: tensor.numpy(), self.NN[1].loss_bD)),
-                     'Neumann_1': list(map(lambda tensor: tensor.numpy(), self.NN[0].loss_bN)),
-                     'Neumann_2': list(map(lambda tensor: tensor.numpy(), self.NN[1].loss_bN)),
-                     'Interface': list(map(lambda tensor: tensor.numpy(), self.NN[0].loss_bN))
-                     }
-                df = pd.DataFrame(d)
-                df.to_excel(self.Excel_writer, sheet_name='Losses', index=False)
-
 
     def plot_u_plane(self,N=200, theta=np.pi/2, phi=0 ):
         fig, ax = plt.subplots()
@@ -362,12 +354,8 @@ class View_results_X():
                 d = {'x': x[:,0],
                     'u': U[:,0]}
                 df2 = pd.DataFrame(d)
-
                 frames = [df, df2]
-
-  
                 df = pd.concat(frames)
-
             
             ax.plot(r[:,0],U[:,0], label=labels[i], c=colr[i])
             i += 1
@@ -413,8 +401,9 @@ class View_results_X():
             logger.info(f'Contour Plot saved: {path}')
 
 
-    def plot_aprox_analytic(self,N=200, theta=np.pi/2, phi=0 ):
+    def plot_aprox_analytic(self,N=200, theta=np.pi/2, phi=0, lims=None):
         
+        flag = True
         fig, ax = plt.subplots() 
         for post_obj,NN in zip(self.Post,self.NN):
             rmin = post_obj.mesh.ins_domain['rmin']
@@ -431,17 +420,23 @@ class View_results_X():
 
             X = tf.concat([x, y, z], axis=1)
             U = post_obj.model(X)
-
-            ax.plot(r[:,0],U[:,0], c='b', label='Aprox')
-
+            
+            if flag:
+                ax.plot(r[:,0],U[:,0], c='b', label='Aprox')
+                flag = False
+            else:
+                ax.plot(r[:,0],U[:,0], c='b')
         r = np.linspace(self.Post[0].mesh.ins_domain['rmax']/10, self.Post[-1].mesh.ins_domain['rmax'], 200, dtype=self.DTYPE)
 
         U2 = self.XPINN.PDE.analytic(r)
-        ax.plot(r,U2, c='r', label='Analytic')
+        ax.plot(r,U2, c='r', label='Analytic', linestyle='--')
             
         ax.set_xlabel('r')
         ax.set_ylabel(r'$\phi_{\theta}$')
-
+        
+        if lims != None:
+            ax.set_ylim(lims)
+            
         ax.grid()
         ax.legend()
 
@@ -455,7 +450,7 @@ class View_results_X():
             logger.info(f'Analytic Plot saved: {path}')   
 
 
-    def plot_interface(self,N=20):
+    def plot_interface(self,N=200):
 
         labels = ['Inside', 'Outside']
         colr = ['r','b']
@@ -503,7 +498,7 @@ class View_results_X():
             fig.savefig(path_save)
             logger.info(f'Interface Plot saved: {path}')
 
-
+    ########################################################################################################################
  
     def plot_u_domain_surface(self,N=100,alpha1=35,alpha2=135):
         fig = plt.figure()
