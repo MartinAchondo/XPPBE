@@ -106,7 +106,7 @@ def main():
     
     Sim.hyperparameters_in = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 4,
+                'num_hidden_layers': 2,
                 'num_neurons_per_layer': 12,
                 'output_dim': 1,
                 'activation': 'tanh',
@@ -116,7 +116,7 @@ def main():
 
     Sim.hyperparameters_out = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 4,
+                'num_hidden_layers': 2,
                 'num_neurons_per_layer': 12,
                 'output_dim': 1,
                 'activation': 'tanh',
@@ -125,7 +125,7 @@ def main():
         }
 
 
-    Sim.N_iters = 15
+    Sim.N_iters = 100
     Sim.precondition = False
     Sim.N_precond = 5
     Sim.N_batches = 40
