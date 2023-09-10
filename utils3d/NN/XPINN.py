@@ -11,8 +11,6 @@ from NN.XPINN_utils import XPINN_utils
 logger = logging.getLogger(__name__)
 
 
-############################################################################################### 
-
         
 class XPINN(XPINN_utils):
     
@@ -103,7 +101,7 @@ class XPINN(XPINN_utils):
 
                 for X_b1, X_b2 in zip(shuff_b1,shuff_b2):
                     N_j += 1
-                    L1,L2 = train_step((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w], precond=self.precondition)
+                    L1,L2 = train_step((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
             
             elif self.precondition:
                 b1,b2 = batches_r_P
@@ -112,7 +110,7 @@ class XPINN(XPINN_utils):
                 
                 for X_b1, X_b2 in zip(shuff_b1,shuff_b2):
                     N_j += 1
-                    L1,L2 = train_step_precond((X_b1,X_b2), self.precondition)
+                    L1,L2 = train_step_precond((X_b1,X_b2))
 
             self.callback(L1,L2)
 

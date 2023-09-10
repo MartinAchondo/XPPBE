@@ -126,6 +126,7 @@ def main():
     Sim.N_iters = 10
     Sim.adapt_weights = True
     Sim.adapt_w_iter = 200
+    Sim.N_batches = 1
 
     Sim.iters_save_model = -1
     Sim.folder_path = folder_path
@@ -133,7 +134,6 @@ def main():
 
     Sim.precondition = False
     Sim.N_precond = 1
-    Sim.N_batches = 40
 
     Sim.setup_algorithm()
 

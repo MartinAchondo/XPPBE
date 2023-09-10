@@ -85,8 +85,9 @@ class Mesh():
                 z_bl = tf.constant(Z_bl.flatten())
                 z_bl = tf.reshape(z_bl,[z_bl.shape[0],1])
             
-                XX_bl = tf.concat([x_bl, y_bl, z_bl], axis=1)
-                self.add_data_meshes(bl,x_bl,y_bl,z_bl,XX_bl)
+                XB_bl = tf.concat([x_bl, y_bl, z_bl], axis=1)
+
+                self.add_data_meshes(bl,x_bl,y_bl,z_bl,XB_bl)
                 self.BP.append((x_bl,y_bl,z_bl))
 
             elif R == 'Random':
@@ -110,8 +111,9 @@ class Mesh():
 
                 X_bl = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
                 x_bl,y_bl,z_bl = self.get_X(X_bl)
-                XX_bl = self.stack_X(x_bl,y_bl,z_bl)
-                self.add_data_meshes(bl,x_bl,y_bl,z_bl,XX_bl)
+                XB_bl = self.stack_X(x_bl,y_bl,z_bl)
+                
+                self.add_data_meshes(bl,x_bl,y_bl,z_bl,XB_bl)
                 self.BP.append((x_bl,y_bl,z_bl))
 
 
@@ -126,25 +128,29 @@ class Mesh():
                 u_b = self.value_u_b(x1, x2, x3, value=value)
             else:
                 u_b = fun(x1, x2, x3)
-            self.XD_data.append(X)
-            self.UD_data.append(u_b)
+            bX,bU = self.create_Datasets(X,u_b)
+            self.XD_data.append(bX)
+            self.UD_data.append(bU)
         elif type_b == 'N':
             if fun == None:
                 ux_b = self.value_ux_b(x1, x2, x3, value=value)
             else:
                 ux_b = fun(x1, x2, x3)
-            self.XN_data.append(X)
-            self.UN_data.append(ux_b)
+            bX,bUx = self.create_Datasets(X,ux_b)
+            self.XN_data.append(bX)
+            self.UN_data.append(bUx)
             self.derN.append(deriv)
         elif type_b == 'I':
-            self.XI_data.append(X)
+            bX = self.create_Dataset(X)
+            self.XI_data.append(bX)
         elif type_b == 'K':
             if fun == None:
                 u_b = self.value_u_b(x1, x2, x3, value=value)
             else:
                 u_b = fun(x1, x2, x3)
-            self.XK_data.append(X)
-            self.UK_data.append(u_b)
+            bX,bU = self.create_Datasets(X,u_b)
+            self.XK_data.append(bX)
+            self.UK_data.append(bU)
         self.meshes_names.add(type_b)
 
     def value_u_b(self,x, y, z, value):
@@ -203,6 +209,21 @@ class Mesh():
    
         inside_P = r > precon_rmin
         self.X_r_P = tf.constant(np.vstack([X1[inside_P].flatten(),Y1[inside_P].flatten(), Z1[inside_P].flatten()]).T)
+
+
+    def create_Dataset(self,X):
+        dataset_XB = tf.data.Dataset.from_tensor_slices(X)
+        dataset_XB = dataset_XB.shuffle(buffer_size=len(X))
+        dataset_X_batch = dataset_XB.batch(len(X))
+        X_batch = next(iter(dataset_X_batch))
+        return X_batch
+
+    def create_Datasets(self, X, Y):
+        dataset_XY = tf.data.Dataset.from_tensor_slices((X, Y))
+        dataset_XY = dataset_XY.shuffle(buffer_size=len(X))
+        dataset_XY_batch = dataset_XY.batch(len(X))
+        X_batch, Y_batch = next(iter(dataset_XY_batch))
+        return X_batch, Y_batch
   
 
     def plot_points_2d(self, directory, file_name):

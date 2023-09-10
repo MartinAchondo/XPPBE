@@ -86,7 +86,7 @@ class XPINN_utils():
 
     def create_batches(self, N_batches):
 
-        number_batches = 1
+        number_batches = N_batches
 
         dataset_X_r_1 = tf.data.Dataset.from_tensor_slices(self.solver1.PDE.X_r)
         dataset_X_r_1 = dataset_X_r_1.shuffle(buffer_size=len(self.solver1.PDE.X_r))
