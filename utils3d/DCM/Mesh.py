@@ -177,6 +177,8 @@ class Mesh():
 
         self.X_r = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
 
+        self.meshes_names.add('R')
+
 
 
     def create_precondition_mesh(self):

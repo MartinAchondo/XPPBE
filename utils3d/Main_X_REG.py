@@ -79,8 +79,8 @@ def main():
     Sim.PDE_out.problem = inputs
 
     u_an = Sim.PDE_out.border_value(rB,0,0,rI) - Sim.PDE_out.G_Fun(rB,0,0)
-    outer_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N':50}
-    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'r':rB, 'N': 50}
+    outer_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N':40}
+    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'r':rB, 'N': 40}
     outer_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_out.analytic(x,y,z), 'r':'Random', 'N': 20}
     Sim.extra_meshes_out = {'1':outer_interface,'2':outer_dirichlet, '3': outer_data}
     Sim.ins_domain_out = {'rmax': rB,'rmin':rI}
@@ -101,7 +101,7 @@ def main():
         'w_k': 1
     }
 
-    Sim.lr = ([3000,6000],[1e-2,5e-3,5e-4])
+    Sim.lr = ([3000,6000],[5e-3,4e-3,5e-4])
 
     
     Sim.hyperparameters_in = {
@@ -125,19 +125,22 @@ def main():
         }
 
 
-    Sim.N_iters = 100
-    Sim.precondition = False
-    Sim.N_precond = 5
-    Sim.N_batches = 40
+    Sim.N_iters = 1000
+    Sim.adapt_weights = True
+    Sim.adapt_w_iter = 200
 
-    Sim.iters_save_model = 5
-
+    Sim.iters_save_model = -1
     Sim.folder_path = folder_path
+
+
+    Sim.precondition = False
+    Sim.N_precond = 1
+    Sim.N_batches = 40
 
     Sim.setup_algorithm()
 
     # Solve
-    Sim.solve_algorithm(N_iters=Sim.N_iters, precond=Sim.precondition, N_precond=Sim.N_precond, N_batches=Sim.N_batches, save_model=Sim.iters_save_model)
+    Sim.solve_algorithm(N_iters=Sim.N_iters, precond=Sim.precondition, N_precond=Sim.N_precond, N_batches=Sim.N_batches, save_model=Sim.iters_save_model, adapt_weights=Sim.adapt_weights, adapt_w_iter=Sim.adapt_w_iter)
     
     Sim.postprocessing(folder_path=folder_path)
 

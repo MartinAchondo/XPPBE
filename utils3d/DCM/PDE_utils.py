@@ -41,16 +41,17 @@ class PDE_utils():
     
     def get_loss(self, X_batch, model):
         L = dict()
-        L['r'] = 0.0
+        L['R'] = 0.0
         L['D'] = 0.0
         L['N'] = 0.0
         L['K'] = 0.0
+        L['I'] = 0.0
 
         #residual
         #X = (self.x,self.y,self.z)
         X = self.mesh.get_X(X_batch)
         loss_r = self.residual_loss(self.mesh,model,X)
-        L['r'] += loss_r
+        L['R'] += loss_r
 
         #dirichlet 
         loss_d = self.dirichlet_loss(self.mesh,model,self.XD_data,self.UD_data)
@@ -98,7 +99,7 @@ class PDE_utils():
 
     def get_loss_preconditioner(self, X_batch, model):
         L = dict()
-        L['r'] = 0.0
+        L['R'] = 0.0
         L['D'] = 0.0
         L['N'] = 0.0
         L['I'] = 0.0

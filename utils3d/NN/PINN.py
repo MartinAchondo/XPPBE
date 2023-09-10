@@ -26,11 +26,11 @@ class PINN():
  
 
     def adapt_mesh(self, mesh,
-        w_r=1,
-        w_d=1,
-        w_n=1,
-        w_i=1,
-        w_k=1):
+        w_r=1.0,
+        w_d=1.0,
+        w_n=1.0,
+        w_i=1.0,
+        w_k=1.0):
 
         logger.info("> Adapting Mesh")
         
@@ -39,15 +39,23 @@ class PINN():
         self.ub = mesh.ub
         self.PDE.adapt_PDE_mesh(self.mesh)
 
-        self.w_i = w_i
         self.w = {
-            'r': w_r,
-            'D': w_d,
-            'N': w_n,
-            'K': w_k
+            'R': float(w_r),
+            'D': float(w_d),
+            'N': float(w_n),
+            'K': float(w_k),
+            'I': float(w_i)
+        }
+
+        self.w_hist = {
+            'R': list(),
+            'D': list(),
+            'N': list(),
+            'K': list(),
+            'I': list()
         }
         
-        self.L_names = ['r','D','N', 'K']
+        self.L_names = ['R','D','N','K','I']
 
         logger.info("Mesh adapted")
         
@@ -80,15 +88,6 @@ class PINN():
         self.model.save(os.path.join(dir_path,name))
  
 
-    def loss_fn(self, X_batch, precond=False):
-        if precond:
-            L = self.PDE.get_loss_preconditioner(X_batch, self.model)
-        elif not precond:
-            L = self.PDE.get_loss(X_batch, self.model)
-        loss = 0
-        for t in self.L_names:
-            loss += L[t]*self.w[t]
-        return loss,L
         
 
 

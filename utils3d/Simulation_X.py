@@ -68,12 +68,12 @@ class Simulation():
         self.XPINN_solver.folder_path = self.folder_path
 
 
-    def solve_algorithm(self,N_iters, precond=False, N_precond=10, N_batches=1, save_model=0):
+    def solve_algorithm(self,N_iters, precond=False, N_precond=10, N_batches=1, save_model=0, adapt_weights=False, adapt_w_iter=1):
         logger.info("> Solving XPINN")
         if precond:
             logger.info(f'Preconditioning {N_precond} iterations')
         logger.info(f'Number Batches: {N_batches}')
-        self.XPINN_solver.solve(N=N_iters, precond=precond, N_precond=N_precond, N_batches=N_batches, save_model=save_model)
+        self.XPINN_solver.solve(N=N_iters, precond=precond, N_precond=N_precond, N_batches=N_batches, save_model=save_model, adapt_weights=adapt_weights, adapt_w_iter=adapt_w_iter)
 
 
     def postprocessing(self,folder_path):
@@ -83,10 +83,12 @@ class Simulation():
         logger.info("> Ploting Solution")
 
         Post.plot_loss_history();
+        Post.plot_loss_history(plot_w=True);
         Post.plot_u_plane();
         Post.plot_u_domain_contour();
         Post.plot_aprox_analytic();
         Post.plot_interface();
+        Post.plot_weights_history();
 
         if Post.data:
             Post.close_file()
