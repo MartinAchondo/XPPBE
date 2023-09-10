@@ -21,6 +21,7 @@ class XPINN(XPINN_utils):
         self.alpha_w = 0.0        
         super().__init__()       
     
+    
     def loss_PINN(self, pinn, X_batch, precond=False):
         if precond:
             L = pinn.PDE.get_loss_preconditioner(X_batch, pinn.model)
