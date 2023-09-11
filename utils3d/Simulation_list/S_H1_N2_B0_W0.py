@@ -64,8 +64,8 @@ def main():
     Sim.PDE_in.q = q_list
     Sim.PDE_in.problem = inputs
 
-    inner_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 35}
-    inner_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_in.analytic(x,y,z), 'r':'Random', 'N': 35}
+    inner_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 30}
+    inner_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_in.analytic(x,y,z), 'r':'Random', 'N': 30}
     Sim.extra_meshes_in = {'1':inner_interface} #, '2': inner_data}
     Sim.ins_domain_in = {'rmax': rI}
 
@@ -79,16 +79,16 @@ def main():
     Sim.PDE_out.problem = inputs
 
     u_an = Sim.PDE_out.border_value(rB,0,0,rI)
-    outer_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 35}
-    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'r':rB, 'N': 35}
-    outer_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_out.analytic(x,y,z), 'r':'Random', 'N': 35}
+    outer_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 30}
+    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'r':rB, 'N': 30}
+    outer_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_out.analytic(x,y,z), 'r':'Random', 'N': 30}
     Sim.extra_meshes_out = {'1':outer_interface,'2':outer_dirichlet}#, '3': outer_data}
     Sim.ins_domain_out = {'rmax': rB,'rmin':rI}
 
 
     # Mesh
-    Sim.mesh_in = {'N_r': 40}
-    Sim.mesh_out = {'N_r': 40}
+    Sim.mesh_in = {'N_r': 35}
+    Sim.mesh_out = {'N_r': 35}
 
     # Neural Network
     Sim.weights = {
@@ -132,7 +132,7 @@ def main():
     Sim.precondition = False
     Sim.N_precond = 5
 
-    Sim.N_iters = 10000
+    Sim.N_iters = 8000
 
 
     Sim.setup_algorithm()
