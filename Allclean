@@ -1,6 +1,0 @@
-#!/bin/sh
-
-filepath="utils3d/results"
-
-rm -r ${filepath}
-mkdir ${filepath}
