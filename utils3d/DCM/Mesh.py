@@ -125,6 +125,8 @@ class Mesh():
         fun = border['fun']
         if 'dr' in border:
             deriv = border['dr']
+        if not 'noise' in border:
+            border['noise'] = False
         if type_b == 'D':
             if fun == None:
                 u_b = self.value_u_b(x1, x2, x3, value=value)
@@ -150,6 +152,8 @@ class Mesh():
                 u_b = self.value_u_b(x1, x2, x3, value=value)
             else:
                 u_b = fun(x1, x2, x3)
+                if border['noise']:
+                    u_b = u_b*self.add_noise(u_b)
             bX,bU = self.create_Datasets(X,u_b)
             self.XK_data.append(bX)
             self.UK_data.append(bU)
@@ -237,6 +241,13 @@ class Mesh():
         #X_batch, Y_batch = tf.unstack(dataset_XY_batch, num=2)
         return X_batch, Y_batch
   
+    def add_noise(self,x):
+        n = x.shape[0]
+        mu, sigma = 1, 0.02 
+        s = np.array(np.random.default_rng().normal(mu, sigma, n), dtype='float32')
+        s = tf.reshape(s,[n,1])
+        return s
+
 
     def plot_points_2d(self, directory, file_name):
 
