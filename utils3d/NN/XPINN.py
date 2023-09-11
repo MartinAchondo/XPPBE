@@ -8,6 +8,7 @@ import pandas as pd
 
 from NN.XPINN_utils import XPINN_utils
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,7 +19,7 @@ class XPINN(XPINN_utils):
 
         self.solver1, self.solver2 = PINN(), PINN()
         self.solvers = [self.solver1,self.solver2]
-        self.alpha_w = 0.0        
+        self.alpha_w = 0.7    
         super().__init__()       
     
     
@@ -33,12 +34,11 @@ class XPINN(XPINN_utils):
     def get_loss(self, X_batch, s1, s2, w, precond=False):
         L = self.loss_PINN(s1,X_batch,precond=precond)
         if not precond:    
-            L['I'] += self.PDE.loss_I(s1,s2)
+            L['I'] += self.PDE.loss_I(s1,s2,X_batch['I'])
 
         loss = 0
         for t in s1.L_names:
             loss += w[t]*L[t]
-
         return loss,L
     
 
@@ -51,7 +51,7 @@ class XPINN(XPINN_utils):
         return loss, L, g
     
     
-    def main_loop(self, N=1000, N_precond=10, N_batches=1):
+    def main_loop(self, N=1000, N_precond=10):
         
         optimizer1,optimizer2 = self.create_optimizers()
         if self.precondition:
@@ -60,8 +60,8 @@ class XPINN(XPINN_utils):
         @tf.function
         def train_step(X_batch, ws,precond=False):
             X_batch1, X_batch2 = X_batch
-            loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1, self.solver1,self.solver2, ws[0],precond)
-            loss2, L_loss2, grad_theta2 = self.get_grad(X_batch2, self.solver2,self.solver1, ws[1],precond)
+            loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1, self.solver1,self.solver2, ws[0], precond)
+            loss2, L_loss2, grad_theta2 = self.get_grad(X_batch2, self.solver2,self.solver1, ws[1], precond)
 
             optimizer1.apply_gradients(zip(grad_theta1, self.solver1.model.trainable_variables))
             optimizer2.apply_gradients(zip(grad_theta2, self.solver2.model.trainable_variables))
@@ -71,10 +71,10 @@ class XPINN(XPINN_utils):
             return L1,L2
 
         @tf.function
-        def train_step_precond(X_batch, precond=True):
+        def train_step_precond(X_batch, ws, precond=True):
             X_batch1, X_batch2 = X_batch
-            loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1, self.solver1,self.solver2, precond)
-            loss2, L_loss2, grad_theta2 = self.get_grad(X_batch2, self.solver2,self.solver1, precond)
+            loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1, self.solver1,self.solver2, ws[0], precond)
+            loss2, L_loss2, grad_theta2 = self.get_grad(X_batch2, self.solver2,self.solver1, ws[1], precond)
 
             optimizer1P.apply_gradients(zip(grad_theta1, self.solver1.model.trainable_variables))
             optimizer2P.apply_gradients(zip(grad_theta2, self.solver2.model.trainable_variables))
@@ -82,37 +82,34 @@ class XPINN(XPINN_utils):
             L1 = [loss1,L_loss1]
             L2 = [loss2,L_loss2]
             return L1,L2
-    
-        
-        batches_r, batches_r_P = self.create_batches(N_batches)
-        
+
         self.N_iters = N
-        N_j = 0
+        self.N_j = 0
         pbar = log_progress(range(N))
         pbar.set_description("Loss: {:6.4e}".format(100))
+
         for i in pbar:
 
+            L1 = [0.0, dict()]
+            L2 = [0.0, dict()]
+
+            if (self.shuffle and self.iter%self.shuffle_iter ==0):
+                shuffle = True
+            else:
+                shuffle = False
+            TX_b1, TX_b2 = self.shuffle_batches(shuffle)
+
             if not self.precondition:
-
                 self.check_get_new_weights()
-
-                b1,b2 = batches_r
-                shuff_b1 = b1.shuffle(buffer_size=len(self.solver1.PDE.X_r))
-                shuff_b2 = b2.shuffle(buffer_size=len(self.solver2.PDE.X_r))
-
-                for X_b1, X_b2 in zip(shuff_b1,shuff_b2):
-                    N_j += 1
-                    L1,L2 = train_step((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
-            
+                for N_stoch in range(self.N_batches):
+                    X_b = self.get_batches(TX_b1,TX_b2)          
+                    L1_b,L2_b = train_step(X_b, ws=[self.solver1.w,self.solver2.w])
+                    L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b))
             elif self.precondition:
-                b1,b2 = batches_r_P
-                shuff_b1 = b1.shuffle(buffer_size=len(self.solver1.PDE.X_r_P))
-                shuff_b2 = b2.shuffle(buffer_size=len(self.solver2.PDE.X_r_P))
-                
-                for X_b1, X_b2 in zip(shuff_b1,shuff_b2):
-                    N_j += 1
-                    L1,L2 = train_step_precond((X_b1,X_b2))
-
+                for N_stoch in range(self.N_batches):
+                    X_b = self.get_batches(TX_b1,TX_b2)          
+                    L1_b,L2_b = train_step_precond(X_b, ws=[self.solver1.w,self.solver2.w])
+                    L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b))
             self.callback(L1,L2)
 
             if self.iter>N_precond and self.precondition:
@@ -128,7 +125,7 @@ class XPINN(XPINN_utils):
 
         
         logger.info(f' Iterations: {N}')
-        logger.info(f' Total steps: {N_j}')
+        logger.info(f' Total steps: {self.N_j}')
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
     
 
@@ -137,8 +134,8 @@ class XPINN(XPINN_utils):
             for solver in self.solvers:
                 loss_wo_w = sum(solver.L.values())
                 for t in solver.L_names:
-                    if t in solver.mesh.meshes_names:
-                        eps = 1e-10
+                    if t in solver.mesh.meshes_names and t!='P':
+                        eps = 1e-9
                         w = float(loss_wo_w/(solver.L[t]+eps))
                         solver.w[t] = self.alpha_w*solver.w[t] + (1-self.alpha_w)*w
 
@@ -157,7 +154,7 @@ class XPINN(XPINN_utils):
             return optimizers_p
 
 
-    def solve(self,N=1000, precond=False, N_precond=10, N_batches=1, save_model=0, adapt_weights=False, adapt_w_iter=1):
+    def solve(self,N=1000, precond=False, N_precond=10, save_model=0, adapt_weights=False, adapt_w_iter=1, shuffle = True, shuffle_iter = 500):
 
         self.precondition = precond
         self.save_model_iter = save_model
@@ -165,12 +162,28 @@ class XPINN(XPINN_utils):
         self.adapt_weights = adapt_weights
         self.adapt_w_iter = adapt_w_iter
 
+        self.shuffle = shuffle
+        self.shuffle_iter = shuffle_iter 
+
         t0 = time()
-        self.main_loop(N, N_precond, N_batches=N_batches)
+        self.main_loop(N, N_precond)
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
 
         self.add_losses_NN()
 
+
+    def batch_iter_callback(self,L,L_b):
+        self.N_j +=1
+        L_f = list()
+        for Li,Li_b in zip(L,L_b):
+            Li[0] += Li_b[0]
+            for t in Li_b[1]:
+                if t in Li[1]:
+                    Li[1][t] += Li_b[1][t]
+                else:
+                    Li[1][t] = Li_b[1][t]
+            L_f.append(Li)
+        return L_f
 
     def callback(self, L1,L2):
 

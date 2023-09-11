@@ -7,13 +7,14 @@ import os
 class Mesh():
     
     def __init__(self, domain,
-        mesh_N, precondition=False
+        mesh_N, N_batches=1, precondition=False
         ):
         self.DTYPE='float32'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
         self.mesh_N = mesh_N
         self.lb = domain[0]
         self.ub = domain[1]
+        self.N_batches = N_batches
         self.precondition = precondition
 
     def get_X(self,X):
@@ -43,6 +44,7 @@ class Mesh():
         self.BP = list()
         self.X_r_P = None
         self.meshes_names = set()
+        self.meshes_N = dict()
 
         self.create_extra_meshes()
 
@@ -52,12 +54,12 @@ class Mesh():
             self.create_precondition_mesh()
 
         self.data_mesh = {
-            'residual': self.X_r,
-            'dirichlet': (self.XD_data,self.UD_data),
-            'neumann': (self.XN_data,self.UN_data,self.derN),
-            'data_known': (self.XK_data, self.UK_data),
-            'interface': (self.XI_data,self.derI),
-            'precondition': self.X_r_P
+            'R': (self.X_r,),
+            'D': (self.XD_data,self.UD_data),
+            'N': (self.XN_data,self.UN_data),
+            'K': (self.XK_data, self.UK_data),
+            'I': (self.XI_data,),
+            'P': (self.X_r_P,)
         }
 
     def create_extra_meshes(self):
@@ -152,6 +154,10 @@ class Mesh():
             self.XK_data.append(bX)
             self.UK_data.append(bU)
         self.meshes_names.add(type_b)
+        if type_b in self.meshes_N:
+            self.meshes_N[type_b] += len(X)
+        else:
+            self.meshes_N[type_b] = len(X)
 
     def value_u_b(self,x, y, z, value):
         n = x.shape[0]
@@ -181,11 +187,11 @@ class Mesh():
         r = np.sqrt(X1**2 + Y1**2 + Z1**2)
         inside = r > self.ins_domain['rmin']
 
-        self.X_r = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
+        X_r = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
 
+        self.X_r = [self.create_Dataset(X_r)]
         self.meshes_names.add('R')
-
-
+        self.meshes_N['R'] = len(X)
 
     def create_precondition_mesh(self):
        #crear dominio circular (cascaron para generalizar)
@@ -208,21 +214,27 @@ class Mesh():
         r = np.sqrt(X1**2 + Y1**2 + Z1**2)
    
         inside_P = r > precon_rmin
-        self.X_r_P = tf.constant(np.vstack([X1[inside_P].flatten(),Y1[inside_P].flatten(), Z1[inside_P].flatten()]).T)
+        X_r_P = tf.constant(np.vstack([X1[inside_P].flatten(),Y1[inside_P].flatten(), Z1[inside_P].flatten()]).T)
+
+        self.X_r_P = [self.create_Dataset(X_r_P)]
+        self.meshes_names.add('P')
+        self.meshes_N['P'] = len(X)
 
 
     def create_Dataset(self,X):
         dataset_XB = tf.data.Dataset.from_tensor_slices(X)
         dataset_XB = dataset_XB.shuffle(buffer_size=len(X))
-        dataset_X_batch = dataset_XB.batch(len(X))
-        X_batch = next(iter(dataset_X_batch))
+        X_batch = dataset_XB.batch(int(len(X)/self.N_batches))
+        #X_batch = next(iter(dataset_X_batch))
         return X_batch
 
     def create_Datasets(self, X, Y):
         dataset_XY = tf.data.Dataset.from_tensor_slices((X, Y))
         dataset_XY = dataset_XY.shuffle(buffer_size=len(X))
-        dataset_XY_batch = dataset_XY.batch(len(X))
-        X_batch, Y_batch = next(iter(dataset_XY_batch))
+        dataset_XY_batch = dataset_XY.batch(int(len(X)/self.N_batches))
+        X_batch = dataset_XY_batch.map(lambda x, y: x)
+        Y_batch = dataset_XY_batch.map(lambda x, y: y)
+        #X_batch, Y_batch = tf.unstack(dataset_XY_batch, num=2)
         return X_batch, Y_batch
   
 

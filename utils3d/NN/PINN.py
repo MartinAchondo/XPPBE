@@ -1,10 +1,12 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import pandas as pd
 import os
 from time import time
 from tqdm import tqdm as log_progress
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,8 @@ class PINN():
             'D': float(w_d),
             'N': float(w_n),
             'K': float(w_k),
-            'I': float(w_i)
+            'I': float(w_i),
+            'P': 1.0,
         }
 
         self.w_hist = {
@@ -52,10 +55,11 @@ class PINN():
             'D': list(),
             'N': list(),
             'K': list(),
-            'I': list()
+            'I': list(),
+            'P': list()
         }
         
-        self.L_names = ['R','D','N','K','I']
+        self.L_names = ['R','D','N','K','I','P']
 
         logger.info("Mesh adapted")
         
@@ -79,13 +83,25 @@ class PINN():
         self.model = NN_model
         self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
         logger.info("Neural Network adapted")
+        
+        path_load = os.path.join(path,'w_hist.csv')
+        df = pd.read_csv(path_load)
+
+        for t in self.mesh.meshes_names:
+            self.w_hist[t] = list(df[t])
+            self.w[t] = self.w_hist[t][-1]
+       
 
     def save_model(self,directory,name):
         dir_path = os.path.join(os.getcwd(),directory)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-
         self.model.save(os.path.join(dir_path,name))
+
+        df_dict = pd.DataFrame.from_dict(self.w_hist)
+        df = pd.DataFrame.from_dict(df_dict)
+        path_save = os.path.join(os.path.join(dir_path,name),'w_hist.csv')
+        df.to_csv(path_save)
  
 
         

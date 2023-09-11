@@ -17,7 +17,7 @@ main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'results')
 #        shutil.rmtree(main_path)
 #os.makedirs(main_path)
 
-folder_name = 'data'
+folder_name = 'S_H1_N2_B0_W0'
 folder_path = os.path.join(main_path,folder_name)
 if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
@@ -41,7 +41,7 @@ def main():
     # PDE
     q_list = [(1,[0,0,0])]
 
-    inputs = {'Problem': 'Main_X',
+    inputs = {'Problem': 'S_H1_N2_B0_W0',
               'rmin': 0,
               'rI': 1,
               'rB': 10,
@@ -64,8 +64,8 @@ def main():
     Sim.PDE_in.q = q_list
     Sim.PDE_in.problem = inputs
 
-    inner_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 20}
-    #inner_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_in.analytic(x,y,z), 'r':'Random', 'N': 20}
+    inner_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 35}
+    inner_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_in.analytic(x,y,z), 'r':'Random', 'N': 35}
     Sim.extra_meshes_in = {'1':inner_interface} #, '2': inner_data}
     Sim.ins_domain_in = {'rmax': rI}
 
@@ -79,18 +79,16 @@ def main():
     Sim.PDE_out.problem = inputs
 
     u_an = Sim.PDE_out.border_value(rB,0,0,rI)
-    outer_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N':20}
-    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'r':rB, 'N': 20}
-    #outer_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_out.analytic(x,y,z), 'r':'Random', 'N': 20}
+    outer_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 35}
+    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'r':rB, 'N': 35}
+    outer_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_out.analytic(x,y,z), 'r':'Random', 'N': 35}
     Sim.extra_meshes_out = {'1':outer_interface,'2':outer_dirichlet}#, '3': outer_data}
     Sim.ins_domain_out = {'rmax': rB,'rmin':rI}
 
 
     # Mesh
-    Sim.mesh_in = {'N_r': 30,
-                   'N_r_P': 30}
-    Sim.mesh_out = {'N_r': 30,
-                    'N_r_P': 30}
+    Sim.mesh_in = {'N_r': 40}
+    Sim.mesh_out = {'N_r': 40}
 
     # Neural Network
     Sim.weights = {
@@ -101,13 +99,13 @@ def main():
         'w_k': 1
     }
 
-    Sim.lr = ([3000,6000],[1e-2,5e-3,5e-4])
+    Sim.lr = ([6000],[1e-3,1e-4])
 
 
     Sim.hyperparameters_in = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 2,
-                'num_neurons_per_layer': 12,
+                'num_hidden_layers': 4,
+                'num_neurons_per_layer': 200,
                 'output_dim': 1,
                 'activation': 'tanh',
                 'architecture_Net': 'FCNN'
@@ -115,26 +113,26 @@ def main():
 
     Sim.hyperparameters_out = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 2,
-                'num_neurons_per_layer': 12,
+                'num_hidden_layers': 4,
+                'num_neurons_per_layer': 200,
                 'output_dim': 1,
                 'activation': 'tanh',
                 'architecture_Net': 'FCNN'
         }
 
 
-    Sim.N_batches = 4
+    Sim.N_batches = 1
 
-    Sim.adapt_weights = True
+    Sim.adapt_weights = False
     Sim.adapt_w_iter = 12
 
-    Sim.iters_save_model = 19
+    Sim.iters_save_model = 1000
     Sim.folder_path = folder_path
 
-    Sim.precondition = True
+    Sim.precondition = False
     Sim.N_precond = 5
 
-    Sim.N_iters = 4
+    Sim.N_iters = 10000
 
 
     Sim.setup_algorithm()

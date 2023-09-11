@@ -176,10 +176,10 @@ class PBE_Interface(PDE_utils):
         self.PDEs = PDEs
         self.uns = unions
 
-    def loss_I(self,solver,solver_ex):
+    def loss_I(self,solver,solver_ex,XI_data):
         loss = 0
-        for j in range(len(solver.PDE.XI_data)):
-            X = solver.mesh.get_X(solver.PDE.XI_data[j])
+        for j in range(len(XI_data)):
+            X = solver.mesh.get_X(XI_data[j])
             x_i,y_i,z_i = X
 
             R = solver.mesh.stack_X(x_i,y_i,z_i)

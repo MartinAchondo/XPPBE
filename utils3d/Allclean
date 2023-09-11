@@ -1,0 +1,6 @@
+#!/bin/sh
+
+filepath="results"
+
+rm -r ${filepath}
+mkdir ${filepath}

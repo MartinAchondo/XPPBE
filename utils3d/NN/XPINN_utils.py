@@ -6,6 +6,7 @@ import logging
 import os
 import pandas as pd
 
+
 logger = logging.getLogger(__name__)
 
 class XPINN_utils():
@@ -39,6 +40,7 @@ class XPINN_utils():
     def adapt_meshes(self,meshes,weights):
         for solver,mesh,weight in zip(self.solvers,meshes,weights):
             solver.adapt_mesh(mesh,**weight)
+        self.adapt_data_batches()
 
     def create_NeuralNets(self,NN_class,lrs,hyperparameters):
         for solver,lr,hyperparameter in zip(self.solvers,lrs,hyperparameters):
@@ -84,38 +86,76 @@ class XPINN_utils():
         df.to_csv(path_save)
         
 
-    def create_batches(self, N_batches):
+    ######################################################
 
-        number_batches = N_batches
 
-        dataset_X_r_1 = tf.data.Dataset.from_tensor_slices(self.solver1.PDE.X_r)
-        dataset_X_r_1 = dataset_X_r_1.shuffle(buffer_size=len(self.solver1.PDE.X_r))
-        batch_size = int(len(self.solver1.PDE.X_r)/number_batches)
-        batches_X_r_1 = dataset_X_r_1.batch(batch_size)
-
-        dataset_X_r_2 = tf.data.Dataset.from_tensor_slices(self.solver2.PDE.X_r)
-        dataset_X_r_2 = dataset_X_r_2.shuffle(buffer_size=len(self.solver2.PDE.X_r))
-        batch_size = int(len(self.solver2.PDE.X_r)/number_batches)
-        batches_X_r_2 = dataset_X_r_2.batch(batch_size)
-
-        if not self.precondition:
-            return (batches_X_r_1, batches_X_r_2), (None,None)
-
-    
-        number_batches = N_batches
-
-        dataset_X_r_P_1 = tf.data.Dataset.from_tensor_slices(self.solver1.PDE.X_r_P)
-        dataset_X_r_P_1 = dataset_X_r_P_1.shuffle(buffer_size=len(self.solver1.PDE.X_r_P))
-        batch_size = int(len(self.solver1.PDE.X_r_P)/number_batches)
-        batches_X_r_P_1 = dataset_X_r_P_1.batch(batch_size)
+    def adapt_data_batches(self):
+        self.L_batches_solvers = list()
+        for solver in self.solvers:
+            L_batches = dict()
+            for t in solver.mesh.meshes_names:
+                L_batches[t] = solver.mesh.data_mesh[t]
+            self.L_batches_solvers.append(L_batches)
+        self.N_batches = solver.mesh.N_batches
         
-        dataset_X_r_P_2 = tf.data.Dataset.from_tensor_slices(self.solver2.PDE.X_r_P)
-        dataset_X_r_P_2 = dataset_X_r_P_2.shuffle(buffer_size=len(self.solver2.PDE.X_r_P))
-        batch_size = int(len(self.solver2.PDE.X_r_P)/number_batches)
-        batches_X_r_P_2 = dataset_X_r_P_2.batch(batch_size)
+    
+    def shuffle_batches(self,shuffle):
 
-        return (batches_X_r_1, batches_X_r_2), (batches_X_r_P_1,batches_X_r_P_2)
+        def iterate_shuffled_dataset(dataset):
+            for batch in dataset:
+                yield batch
 
+        L_shuffled_solver = list()
+        for set_batches,solver in zip(self.L_batches_solvers,self.solvers):
+            L_shuffled = dict()
+            for t in set_batches:
+                if t in ('I','R','P'):
+                    L = list()
+                    for list_batches in set_batches[t][0]:
+                        if shuffle:
+                            L.append(iterate_shuffled_dataset(list_batches.shuffle(buffer_size=solver.mesh.meshes_N[t])))
+                        else: 
+                            L.append(iterate_shuffled_dataset(list_batches))
+                    L_shuffled[t] = (L,)
+                elif t in ('D','K','N'):
+                    L1 = list()
+                    for list_batches in set_batches[t][0]:
+                        if shuffle:
+                            L1.append(iterate_shuffled_dataset(list_batches.shuffle(buffer_size=solver.mesh.meshes_N[t])))
+                        else:
+                            L1.append(iterate_shuffled_dataset(list_batches))
+                    L2 = list()
+                    for list_batches in set_batches[t][1]:
+                        if shuffle:
+                            L2.append(iterate_shuffled_dataset(list_batches.shuffle(buffer_size=solver.mesh.meshes_N[t])))  
+                        else:
+                            L2.append(iterate_shuffled_dataset(list_batches))             
+                    L_shuffled[t] = (L1,L2)
+            L_shuffled_solver.append(L_shuffled)
+        return L_shuffled_solver
+    
+
+    def get_batches(self,TX_b1,TX_b2):
+        X_b = (dict(),dict()) 
+        TX = (TX_b1,TX_b2)
+        names = (self.solver1.mesh.meshes_names,self.solver2.mesh.meshes_names)
+        for k in range(len(X_b)):
+            for key in names[k]:
+                X_b[k][key] = list()                      
+                if key in ('I','R','P'):
+                    N_doms = len(TX[k][key][0])  
+                    xs = TX[k][key][0]
+                    for i in range(N_doms):
+                        x = xs[i]
+                        X_b[k][key].append(next(x))
+                elif key in ('D','N','K'): 
+                    N_doms = len(TX[k][key][0])  
+                    xs,us = TX[k][key]
+                    for i in range(N_doms):
+                        x = xs[i]
+                        u = us[i]
+                        X_b[k][key].append((next(x),next(u)))    
+        return X_b
 
 
     def add_losses_NN(self):
