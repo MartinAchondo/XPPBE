@@ -433,7 +433,7 @@ class View_results_X():
                 df.to_excel(self.Excel_writer, sheet_name='Solution', index=False)
 
 
-    def plot_u_domain_contour(self, N=100):
+    def plot_u_domain_contour(self, N=50):
         fig, ax = plt.subplots()
         vmax,vmin = self.get_max_min()
         for post_obj in self.Post:
@@ -537,7 +537,7 @@ class View_results_X():
             ax.plot(phi_bl[:,0],U[:,0], label=labels[i], c=colr[i])
             i += 1
         
-        ax.set_xlabel(r'$\varphi$')
+        ax.set_xlabel(r'$\beta$')
         ax.set_ylabel(r'$\phi_{\theta}$')
 
         text_l = r'$\phi_{\theta}$'
@@ -552,7 +552,9 @@ class View_results_X():
             fig.savefig(path_save)
             logger.info(f'Interface Plot saved: {path}')
 
+
     ########################################################################################################################
+ 
  
     def plot_u_domain_surface(self,N=100,alpha1=35,alpha2=135):
         fig = plt.figure()
