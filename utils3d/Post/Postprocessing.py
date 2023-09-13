@@ -266,6 +266,10 @@ class View_results():
         plt.yscale('log');
 
 
+
+
+
+
 class View_results_X():
 
     def __init__(self,XPINN,Post, save=False,directory=None, data=False, last=False):
@@ -297,25 +301,36 @@ class View_results_X():
         self.Excel_writer.close()
         logger.info(f'Excel created: {"results.xlsx"}')
 
-    def plot_loss_history(self, flag=True, ax=None):
+    def plot_loss_history(self, flag=True, plot_w=False, ax=None):
         if not ax:
             fig = plt.figure(figsize=(7,5))
             ax = fig.add_subplot(111)
         ax.semilogy(range(len(self.XPINN.loss_hist)), self.XPINN.loss_hist,'k-',label='Loss')
         if flag: 
             iter = 1
-            c = [['r','b','g','c','m'],['salmon','royalblue','springgreen','aqua', 'lavender']]
+            c = [['r','b','g','c','m'],['salmon','royalblue','springgreen','aqua', 'pink']]
             for NN in self.NN:
-                ax.semilogy(range(len(NN.loss_r)), NN.loss_r,c[iter-1][0],label=f'Loss_r_{iter}')
+                if not plot_w:
+                    w = {
+                    'R': 1.0,
+                    'D': 1.0,
+                    'N': 1.0,
+                    'K': 1.0,
+                    'I': 1.0
+                    }
+                elif plot_w:
+                    w = NN.w_hist
                 meshes_names = NN.mesh.meshes_names
+                if 'R' in meshes_names:
+                    ax.semilogy(range(len(NN.loss_r)), w['R']*np.array(NN.loss_r),c[iter-1][0],label=f'Loss_r_{iter}')
                 if 'D' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bD)), NN.loss_bD,c[iter-1][1],label=f'Loss_bD_{iter}')
+                    ax.semilogy(range(len(NN.loss_bD)), w['D']*np.array(NN.loss_bD),c[iter-1][1],label=f'Loss_bD_{iter}')
                 if 'N' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bN)), NN.loss_bN,c[iter-1][2],label=f'Loss_bN_{iter}')
+                    ax.semilogy(range(len(NN.loss_bN)), w['N']*np.array(NN.loss_bN),c[iter-1][2],label=f'Loss_bN_{iter}')
                 if 'K' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bK)), NN.loss_bK,c[iter-1][3],label=f'Loss_bK_{iter}')
+                    ax.semilogy(range(len(NN.loss_bK)), w['K']*np.array(NN.loss_bK),c[iter-1][3],label=f'Loss_bK_{iter}')
                 if 'I' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bI)), NN.loss_bI,'m',label=f'Loss_bI_{iter}')
+                    ax.semilogy(range(len(NN.loss_bI)), w['I']*np.array(NN.loss_bI),c[iter-1][4],label=f'Loss_bI_{iter}')
                 iter += 1
         
         ax.legend()
@@ -326,10 +341,49 @@ class View_results_X():
         ax.grid()
 
         if self.save:
-            path = 'loss_history.png'
+            path = 'loss_history.png' if not plot_w  else 'loss_history_w.png' 
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
+
+
+    def plot_weights_history(self, ax=None):
+        if not ax:
+            fig = plt.figure(figsize=(7,5))
+            ax = fig.add_subplot(111)
+
+        iter = 1
+        c = [['r','b','g','c','m'],['salmon','royalblue','springgreen','aqua', 'pink']]
+        for NN in self.NN:
+            if True:
+                w = NN.w_hist
+                meshes_names = NN.mesh.meshes_names
+                if 'R' in meshes_names:
+                    ax.semilogy(range(len(w['R'])), w['R'], c[iter-1][0],label=f'w_R_{iter}')
+                if 'D' in meshes_names:
+                    ax.semilogy(range(len(w['D'])), w['D'], c[iter-1][1],label=f'w_D_{iter}')
+                if 'N' in meshes_names:
+                    ax.semilogy(range(len(w['N'])), w['N'], c[iter-1][2],label=f'w_N_{iter}')
+                if 'K' in meshes_names:
+                    ax.semilogy(range(len(w['K'])), w['K'], c[iter-1][3],label=f'w_K_{iter}')
+                if 'I' in meshes_names:
+                    ax.semilogy(range(len(w['I'])), w['I'], c[iter-1][4],label=f'w_I_{iter}')
+            iter += 1
+    
+        ax.legend()
+        ax.set_xlabel('$n: iterations$')
+        ax.set_ylabel(r'$\mathcal{L}: Losses$')
+        text_l = r'$\phi_{\theta}$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
+        ax.grid()
+
+        if self.save:
+            path = 'weights_history.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            logger.info(f'Loss history Plot saved: {path}')
+
+
 
     def plot_u_plane(self,N=200, theta=np.pi/2, phi=0 ):
         fig, ax = plt.subplots()
@@ -379,7 +433,7 @@ class View_results_X():
                 df.to_excel(self.Excel_writer, sheet_name='Solution', index=False)
 
 
-    def plot_u_domain_contour(self, N=100):
+    def plot_u_domain_contour(self, N=50):
         fig, ax = plt.subplots()
         vmax,vmin = self.get_max_min()
         for post_obj in self.Post:
@@ -483,7 +537,7 @@ class View_results_X():
             ax.plot(phi_bl[:,0],U[:,0], label=labels[i], c=colr[i])
             i += 1
         
-        ax.set_xlabel(r'$\varphi$')
+        ax.set_xlabel(r'$\beta$')
         ax.set_ylabel(r'$\phi_{\theta}$')
 
         text_l = r'$\phi_{\theta}$'
@@ -498,7 +552,9 @@ class View_results_X():
             fig.savefig(path_save)
             logger.info(f'Interface Plot saved: {path}')
 
+
     ########################################################################################################################
+ 
  
     def plot_u_domain_surface(self,N=100,alpha1=35,alpha2=135):
         fig = plt.figure()

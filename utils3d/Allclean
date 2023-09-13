@@ -1,6 +1,6 @@
 #!/bin/sh
 
-filepath="utils3d/results"
+filepath="results"
 
 rm -r ${filepath}
 mkdir ${filepath}

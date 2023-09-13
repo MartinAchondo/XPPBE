@@ -1,15 +1,17 @@
-import tensorflow as tf
 import os
 import logging
 import shutil
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
 
 from DCM.PDE_Model import Poisson
 from DCM.PDE_Model import Helmholtz
 from DCM.PDE_Model import PBE_Interface
 
 from Simulation_X import Simulation
-
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
 main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'results')
@@ -64,8 +66,8 @@ def main():
     Sim.PDE_in.q = q_list
     Sim.PDE_in.problem = inputs
 
-    inner_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 40}
-    inner_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_in.analytic(x,y,z), 'r':'Random', 'N': 20}
+    inner_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 15}
+    inner_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_in.analytic(x,y,z), 'r':'Random', 'N': 15, 'noise': True}
     Sim.extra_meshes_in = {'1':inner_interface, '2': inner_data}
     Sim.ins_domain_in = {'rmax': rI}
 
@@ -79,18 +81,18 @@ def main():
     Sim.PDE_out.problem = inputs
 
     u_an = Sim.PDE_out.border_value(rB,0,0,rI)
-    outer_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N':50}
-    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'r':rB, 'N': 50}
-    outer_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_out.analytic(x,y,z), 'r':'Random', 'N': 20}
+    outer_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N':15}
+    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'r':rB, 'N': 15}
+    outer_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_out.analytic(x,y,z), 'r':'Random', 'N': 15, 'noise': True}
     Sim.extra_meshes_out = {'1':outer_interface,'2':outer_dirichlet, '3': outer_data}
     Sim.ins_domain_out = {'rmax': rB,'rmin':rI}
 
 
     # Mesh
-    Sim.mesh_in = {'N_r': 40,
-                   'N_r_P': 40}
-    Sim.mesh_out = {'N_r': 40,
-                    'N_r_P': 40}
+    Sim.mesh_in = {'N_r': 20,
+                   'N_r_P': 20}
+    Sim.mesh_out = {'N_r': 20,
+                    'N_r_P': 20}
 
     # Neural Network
     Sim.weights = {
@@ -123,18 +125,31 @@ def main():
         }
 
 
-    Sim.N_iters = 100
-    Sim.precondition = False
-    Sim.N_precond = 1
-    Sim.N_batches = 40
+    Sim.N_batches = 2
 
-    Sim.iters_save_model = 5
+    adapt_weights = True
+    adapt_w_iter = 15
+
+    iters_save_model = 0
     Sim.folder_path = folder_path
+
+    Sim.precondition = False
+    N_precond = 10
+
+    N_iters = 2
+
 
     Sim.setup_algorithm()
 
     # Solve
-    Sim.solve_algorithm(N_iters=Sim.N_iters, precond=Sim.precondition, N_precond=Sim.N_precond, N_batches=Sim.N_batches, save_model=Sim.iters_save_model)
+    Sim.solve_algorithm(N_iters = N_iters, 
+                        precond = Sim.precondition, 
+                        N_precond = N_precond, 
+                        save_model = iters_save_model, 
+                        adapt_weights = adapt_weights, 
+                        adapt_w_iter = adapt_w_iter,
+                        shuffle = True,
+                        shuffle_iter=100)
     
     Sim.postprocessing(folder_path=folder_path)
 

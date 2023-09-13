@@ -1,15 +1,15 @@
-import tensorflow as tf
 import os
 import logging
 import shutil
 
-from DCM.PDE_Model_Regularized import Poisson
-from DCM.PDE_Model_Regularized import Helmholtz
-from DCM.PDE_Model_Regularized import PBE_Interface
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import tensorflow as tf
+
+from DCM.PDE_Model import Poisson
+from DCM.PDE_Model import Helmholtz
+from DCM.PDE_Model import PBE_Interface
 
 from Simulation_X import Simulation
-
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
 main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'results')
@@ -17,7 +17,7 @@ main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'results')
 #        shutil.rmtree(main_path)
 #os.makedirs(main_path)
 
-folder_name = 'data'
+folder_name = 'S_H2_N2_B2_W0'
 folder_path = os.path.join(main_path,folder_name)
 if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
@@ -41,7 +41,7 @@ def main():
     # PDE
     q_list = [(1,[0,0,0])]
 
-    inputs = {'Problem': 'Main_X_REG',
+    inputs = {'Problem': 'S_H2_N2_B2_W0',
               'rmin': 0,
               'rI': 1,
               'rB': 10,
@@ -64,8 +64,8 @@ def main():
     Sim.PDE_in.q = q_list
     Sim.PDE_in.problem = inputs
 
-    inner_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 40}
-    inner_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_in.analytic(x,y,z), 'r':'Random', 'N': 20}
+    inner_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 30}
+    inner_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_in.analytic(x,y,z), 'r':'Random', 'N': 30, 'noise': True}
     Sim.extra_meshes_in = {'1':inner_interface, '2': inner_data}
     Sim.ins_domain_in = {'rmax': rI}
 
@@ -78,19 +78,17 @@ def main():
     Sim.PDE_out.q = q_list 
     Sim.PDE_out.problem = inputs
 
-    u_an = Sim.PDE_out.border_value(rB,0,0,rI) - Sim.PDE_out.G_Fun(rB,0,0)
-    outer_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N':40}
-    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'r':rB, 'N': 40}
-    outer_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_out.analytic(x,y,z), 'r':'Random', 'N': 20}
+    u_an = Sim.PDE_out.border_value(rB,0,0,rI)
+    outer_interface = {'type':'I', 'value':None, 'fun':None, 'r':rI, 'N': 30}
+    outer_dirichlet = {'type':'D', 'value':u_an, 'fun':None, 'r':rB, 'N': 30}
+    outer_data = {'type':'K', 'value':None, 'fun':lambda x,y,z: Sim.PDE_out.analytic(x,y,z), 'r':'Random', 'N': 30, 'noise': True}
     Sim.extra_meshes_out = {'1':outer_interface,'2':outer_dirichlet, '3': outer_data}
     Sim.ins_domain_out = {'rmax': rB,'rmin':rI}
 
 
     # Mesh
-    Sim.mesh_in = {'N_r': 40,
-                   'N_r_P': 40}
-    Sim.mesh_out = {'N_r': 40,
-                    'N_r_P': 40}
+    Sim.mesh_in = {'N_r': 35}
+    Sim.mesh_out = {'N_r': 35}
 
     # Neural Network
     Sim.weights = {
@@ -101,46 +99,53 @@ def main():
         'w_k': 1
     }
 
-    Sim.lr = ([3000,6000],[5e-3,4e-3,5e-4])
+    Sim.lr = ([6000],[1e-3,1e-4])
 
-    
+
     Sim.hyperparameters_in = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 2,
-                'num_neurons_per_layer': 12,
+                'num_hidden_layers': 8,
+                'num_neurons_per_layer': 200,
                 'output_dim': 1,
                 'activation': 'tanh',
-                'architecture_Net': 'FCNN',
-                'kernel_initializer': 'glorot_normal'
+                'architecture_Net': 'FCNN'
         }
 
     Sim.hyperparameters_out = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 2,
-                'num_neurons_per_layer': 12,
+                'num_hidden_layers': 8,
+                'num_neurons_per_layer': 200,
                 'output_dim': 1,
                 'activation': 'tanh',
-                'architecture_Net': 'FCNN',
-                'kernel_initializer': 'glorot_normal'
+                'architecture_Net': 'FCNN'
         }
 
 
-    Sim.N_iters = 1000
-    Sim.adapt_weights = True
-    Sim.adapt_w_iter = 200
+    Sim.N_batches = 8
 
-    Sim.iters_save_model = -1
+    Sim.adapt_weights = False
+    Sim.adapt_w_iter = 1001
+
+    Sim.iters_save_model = 500
     Sim.folder_path = folder_path
 
-
     Sim.precondition = False
-    Sim.N_precond = 1
-    Sim.N_batches = 40
+    Sim.N_precond = 5
+
+    Sim.N_iters = 3000
+
 
     Sim.setup_algorithm()
 
     # Solve
-    Sim.solve_algorithm(N_iters=Sim.N_iters, precond=Sim.precondition, N_precond=Sim.N_precond, N_batches=Sim.N_batches, save_model=Sim.iters_save_model, adapt_weights=Sim.adapt_weights, adapt_w_iter=Sim.adapt_w_iter)
+    Sim.solve_algorithm(N_iters=Sim.N_iters, 
+                        precond=Sim.precondition, 
+                        N_precond=Sim.N_precond, 
+                        save_model=Sim.iters_save_model, 
+                        adapt_weights=Sim.adapt_weights, 
+                        adapt_w_iter=Sim.adapt_w_iter,
+                        shuffle = True,
+                        shuffle_iter=500)
     
     Sim.postprocessing(folder_path=folder_path)
 
@@ -148,5 +153,4 @@ def main():
 
 if __name__=='__main__':
     main()
-
 

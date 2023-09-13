@@ -1,10 +1,12 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import pandas as pd
 import os
 from time import time
 from tqdm import tqdm as log_progress
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +28,11 @@ class PINN():
  
 
     def adapt_mesh(self, mesh,
-        w_r=1,
-        w_d=1,
-        w_n=1,
-        w_i=1,
-        w_k=1):
+        w_r=1.0,
+        w_d=1.0,
+        w_n=1.0,
+        w_i=1.0,
+        w_k=1.0):
 
         logger.info("> Adapting Mesh")
         
@@ -39,15 +41,25 @@ class PINN():
         self.ub = mesh.ub
         self.PDE.adapt_PDE_mesh(self.mesh)
 
-        self.w_i = w_i
         self.w = {
-            'r': w_r,
-            'D': w_d,
-            'N': w_n,
-            'K': w_k
+            'R': float(w_r),
+            'D': float(w_d),
+            'N': float(w_n),
+            'K': float(w_k),
+            'I': float(w_i),
+            'P': 1.0,
+        }
+
+        self.w_hist = {
+            'R': list(),
+            'D': list(),
+            'N': list(),
+            'K': list(),
+            'I': list(),
+            'P': list()
         }
         
-        self.L_names = ['r','D','N', 'K']
+        self.L_names = ['R','D','N','K','I','P']
 
         logger.info("Mesh adapted")
         
@@ -71,24 +83,27 @@ class PINN():
         self.model = NN_model
         self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
         logger.info("Neural Network adapted")
+        
+        path_load = os.path.join(path,'w_hist.csv')
+        df = pd.read_csv(path_load)
+
+        for t in self.mesh.meshes_names:
+            self.w_hist[t] = list(df[t])
+            self.w[t] = self.w_hist[t][-1]
+       
 
     def save_model(self,directory,name):
         dir_path = os.path.join(os.getcwd(),directory)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-
         self.model.save(os.path.join(dir_path,name))
+
+        df_dict = pd.DataFrame.from_dict(self.w_hist)
+        df = pd.DataFrame.from_dict(df_dict)
+        path_save = os.path.join(os.path.join(dir_path,name),'w_hist.csv')
+        df.to_csv(path_save)
  
 
-    def loss_fn(self, X_batch, precond=False):
-        if precond:
-            L = self.PDE.get_loss_preconditioner(X_batch, self.model)
-        elif not precond:
-            L = self.PDE.get_loss(X_batch, self.model)
-        loss = 0
-        for t in self.L_names:
-            loss += L[t]*self.w[t]
-        return loss,L
         
 
 
