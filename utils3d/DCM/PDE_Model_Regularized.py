@@ -192,27 +192,27 @@ class PBE_Interface(PDE_utils):
             sum += qk*r_1 
         return (-1/self.epsilon_G*4*self.pi)*sum
 
-    def loss_I(self,solver,solver_ex,XI_data):
+    def get_loss_I(self,solver,solver_ex,XI_data):
         loss = 0
-        for j in range(len(XI_data)):
-            X = solver.mesh.get_X(XI_data[j])
-            x_i,y_i,z_i = X
+        
+        X = solver.mesh.get_X(XI_data)
+        x_i,y_i,z_i = X
 
-            R = solver.mesh.stack_X(x_i,y_i,z_i)
-            u_1 = solver.model(R)
-            u_2 = solver_ex.model(R)
+        R = solver.mesh.stack_X(x_i,y_i,z_i)
+        u_1 = solver.model(R)
+        u_2 = solver_ex.model(R)
 
-            n_v = self.normal_vector(X)
-            du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
-            du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
-            dG = self.dG_n(x_i,y_i,z_i)
+        n_v = self.normal_vector(X)
+        du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
+        du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
+        dG = self.dG_n(x_i,y_i,z_i)
 
-            u_prom = (u_1+u_2)/2
-            dun_prom = (solver.un*(du_1+dG) + solver_ex.un*(du_2+dG))/2
-            
-            loss += tf.reduce_mean(tf.square(u_1 - u_prom)) 
-            loss += tf.reduce_mean(tf.square(solver.un*(du_1+dG)-dun_prom))
-            
+        u_prom = (u_1+u_2)/2
+        dun_prom = (solver.un*(du_1+dG) + solver_ex.un*(du_2+dG))/2
+        
+        loss += tf.reduce_mean(tf.square(u_1 - u_prom)) 
+        loss += tf.reduce_mean(tf.square(solver.un*(du_1+dG)-dun_prom))
+        
         return loss
     
 

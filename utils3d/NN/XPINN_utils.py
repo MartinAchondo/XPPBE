@@ -90,72 +90,102 @@ class XPINN_utils():
 
 
     def adapt_data_batches(self):
-        self.L_batches_solvers = list()
+        self.L_X_solvers = list()
         for solver in self.solvers:
             L_batches = dict()
             for t in solver.mesh.meshes_names:
                 L_batches[t] = solver.mesh.data_mesh[t]
-            self.L_batches_solvers.append(L_batches)
+            self.L_X_solvers.append(L_batches)
         self.N_batches = solver.mesh.N_batches
         
     
-    def shuffle_batches(self,shuffle):
+    def create_generators_shuffle(self, shuffle):
 
-        def iterate_shuffled_dataset(dataset):
+        def generator(dataset):
             for batch in dataset:
                 yield batch
 
-        L_shuffled_solver = list()
-        for set_batches,solver in zip(self.L_batches_solvers,self.solvers):
-            L_shuffled = dict()
+        L_X_generators = list()
+        for set_batches,solver in zip(self.L_X_solvers,self.solvers):
+            L = dict()
             for t in set_batches:
-                if t in ('I','R','P'):
-                    L = list()
-                    for list_batches in set_batches[t][0]:
-                        if shuffle:
-                            L.append(iterate_shuffled_dataset(list_batches.shuffle(buffer_size=solver.mesh.meshes_N[t])))
-                        else: 
-                            L.append(iterate_shuffled_dataset(list_batches))
-                    L_shuffled[t] = (L,)
-                elif t in ('D','K','N'):
-                    L1 = list()
-                    for list_batches in set_batches[t][0]:
-                        if shuffle:
-                            L1.append(iterate_shuffled_dataset(list_batches.shuffle(buffer_size=solver.mesh.meshes_N[t])))
-                        else:
-                            L1.append(iterate_shuffled_dataset(list_batches))
-                    L2 = list()
-                    for list_batches in set_batches[t][1]:
-                        if shuffle:
-                            L2.append(iterate_shuffled_dataset(list_batches.shuffle(buffer_size=solver.mesh.meshes_N[t])))  
-                        else:
-                            L2.append(iterate_shuffled_dataset(list_batches))             
-                    L_shuffled[t] = (L1,L2)
-            L_shuffled_solver.append(L_shuffled)
-        return L_shuffled_solver
-    
+                if shuffle:
+                    L[t] = generator(set_batches[t].shuffle(buffer_size=solver.mesh.meshes_N[t]))
+                elif not shuffle:
+                    L[t] = generator(set_batches[t])
+            L_X_generators.append(L)
+        return L_X_generators
 
-    def get_batches(self,TX_b1,TX_b2):
-        X_b = (dict(),dict()) 
-        TX = (TX_b1,TX_b2)
-        names = (self.solver1.mesh.meshes_names,self.solver2.mesh.meshes_names)
-        for k in range(len(X_b)):
-            for key in names[k]:
-                X_b[k][key] = list()                      
-                if key in ('I','R','P'):
-                    N_doms = len(TX[k][key][0])  
-                    xs = TX[k][key][0]
-                    for i in range(N_doms):
-                        x = xs[i]
-                        X_b[k][key].append(next(x))
-                elif key in ('D','N','K'): 
-                    N_doms = len(TX[k][key][0])  
-                    xs,us = TX[k][key]
-                    for i in range(N_doms):
-                        x = xs[i]
-                        u = us[i]
-                        X_b[k][key].append((next(x),next(u)))    
+
+    def get_batches(self, TX_b):
+        X_b = dict()
+        for t in TX_b:
+            X_b[t] = next(TX_b[t])
         return X_b
+
+
+    def checkers_iterations(self):
+
+        if (self.shuffle and self.iter%self.shuffle_iter ==0):
+            self.shuffle_now = True
+        else:
+            self.shuffle_now = False
+
+        if self.iter>=self.N_precond and self.precondition:
+            self.precondition = False
+        
+        if self.iter % 2 == 0:
+            self.pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
+
+        return [0.0, dict()],[0.0, dict()]
+
+
+
+    def callback(self, L1,L2):
+
+        self.loss_r1.append(L1[1]['R'])
+        self.loss_bD1.append(L1[1]['D'])
+        self.loss_bN1.append(L1[1]['N'])
+        self.loss_bI1.append(L1[1]['I'])
+        self.loss_bK1.append(L1[1]['K'])
+
+        self.loss_r2.append(L2[1]['R'])
+        self.loss_bD2.append(L2[1]['D'])
+        self.loss_bN2.append(L2[1]['N'])
+        self.loss_bI2.append(L2[1]['I'])
+        self.loss_bK2.append(L2[1]['K'])
+
+        loss = L1[0] + L2[0]
+        self.current_loss = loss.numpy()
+        self.loss_hist.append(self.current_loss)
+        self.solver1.L = L1[1]
+        self.solver2.L = L2[1]
+
+        for solver in self.solvers:
+            for t in solver.L_names:
+                solver.w_hist[t].append(solver.w[t])
+
+        self.iter+=1
+
+        if self.save_model_iter > 0:
+            if self.iter % self.save_model_iter == 0 and self.iter>1:
+                dir_save = os.path.join(self.folder_path,f'iter_{self.iter}')
+                self.save_models(dir_save, [f'model_1',f'model_2'])
+
+
+
+    def batch_iter_callback(self,L,L_b):
+        self.N_steps +=1
+        L_f = list()
+        for Li,Li_b in zip(L,L_b):
+            Li[0] += Li_b[0]
+            for t in Li_b[1]:
+                if t in Li[1]:
+                    Li[1][t] += Li_b[1][t]
+                else:
+                    Li[1][t] = Li_b[1][t]
+            L_f.append(Li)
+        return L_f
 
 
     def add_losses_NN(self):

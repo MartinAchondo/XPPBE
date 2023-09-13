@@ -34,7 +34,7 @@ class XPINN(XPINN_utils):
     def get_loss(self, X_batch, s1, s2, w, precond=False):
         L = self.loss_PINN(s1,X_batch,precond=precond)
         if not precond:    
-            L['I'] += self.PDE.loss_I(s1,s2,X_batch['I'])
+            L['I'] += self.PDE.get_loss_I(s1,s2,X_batch['I'])
 
         loss = 0
         for t in s1.L_names:
@@ -84,49 +84,33 @@ class XPINN(XPINN_utils):
             return L1,L2
 
         self.N_iters = N
-        self.N_j = 0
-        pbar = log_progress(range(N))
-        pbar.set_description("Loss: {:6.4e}".format(100))
+        self.N_precond = N_precond
+        self.N_steps = 0
+        self.current_loss = 100
 
-        for i in pbar:
+        self.pbar = log_progress(range(N))
 
-            L1 = [0.0, dict()]
-            L2 = [0.0, dict()]
+        for i in self.pbar:
 
-            if (self.shuffle and self.iter%self.shuffle_iter ==0):
-                shuffle = True
-            else:
-                shuffle = False
-            TX_b1, TX_b2 = self.shuffle_batches(shuffle)
+            L1,L2 = self.checkers_iterations()
 
-            if not self.precondition:
-                self.check_get_new_weights()
-                for N_stoch in range(self.N_batches):
-                    X_b = self.get_batches(TX_b1,TX_b2)          
-                    L1_b,L2_b = train_step(X_b, ws=[self.solver1.w,self.solver2.w])
-                    L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b))
-            elif self.precondition:
-                for N_stoch in range(self.N_batches):
-                    X_b = self.get_batches(TX_b1,TX_b2)          
-                    L1_b,L2_b = train_step_precond(X_b, ws=[self.solver1.w,self.solver2.w])
-                    L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b))
+            TX_b1, TX_b2 = self.create_generators_shuffle(self.shuffle_now)
+
+            for N_stoch in range(self.N_batches):
+                if not self.precondition:
+                    self.check_get_new_weights()
+                    X_b1 = self.get_batches(TX_b1)
+                    X_b2 = self.get_batches(TX_b2)          
+                    L1_b,L2_b = train_step((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
+                    L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b))    
+
+                elif self.precondition:
+                    X_b1 = self.get_batches(TX_b1)
+                    X_b2 = self.get_batches(TX_b2)          
+                    L1_b,L2_b = train_step_precond((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
+                    L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b)) 
+
             self.callback(L1,L2)
-
-            if self.iter>N_precond and self.precondition:
-                self.precondition = False
-            
-            if self.iter % 2 == 0:
-                pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
-
-            if self.save_model_iter > 0:
-                if self.iter % self.save_model_iter == 0:
-                    dir_save = os.path.join(self.folder_path,f'iter_{self.iter}')
-                    self.save_models(dir_save, [f'model_1',f'model_2'])
-
-        
-        logger.info(f' Iterations: {N}')
-        logger.info(f' Total steps: {self.N_j}')
-        logger.info(" Loss: {:6.4e}".format(self.current_loss))
     
 
     def check_get_new_weights(self):
@@ -157,7 +141,7 @@ class XPINN(XPINN_utils):
     def solve(self,N=1000, precond=False, N_precond=10, save_model=0, adapt_weights=False, adapt_w_iter=1, shuffle = True, shuffle_iter = 500):
 
         self.precondition = precond
-        self.save_model_iter = save_model
+        self.save_model_iter = save_model if save_model != 0 else N
 
         self.adapt_weights = adapt_weights
         self.adapt_w_iter = adapt_w_iter
@@ -166,50 +150,18 @@ class XPINN(XPINN_utils):
         self.shuffle_iter = shuffle_iter 
 
         t0 = time()
+
         self.main_loop(N, N_precond)
+
+        logger.info(f' Iterations: {self.N_iters}')
+        logger.info(f' Total steps: {self.N_steps}')
+        logger.info(" Loss: {:6.4e}".format(self.current_loss))
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
+
+
 
         self.add_losses_NN()
 
-
-    def batch_iter_callback(self,L,L_b):
-        self.N_j +=1
-        L_f = list()
-        for Li,Li_b in zip(L,L_b):
-            Li[0] += Li_b[0]
-            for t in Li_b[1]:
-                if t in Li[1]:
-                    Li[1][t] += Li_b[1][t]
-                else:
-                    Li[1][t] = Li_b[1][t]
-            L_f.append(Li)
-        return L_f
-
-    def callback(self, L1,L2):
-
-        self.loss_r1.append(L1[1]['R'])
-        self.loss_bD1.append(L1[1]['D'])
-        self.loss_bN1.append(L1[1]['N'])
-        self.loss_bI1.append(L1[1]['I'])
-        self.loss_bK1.append(L1[1]['K'])
-
-        self.loss_r2.append(L2[1]['R'])
-        self.loss_bD2.append(L2[1]['D'])
-        self.loss_bN2.append(L2[1]['N'])
-        self.loss_bI2.append(L2[1]['I'])
-        self.loss_bK2.append(L2[1]['K'])
-
-        loss = L1[0] + L2[0]
-        self.current_loss = loss.numpy()
-        self.loss_hist.append(self.current_loss)
-        self.solver1.L = L1[1]
-        self.solver2.L = L2[1]
-
-        for solver in self.solvers:
-            for t in solver.L_names:
-                solver.w_hist[t].append(solver.w[t])
-
-        self.iter+=1
 
 
 

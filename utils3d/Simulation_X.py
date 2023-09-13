@@ -42,20 +42,12 @@ class Simulation():
         logger.info(f'Batches: {self.N_batches}')
         mesh_in = Mesh(domain_in, mesh_N=self.mesh_in, N_batches=self.N_batches, precondition=self.precondition)
         mesh_in.create_mesh(self.extra_meshes_in, self.ins_domain_in)
-        logger.info(json.dumps({'Domain_Mesh_in': self.mesh_in}, indent=4))
-        L = dict()
-        for t in self.extra_meshes_in:
-            L[self.extra_meshes_in[t]['type']] = self.extra_meshes_in[t]['N']
-        logger.info(json.dumps({'Extra_Meshes_in': L}, indent=4))
+        logger.info(json.dumps({'Number Inner points': mesh_in.meshes_N}, indent=4))
         # mesh_in.plot_points_2d(self.folder_path, 'Mesh_2d_in')
 
         mesh_out = Mesh(domain_out, mesh_N=self.mesh_out, N_batches=self.N_batches, precondition=self.precondition)
         mesh_out.create_mesh(self.extra_meshes_out, self.ins_domain_out)
-        logger.info(json.dumps({'Domain_Mesh_out': self.mesh_out}, indent=4))
-        L = dict()
-        for t in self.extra_meshes_out:
-            L[self.extra_meshes_out[t]['type']] = self.extra_meshes_out[t]['N']
-        logger.info(json.dumps({'Extra_Meshes_out': L}, indent=4))
+        logger.info(json.dumps({'Number Outer points': mesh_out.meshes_N}, indent=4))
         # mesh_out.plot_points_2d(self.folder_path, 'Mesh_2d_out')
 
         PDE = self.PDE_Interface()
@@ -89,6 +81,7 @@ class Simulation():
             logger.info(f'Shuffling batches every {shuffle_iter} iterations')
         if adapt_weights:
             logger.info(f'Adapting weights every {adapt_w_iter} iterations')
+
         self.XPINN_solver.solve(N=N_iters, 
                                 precond=precond, 
                                 N_precond=N_precond,  
@@ -97,7 +90,6 @@ class Simulation():
                                 adapt_w_iter=adapt_w_iter,
                                 shuffle = shuffle, 
                                 shuffle_iter = shuffle_iter )
-
 
     def postprocessing(self,folder_path):
         

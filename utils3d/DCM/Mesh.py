@@ -32,14 +32,13 @@ class Mesh():
 
         self.extra_meshes = extra_meshes
         self.ins_domain = ins_domain
-        self.XD_data = list()
-        self.UD_data = list()
-        self.XN_data = list()
-        self.UN_data = list()
-        self.XK_data = list()
-        self.UK_data = list()
+
+        self.XUD_data = None
+        self.XUN_data = None
+        self.XUK_data = None
+        self.XI_data = None
+        
         self.derN = list()
-        self.XI_data = list()
         self.derI = list()
         self.BP = list()
         self.X_r_P = None
@@ -47,19 +46,17 @@ class Mesh():
         self.meshes_N = dict()
 
         self.create_extra_meshes()
-
         self.create_domain_mesh()
-
         if self.precondition:
             self.create_precondition_mesh()
 
         self.data_mesh = {
-            'R': (self.X_r,),
-            'D': (self.XD_data,self.UD_data),
-            'N': (self.XN_data,self.UN_data),
-            'K': (self.XK_data, self.UK_data),
-            'I': (self.XI_data,),
-            'P': (self.X_r_P,)
+            'R': self.X_r,
+            'D': self.XUD_data,
+            'N': self.XUN_data,
+            'K': self.XUK_data, 
+            'I': self.XI_data,
+            'P': self.X_r_P,
         }
 
     def create_extra_meshes(self):
@@ -127,26 +124,25 @@ class Mesh():
             deriv = border['dr']
         if not 'noise' in border:
             border['noise'] = False
+            
         if type_b == 'D':
             if fun == None:
                 u_b = self.value_u_b(x1, x2, x3, value=value)
             else:
                 u_b = fun(x1, x2, x3)
-            bX,bU = self.create_Datasets(X,u_b)
-            self.XD_data.append(bX)
-            self.UD_data.append(bU)
+            bXU = self.create_Datasets(X,u_b)
+            self.XUD_data = bXU
         elif type_b == 'N':
             if fun == None:
                 ux_b = self.value_ux_b(x1, x2, x3, value=value)
             else:
                 ux_b = fun(x1, x2, x3)
-            bX,bUx = self.create_Datasets(X,ux_b)
-            self.XN_data.append(bX)
-            self.UN_data.append(bUx)
+            bXU = self.create_Datasets(X,ux_b)
+            self.XUN_data = bXU
             self.derN.append(deriv)
         elif type_b == 'I':
             bX = self.create_Dataset(X)
-            self.XI_data.append(bX)
+            self.XI_data = bX
         elif type_b == 'K':
             if fun == None:
                 u_b = self.value_u_b(x1, x2, x3, value=value)
@@ -154,14 +150,15 @@ class Mesh():
                 u_b = fun(x1, x2, x3)
                 if border['noise']:
                     u_b = u_b*self.add_noise(u_b)
-            bX,bU = self.create_Datasets(X,u_b)
-            self.XK_data.append(bX)
-            self.UK_data.append(bU)
+            bXU = self.create_Datasets(X,u_b)
+            self.XUK_data = bXU
+
         self.meshes_names.add(type_b)
         if type_b in self.meshes_N:
             self.meshes_N[type_b] += len(X)
         else:
             self.meshes_N[type_b] = len(X)
+
 
     def value_u_b(self,x, y, z, value):
         n = x.shape[0]
@@ -181,7 +178,7 @@ class Mesh():
         X, Y, Z = np.meshgrid(xspace, yspace, zspace)
 
         if 'rmin' not in self.ins_domain:
-            self.ins_domain['rmin'] = -0.1
+            self.ins_domain['rmin'] = 0.0
 
         r = np.sqrt(X**2 + Y**2 + Z**2)
         inside1 = r < self.ins_domain['rmax']
@@ -193,9 +190,9 @@ class Mesh():
 
         X_r = tf.constant(np.vstack([X1[inside].flatten(),Y1[inside].flatten(), Z1[inside].flatten()]).T)
 
-        self.X_r = [self.create_Dataset(X_r)]
+        self.X_r = self.create_Dataset(X_r)
         self.meshes_names.add('R')
-        self.meshes_N['R'] = len(X)
+        self.meshes_N['R'] = len(X1[inside].flatten())
 
     def create_precondition_mesh(self):
        #crear dominio circular (cascaron para generalizar)
@@ -206,12 +203,12 @@ class Mesh():
         X, Y, Z = np.meshgrid(xspace, yspace, zspace)
         
         if 'rmin' not in self.ins_domain:
-            precon_rmin = -0.02
+            precon_rmin = 0.0
         else:
-            precon_rmin = 0.5*self.ins_domain['rmin']
+            precon_rmin = 0.95*self.ins_domain['rmin']
 
         r = np.sqrt(X**2 + Y**2 + Z**2)
-        inside1 = r < self.ins_domain['rmax']
+        inside1 = r < self.ins_domain['rmax']*1.05
         X1 = X[inside1]
         Y1 = Y[inside1]
         Z1 = Z[inside1]
@@ -220,26 +217,22 @@ class Mesh():
         inside_P = r > precon_rmin
         X_r_P = tf.constant(np.vstack([X1[inside_P].flatten(),Y1[inside_P].flatten(), Z1[inside_P].flatten()]).T)
 
-        self.X_r_P = [self.create_Dataset(X_r_P)]
+        self.X_r_P = self.create_Dataset(X_r_P)
         self.meshes_names.add('P')
-        self.meshes_N['P'] = len(X)
+        self.meshes_N['P'] = len(X1[inside_P].flatten())
 
 
     def create_Dataset(self,X):
         dataset_XB = tf.data.Dataset.from_tensor_slices(X)
         dataset_XB = dataset_XB.shuffle(buffer_size=len(X))
-        X_batch = dataset_XB.batch(int(len(X)/self.N_batches))
-        #X_batch = next(iter(dataset_X_batch))
-        return X_batch
+        X_batches = dataset_XB.batch(int(len(X)/self.N_batches))
+        return X_batches
 
     def create_Datasets(self, X, Y):
         dataset_XY = tf.data.Dataset.from_tensor_slices((X, Y))
         dataset_XY = dataset_XY.shuffle(buffer_size=len(X))
-        dataset_XY_batch = dataset_XY.batch(int(len(X)/self.N_batches))
-        X_batch = dataset_XY_batch.map(lambda x, y: x)
-        Y_batch = dataset_XY_batch.map(lambda x, y: y)
-        #X_batch, Y_batch = tf.unstack(dataset_XY_batch, num=2)
-        return X_batch, Y_batch
+        XY_batches = dataset_XY.batch(int(len(X)/self.N_batches))
+        return XY_batches
   
     def add_noise(self,x):
         n = x.shape[0]

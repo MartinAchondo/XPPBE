@@ -38,28 +38,28 @@ class PDE_utils():
         L['P'] = 0.0
 
         #residual
-        if 'R' in self.mesh.meshes_names:
-            for X in X_batches['R']: 
-                loss_r = self.residual_loss(self.mesh,model,self.mesh.get_X(X))
-                L['R'] += loss_r    
+        if 'R' in self.mesh.meshes_names: 
+            X = X_batches['R']
+            loss_r = self.residual_loss(self.mesh,model,self.mesh.get_X(X))
+            L['R'] += loss_r    
 
         #dirichlet 
         if 'D' in self.mesh.meshes_names:
-            for X,U in X_batches['D']:
-                loss_d = self.dirichlet_loss(self.mesh,model,X,U)
-                L['D'] += loss_d
+            X,U = X_batches['D']
+            loss_d = self.dirichlet_loss(self.mesh,model,X,U)
+            L['D'] += loss_d
 
         #neumann
         if 'N' in self.mesh.meshes_names:
-            for X,U in X_batches['K']:
-                loss_n = self.neumann_loss(self.mesh,model,X,U)
-                L['N'] += loss_n
+            X,U = X_batches['K']
+            loss_n = self.neumann_loss(self.mesh,model,X,U)
+            L['N'] += loss_n
 
         # data known
         if 'K' in self.mesh.meshes_names:
-            for X,U in X_batches['K']:
-                loss_k = self.data_known_loss(self.mesh,model,X,U)
-                L['K'] += loss_k    
+            X,U = X_batches['K']
+            loss_k = self.data_known_loss(self.mesh,model,X,U)
+            L['K'] += loss_k    
 
         return L
 
@@ -101,9 +101,9 @@ class PDE_utils():
 
         #residual
         if 'P' in self.mesh.meshes_names:
-            for X in X_batches['P']: 
-                loss_p = self.preconditioner(self.mesh,model,self.mesh.get_X(X))
-                L['P'] += loss_p   
+            X = X_batches['P'] 
+            loss_p = self.preconditioner(self.mesh,model,self.mesh.get_X(X))
+            L['P'] += loss_p   
             
         return L
 
