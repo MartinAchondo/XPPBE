@@ -126,11 +126,19 @@ class XPINN_utils():
 
     def checkers_iterations(self):
 
-        if (self.shuffle and self.iter%self.shuffle_iter ==0):
+        # shuffle batches
+        if self.shuffle and self.iter%self.shuffle_iter==0 and self.iter>1:
             self.shuffle_now = True
         else:
             self.shuffle_now = False
 
+        # adapt losses weights
+        if self.adapt_weights and self.iter%self.adapt_w_iter==0 and self.iter>1 and not self.precondition:
+            self.adapt_w_now = True
+        else:
+            self.adapt_w_now = False  
+
+        # check precondition
         if self.iter>=self.N_precond and self.precondition:
             self.precondition = False
         

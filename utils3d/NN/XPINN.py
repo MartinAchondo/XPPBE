@@ -37,7 +37,7 @@ class XPINN(XPINN_utils):
             L['I'] += self.PDE.get_loss_I(s1,s2,X_batch['I'])
 
         loss = 0
-        for t in s1.L_names:
+        for t in s1.mesh.meshes_names:
             loss += w[t]*L[t]
         return loss,L
     
@@ -93,28 +93,28 @@ class XPINN(XPINN_utils):
         for i in self.pbar:
 
             L1,L2 = self.checkers_iterations()
-
+            
+            self.check_adapt_new_weights(self.adapt_w_now)
             TX_b1, TX_b2 = self.create_generators_shuffle(self.shuffle_now)
 
             for n_b in range(self.N_batches):
-                if not self.precondition:
-                    self.check_get_new_weights()
-                    X_b1 = self.get_batches(TX_b1)
-                    X_b2 = self.get_batches(TX_b2)          
-                    L1_b,L2_b = train_step((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
-                    L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b))    
 
-                elif self.precondition:
-                    X_b1 = self.get_batches(TX_b1)
-                    X_b2 = self.get_batches(TX_b2)          
+                X_b1 = self.get_batches(TX_b1)
+                X_b2 = self.get_batches(TX_b2)    
+
+                if not self.precondition:
+                    L1_b,L2_b = train_step((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])   
+
+                elif self.precondition:        
                     L1_b,L2_b = train_step_precond((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
-                    L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b)) 
+
+                L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b)) 
 
             self.callback(L1,L2)
     
 
-    def check_get_new_weights(self):
-        if self.adapt_weights and (self.iter % self.adapt_w_iter)==0 and self.iter>1:        
+    def check_adapt_new_weights(self,adapt_now):
+        if adapt_now:
             for solver in self.solvers:
                 loss_wo_w = sum(solver.L.values())
                 for t in solver.L_names:

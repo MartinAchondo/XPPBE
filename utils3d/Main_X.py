@@ -133,10 +133,10 @@ def main():
     iters_save_model = 0
     Sim.folder_path = folder_path
 
-    Sim.precondition = True
+    Sim.precondition = False
     N_precond = 10
 
-    N_iters = 100
+    N_iters = 2
 
 
     Sim.setup_algorithm()
