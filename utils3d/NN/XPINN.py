@@ -96,7 +96,7 @@ class XPINN(XPINN_utils):
 
             TX_b1, TX_b2 = self.create_generators_shuffle(self.shuffle_now)
 
-            for N_stoch in range(self.N_batches):
+            for n_b in range(self.N_batches):
                 if not self.precondition:
                     self.check_get_new_weights()
                     X_b1 = self.get_batches(TX_b1)
@@ -157,8 +157,6 @@ class XPINN(XPINN_utils):
         logger.info(f' Total steps: {self.N_steps}')
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
-
-
 
         self.add_losses_NN()
 
