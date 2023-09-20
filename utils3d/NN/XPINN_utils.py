@@ -141,6 +141,10 @@ class XPINN_utils():
         # check precondition
         if self.iter>=self.N_precond and self.precondition:
             self.precondition = False
+            for data,solver in zip(self.L_X_solvers,self.solvers):
+                del data['P']
+                solver.mesh.data_mesh['P'] = None
+                solver.mesh.meshes_names.remove('P')
         
         if self.iter % 2 == 0:
             self.pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
@@ -184,14 +188,15 @@ class XPINN_utils():
 
     def batch_iter_callback(self,L,L_b):
         self.N_steps +=1
+        N_batches = float(self.N_batches)
         L_f = list()
         for Li,Li_b in zip(L,L_b):
-            Li[0] += Li_b[0]
+            Li[0] += Li_b[0]/N_batches
             for t in Li_b[1]:
                 if t in Li[1]:
-                    Li[1][t] += Li_b[1][t]
+                    Li[1][t] += Li_b[1][t]/N_batches
                 else:
-                    Li[1][t] = Li_b[1][t]
+                    Li[1][t] = Li_b[1][t]/N_batches
             L_f.append(Li)
         return L_f
 

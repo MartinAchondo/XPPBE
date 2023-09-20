@@ -103,7 +103,7 @@ def main():
         'w_k': 1
     }
 
-    Sim.lr = ([3000,6000],[1e-2,5e-3,5e-4])
+    Sim.lr = ([1000,1600],[1e-2,5e-3,5e-4])
 
 
     Sim.hyperparameters_in = {
@@ -128,19 +128,19 @@ def main():
     Sim.N_batches = 2
 
     adapt_weights = True
-    adapt_w_iter = 15
+    adapt_w_iter = 25
 
     iters_save_model = 0
     Sim.folder_path = folder_path
 
-    Sim.precondition = False
-    N_precond = 10
+    Sim.precondition = True
+    N_precond = 15
 
-    N_iters = 2
+    N_iters = 50
 
 
     Sim.setup_algorithm()
-
+     
     # Solve
     Sim.solve_algorithm(N_iters = N_iters, 
                         precond = Sim.precondition, 
@@ -149,10 +149,9 @@ def main():
                         adapt_weights = adapt_weights, 
                         adapt_w_iter = adapt_w_iter,
                         shuffle = True,
-                        shuffle_iter=100)
+                        shuffle_iter=150)
     
     Sim.postprocessing(folder_path=folder_path)
-
 
 
 if __name__=='__main__':

@@ -117,11 +117,10 @@ class XPINN(XPINN_utils):
         if adapt_now:
             for solver in self.solvers:
                 loss_wo_w = sum(solver.L.values())
-                for t in solver.L_names:
-                    if t in solver.mesh.meshes_names and t!='P':
-                        eps = 1e-9
-                        w = float(loss_wo_w/(solver.L[t]+eps))
-                        solver.w[t] = self.alpha_w*solver.w[t] + (1-self.alpha_w)*w
+                for t in solver.mesh.meshes_names:
+                    eps = 1e-9
+                    w = float(loss_wo_w/(solver.L[t]+eps))
+                    solver.w[t] = self.alpha_w*solver.w[t] + (1-self.alpha_w)*w
 
 
     def create_optimizers(self, precond=False):
