@@ -1,0 +1,161 @@
+import os
+import logging
+import shutil
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
+
+from Model.Mesh.Mesh import Molecule_Mesh
+from Model.PDE_Model import PBE
+from NN.NeuralNet import PINN_NeuralNet
+from NN.PINN import PINN 
+from NN.XPINN import XPINN
+from Post.Postprocessing import View_results
+from Post.Postprocessing import View_results_X
+
+
+main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'results')
+#if os.path.exists(main_path):
+#        shutil.rmtree(main_path)
+#os.makedirs(main_path)
+
+folder_name = 'data'
+folder_path = os.path.join(main_path,folder_name)
+if os.path.exists(folder_path):
+        shutil.rmtree(folder_path)
+os.makedirs(folder_path)
+
+filename = os.path.join(folder_path,'logfile.log')
+LOG_format = '%(levelname)s - %(name)s: %(message)s'
+logging.basicConfig(filename=filename, filemode='w', level=logging.INFO, format=LOG_format)
+logger = logging.getLogger(__name__)
+
+logger.info('================================================')
+
+
+        # qe = 1.60217663e-19
+        # eps0 = 8.8541878128e-12
+        # ang_to_m = 1e-10
+        # to_V = qe/(eps0 * ang_to_m)
+        # kT = 4.11e-21 
+        # Na = 6.02214076e23
+
+
+# Inputs
+###############################################
+
+def main():
+
+    inputs = {'molecule': 'sphere',
+              'epsilon_1':  1,
+              'epsilon_2': 80,
+              'kappa': 0.125,
+              'kT' : 4.11e-21 
+              }
+    
+    N_points = {'N_interior': 31,
+              'N_exterior': 20,
+              'N_border': 20,
+              'dR_exterior': 8
+             }
+    
+    N_batches = 1
+
+    Mol_mesh = Molecule_Mesh(inputs['molecule'], 
+                             N_points, 
+                             N_batches)
+    PBE_model = PBE(inputs,
+                    mesh=Mol_mesh, 
+                    model='linear'
+                    ) 
+
+
+    inner_residual = {'type':'R', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
+    inner_interface = {'type':'I', 'value':None, 'fun':None}
+    meshes_in = {'1':inner_residual, '2': inner_interface}
+    PBE_model.PDE_in.mesh.adapt_meshes(meshes_in)
+
+    outer_residual = {'type':'R', 'value':0.0, 'fun':None}
+    outer_interface = {'type':'I', 'value':None, 'fun':None}
+    outer_border = {'type':'D', 'value':None, 'fun':lambda x,y,z: PBE_model.border_value(x,y,z)}
+    meshes_out = {'1':outer_residual, '2': outer_interface, '3': outer_border}
+    PBE_model.PDE_out.mesh.adapt_meshes(meshes_out)
+
+
+    XPINN_solver = XPINN(PINN)
+    XPINN_solver.adapt_PDEs(PBE_model)
+
+    weights = {'w_r': 1,
+               'w_d': 1,
+               'w_n': 1,
+               'w_i': 1,
+               'w_k': 1
+            }
+
+    XPINN_solver.adapt_weights([weights,weights])
+
+    lr = ([1000,1600],[1e-2,5e-3,5e-4])
+
+    hyperparameters_in = {
+                'input_shape': (None,3),
+                'num_hidden_layers': 2,
+                'num_neurons_per_layer': 20,
+                'output_dim': 1,
+                'activation': 'tanh',
+                'architecture_Net': 'FCNN'
+        }
+
+    hyperparameters_out = {
+                'input_shape': (None,3),
+                'num_hidden_layers': 2,
+                'num_neurons_per_layer': 20,
+                'output_dim': 1,
+                'activation': 'tanh',
+                'architecture_Net': 'FCNN'
+        }
+
+    XPINN_solver.create_NeuralNets(PINN_NeuralNet,
+                                   [lr,lr],
+                                   [hyperparameters_in,hyperparameters_out]
+                                   )
+
+    adapt_weights = False
+    adapt_w_iter = 25
+
+    iters_save_model = 0
+
+    precondition = False
+    N_precond = 15
+
+    N_iters = 1500
+
+    XPINN_solver.folder_path = folder_path
+
+    XPINN_solver.solve(N=N_iters, 
+                       precond = precondition, 
+                       N_precond = N_precond,  
+                       save_model = iters_save_model, 
+                       adapt_weights = adapt_weights, 
+                       adapt_w_iter = adapt_w_iter,
+                       shuffle = False, 
+                       shuffle_iter = 150 )
+
+
+    Post = View_results_X(XPINN_solver, View_results, save=True, directory=folder_path, data=False)
+
+    Post.plot_loss_history();
+    #Post.plot_loss_history(plot_w=True);
+    
+    Post.plot_u_plane();
+    # Post.plot_u_domain_contour();
+    Post.plot_aprox_analytic();
+    # Post.plot_interface();
+    # Post.plot_weights_history();
+
+
+if __name__=='__main__':
+    main()
+
+

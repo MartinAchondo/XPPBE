@@ -26,20 +26,21 @@ class PINN():
         self.iter = 0
         self.lr = None
  
+    def adapt_PDE(self,PDE):
+        self.PDE = PDE
+        self.adapt_mesh()
 
-    def adapt_mesh(self, mesh,
+    def adapt_mesh(self):
+        self.mesh = self.PDE.mesh
+        self.lb = tf.constant(self.mesh.lb, dtype=self.DTYPE)
+        self.ub = tf.constant(self.mesh.ub, dtype=self.DTYPE)
+
+    def adapt_weights(self,
         w_r=1.0,
         w_d=1.0,
         w_n=1.0,
         w_i=1.0,
         w_k=1.0):
-
-        logger.info("> Adapting Mesh")
-        
-        self.mesh = mesh
-        self.lb = mesh.lb
-        self.ub = mesh.ub
-        self.PDE.adapt_PDE_mesh(self.mesh)
 
         self.w = {
             'R': float(w_r),
@@ -60,21 +61,13 @@ class PINN():
         }
         
         self.L_names = ['R','D','N','K','I','P']
-
-        logger.info("Mesh adapted")
         
-
+ 
     def create_NeuralNet(self,NN_class,lr,*args,**kwargs):
-        logger.info("> Creating NeuralNet")
-        self.model = NN_class(self.mesh.lb, self.mesh.ub,*args,**kwargs)
+        self.model = NN_class(self.lb, self.ub,*args,**kwargs)
         self.model.build_Net()
         self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
-        logger.info("Neural Network created")
 
-    def adapt_PDE(self,PDE):
-        logger.info("> Adapting PDE")
-        self.PDE = PDE
-        logger.info("PDE adapted")
 
     def load_NeuralNet(self,directory,name,lr):
         logger.info("> Adapting NeuralNet")
@@ -103,7 +96,3 @@ class PINN():
         path_save = os.path.join(os.path.join(dir_path,name),'w_hist.csv')
         df.to_csv(path_save)
  
-
-        
-
-

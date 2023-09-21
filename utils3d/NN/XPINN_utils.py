@@ -30,17 +30,15 @@ class XPINN_utils():
         self.iter = 0
         self.lr = None
 
-
     def adapt_PDEs(self,PDE):
         self.PDE = PDE
-        for solver,pde,union in zip(self.solvers,PDE.PDEs,PDE.uns):
+        for solver,pde in zip(self.solvers, PDE.get_PDEs):
             solver.adapt_PDE(pde)
-            solver.un = union
-
-    def adapt_meshes(self,meshes,weights):
-        for solver,mesh,weight in zip(self.solvers,meshes,weights):
-            solver.adapt_mesh(mesh,**weight)
         self.adapt_data_batches()
+
+    def adapt_weights(self,weights):
+        for solver,weight in zip(self.solvers,weights):
+            solver.adapt_weights(**weight) 
 
     def create_NeuralNets(self,NN_class,lrs,hyperparameters):
         for solver,lr,hyperparameter in zip(self.solvers,lrs,hyperparameters):
