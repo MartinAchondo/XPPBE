@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 class PINN():
     
-    def __init__(self):
+    DTYPE='float32'
 
-        self.DTYPE='float32'
+    def __init__(self):
        
         self.loss_hist = list()
         self.loss_r = list()

@@ -11,8 +11,10 @@ logger = logging.getLogger(__name__)
 
 class XPINN_utils():
 
+    DTYPE='float32'
+
     def __init__(self):
-        self.DTYPE = 'float32'
+
         self.loss_hist = list()
 
         self.loss_r1 = list()

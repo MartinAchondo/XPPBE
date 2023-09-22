@@ -9,8 +9,9 @@ import plotly.express as px
 
 class Mesh():
 
-    def __init__(self) -> None:
-        self.DTYPE='float32'
+    DTYPE='float32'
+
+    def __init__(self):
 
         self.X_R = None
         self.XU_D = None
@@ -124,8 +125,8 @@ class Molecule_Mesh():
 
         self.faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
         verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(float)
-        centroid = np.mean(verts, axis=0)
-        self.verts = verts - centroid
+        self.centroid = np.mean(verts, axis=0)
+        self.verts = verts - self.centroid
 
         self.normal = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, 3:6].astype(np.float32)
 
@@ -280,6 +281,6 @@ if __name__=='__main__':
 
     molecule_mesh = Molecule_Mesh('1ubq', N_points)
 
-    molecule_mesh.plot_molecule()
+    #molecule_mesh.plot_molecule()
 
 

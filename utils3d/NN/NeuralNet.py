@@ -1,14 +1,14 @@
 import tensorflow as tf
 
 
-class PINN_NeuralNet(tf.keras.Model):
+class NeuralNet(tf.keras.Model):
 
     def __init__(self, lb,ub, 
             input_shape=(None,3),
             output_dim=1,
-            num_hidden_layers=8, 
+            num_hidden_layers=2, 
             num_neurons_per_layer=20,
-            num_hidden_blocks='8',
+            num_hidden_blocks=2,
             activation='tanh',
             kernel_initializer='glorot_normal',
             architecture_Net='FCNN',
@@ -63,7 +63,7 @@ class PINN_NeuralNet(tf.keras.Model):
             
             
         # Output layer
-        self.out = tf.keras.layers.Dense(output_dim,name=f'layer_output')
+        self.out = tf.keras.layers.Dense(output_dim,name=f'layer_output') # Doesnt have an activation function?
 
 
     def build_Net(self):

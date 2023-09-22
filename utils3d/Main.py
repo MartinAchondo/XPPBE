@@ -9,7 +9,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 from Model.Mesh.Mesh import Molecule_Mesh
 from Model.PDE_Model import PBE
-from NN.NeuralNet import PINN_NeuralNet
+from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
 from Post.Postprocessing import View_results
@@ -55,9 +55,9 @@ def main():
               'kT' : 4.11e-21 
               }
     
-    N_points = {'N_interior': 31,
-              'N_exterior': 20,
-              'N_border': 20,
+    N_points = {'N_interior': 21,
+              'N_exterior': 11,
+              'N_border': 11,
               'dR_exterior': 8
              }
     
@@ -116,20 +116,20 @@ def main():
                 'architecture_Net': 'FCNN'
         }
 
-    XPINN_solver.create_NeuralNets(PINN_NeuralNet,
+    XPINN_solver.create_NeuralNets(NeuralNet,
                                    [lr,lr],
                                    [hyperparameters_in,hyperparameters_out]
                                    )
 
-    adapt_weights = False
-    adapt_w_iter = 25
+    adapt_weights = True
+    adapt_w_iter = 200
 
     iters_save_model = 0
 
     precondition = False
     N_precond = 15
 
-    N_iters = 1500
+    N_iters = 500
 
     XPINN_solver.folder_path = folder_path
 
@@ -143,16 +143,16 @@ def main():
                        shuffle_iter = 150 )
 
 
-    Post = View_results_X(XPINN_solver, View_results, save=True, directory=folder_path, data=False)
+    Post = View_results_X(XPINN_solver, View_results, save=True, directory=folder_path)
 
     Post.plot_loss_history();
-    #Post.plot_loss_history(plot_w=True);
+    Post.plot_loss_history(plot_w=True);
     
     Post.plot_u_plane();
     # Post.plot_u_domain_contour();
     Post.plot_aprox_analytic();
     # Post.plot_interface();
-    # Post.plot_weights_history();
+    Post.plot_weights_history();
 
 
 if __name__=='__main__':

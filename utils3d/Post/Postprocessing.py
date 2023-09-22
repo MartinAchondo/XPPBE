@@ -198,7 +198,7 @@ class View_results_X():
     
         ax.legend()
         ax.set_xlabel('$n: iterations$')
-        ax.set_ylabel(r'$\mathcal{L}: Losses$')
+        ax.set_ylabel('w: weights')
         text_l = r'$\phi_{\theta}$'
         ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
         ax.grid()

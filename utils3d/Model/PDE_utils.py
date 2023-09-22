@@ -4,10 +4,11 @@ import numpy as np
 
 class PDE_utils():
 
+    DTYPE = 'float32'
+    pi = tf.constant(np.pi, dtype=DTYPE)
+
     def __init__(self):
 
-        self.DTYPE='float32'
-        self.pi = tf.constant(np.pi, dtype=self.DTYPE)
         self.maintain_precond = False
             
     
@@ -72,23 +73,6 @@ class PDE_utils():
         Loss_d += loss
         return Loss_d
 
-
-    def get_loss_preconditioner(self, X_batches, model):
-        L = dict()
-        L['R'] = 0.0
-        L['D'] = 0.0
-        L['N'] = 0.0
-        L['I'] = 0.0
-        L['K'] = 0.0
-        L['P'] = 0.0
-
-        #residual
-        if 'P' in self.mesh.meshes_names:
-            X = X_batches['P'] 
-            loss_p = self.preconditioner(self.mesh,model,self.mesh.get_X(X))
-            L['P'] += loss_p   
-            
-        return L
 
 
     ####################################################################################################################################################

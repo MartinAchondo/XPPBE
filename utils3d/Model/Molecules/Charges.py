@@ -25,7 +25,6 @@ def get_charges_list(pqr_path):
 
 def import_charges_from_pqr(pqr_path):
 
-    # Read charges and coordinates from the .pqr file
     molecule_file = open(pqr_path, "r")
     molecule_data = molecule_file.read().split("\n")
     atom_count = 0

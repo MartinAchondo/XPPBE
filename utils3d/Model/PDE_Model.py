@@ -5,14 +5,6 @@ import numpy as np
 from Model.PDE_utils import PDE_utils
 from Model.Molecules.Charges import get_charges_list
 
-# va a tener una malla asociada (calculos a todo el dominio)
-# va a tener el loss experimental
-# pde in , pde out
-# que los epsilon se definan en esta clase y se les asocie a las distnitas pdes, (lo estoys haciendo al revés)
-
-# leer solutes aqui y asociar a la pde
-
-# asociar un dataset al rhs, no calcular cada iteración
 
 class PBE(PDE_utils):
 
@@ -46,11 +38,11 @@ class PBE(PDE_utils):
 
 
     def get_charges(self):
-
         path_files = os.path.join(os.getcwd(),'utils3d','Model','Molecules')
-
         self.q_list = get_charges_list(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
-
+        for charge in self.q_list:
+            for i in range(3):
+                charge.x_q[i] -= self.mesh.centroid[i]
 
     def source(self,x,y,z):
         sum = 0
@@ -64,7 +56,7 @@ class PBE(PDE_utils):
         normalizer = (1/((2*self.pi)**(3.0/2)*self.sigma**3))
         sum *= normalizer
         return (-1/self.epsilon_1)*sum
-    
+
 
     def border_value(self,x,y,z):
         sum = 0
@@ -99,6 +91,10 @@ class PBE(PDE_utils):
         loss += tf.reduce_mean(tf.square(du_1*solver.PDE.epsilon - du_prom))
             
         return loss
+    
+
+    def get_loss_experimental(self,s1,s2):
+        pass
 
 
     def analytic(self,r):
@@ -129,7 +125,6 @@ class Poisson(PDE_utils):
 
         super().__init__()
 
-   
     def residual_loss(self,mesh,model,X,SU):
         x,y,z = X
         r = self.laplacian(mesh,model,X) - SU       
@@ -153,7 +148,6 @@ class Helmholtz(PDE_utils):
         super().__init__()
 
 
-    # Define loss of the PDE
     def residual_loss(self,mesh,model,X,SU):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
@@ -178,7 +172,6 @@ class Non_Linear(PDE_utils):
         super().__init__()
 
 
-    # Define loss of the PDE
     def residual_loss(self,mesh,model,X,SU):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
