@@ -91,16 +91,14 @@ class PBE(PDE_utils):
     
 
     def get_loss_experimental(self,s1,s2,X_exp):
-        # [(X1,X2,phi_ens),...]
-        # X contains Xi and ri (a point and the radius to the charge)
 
         qe = 1.60217663e-19
-        eps0 = 8.8541878128e-12
+        eps0 = 8.8541878128e-12       # Coulumb / Volt x Meter
         ang_to_m = 1e-10
-        to_V = qe/(eps0 * ang_to_m)
-        kT = 4.11e-21 
-        Na = 6.02214076e23
-        C = qe/kT
+        to_V = qe/(eps0 * ang_to_m)   # Volt x Amstrong
+        kT = 4.11e-21                 # Joule
+        Na = 6.02214076e23   
+        C = qe/kT                     # Coulumb / Joule  (Volt)
 
         loss = 0.0
         n = len(X_exp)
@@ -118,12 +116,12 @@ class PBE(PDE_utils):
 
             X2,r2 = X_out
 
-            phi2 = s2.model(X2) * to_V
+            phi2 = s2.model(X2) * to_V 
 
             G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C*phi2)/r2**6)
             G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C*phi2)/r2**6)
 
-            phi_ens_pred = -kT/(2*qe) * tf.math.log(G2_p/G2_m) * 1000
+            phi_ens_pred = -kT/(2*qe) * tf.math.log(G2_p/G2_m) * 1000   # mV ??
 
             loss += tf.square(phi_ens_pred - phi_ens_exp)
 

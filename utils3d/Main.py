@@ -137,7 +137,7 @@ def main():
         precondition = False
         N_precond = 40
 
-        N_iters = 50
+        N_iters = 4
 
         XPINN_solver.folder_path = folder_path
 

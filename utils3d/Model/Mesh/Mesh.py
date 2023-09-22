@@ -268,8 +268,8 @@ class Molecule_Mesh():
 
         for q in q_list:
             if q.atom_name == 'H' and str(q.res_num) in L_phi:
-                mesh_length = 6
-                mesh_dx = 0.5
+                mesh_length = 10
+                mesh_dx = 1
                 N = int(mesh_length / mesh_dx)
                 x = np.linspace(q.x_q[0] - mesh_length / 2, q.x_q[0] + mesh_length / 2, num=N)
                 y = np.linspace(q.x_q[1] - mesh_length / 2, q.x_q[1] + mesh_length / 2, num=N)
@@ -331,7 +331,7 @@ class Molecule_Mesh():
 
                 X_exp.append((X_in,X_out,phi_ens))
                 self.domain_meshes_names.add(type_b)
-        
+
         self.domain_meshes_data[type_b] = X_exp
 
 
@@ -418,14 +418,14 @@ if __name__=='__main__':
     N_points = {'N_interior': 19,
               'N_exterior': 20,
               'N_border': 20,
-              'dR_exterior': 8
+              'dR_exterior': 20
              }
 
-    molecule_mesh = Molecule_Mesh('sphere', N_points)
+    molecule_mesh = Molecule_Mesh('1ubq', N_points)
     mesh_domain = {'type': 'E', 'file': 'data_experimental.dat'}
 
     # path_files = os.path.join(os.getcwd(),'utils3d','Model','Molecules')
-    # q_list = get_charges_list(os.path.join(path_files,'sphere','sphere'+'.pqr'))
+    # q_list = get_charges_list(os.path.join(path_files,'1ubq','1ubq'+'.pqr'))
     # molecule_mesh.adapt_meshes_domain(mesh_domain,q_list)
     # #molecule_mesh.plot_molecule()
 
