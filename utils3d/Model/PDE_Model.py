@@ -72,13 +72,10 @@ class PBE(PDE_utils):
         loss = 0
         
         XI,N_v = XI_data
-
         X = solver.mesh.get_X(XI)
-        x_i,y_i,z_i = X
 
-        R = solver.mesh.stack_X(x_i,y_i,z_i)
-        u_1 = solver.model(R)
-        u_2 = solver_ex.model(R)
+        u_1 = solver.model(XI)
+        u_2 = solver_ex.model(XI)
 
         n_v = solver.mesh.get_X(N_v)
         du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
@@ -93,8 +90,49 @@ class PBE(PDE_utils):
         return loss
     
 
-    def get_loss_experimental(self,s1,s2):
-        pass
+    def get_loss_experimental(self,s1,s2,X_exp):
+        # [(X1,X2,phi_ens),...]
+        # X contains Xi and ri (a point and the radius to the charge)
+
+        if 'E' not in self.mesh.domain_meshes_names:
+            return 0.0
+
+        qe = 1.60217663e-19
+        eps0 = 8.8541878128e-12
+        ang_to_m = 1e-10
+        to_V = qe/(eps0 * ang_to_m)
+        kT = 4.11e-21 
+        Na = 6.02214076e23
+        C = qe/kT
+
+        loss = 0.0
+        n = len(X_exp)
+
+        for X_in,X_out,phi_ens_exp in X_exp:
+
+            if X_in != None:
+                X1,r1 = X_in
+                phi1 = s1.model(X1) * to_V
+                G2_p_1 =  tf.math.reduce_sum(tf.math.exp(-C*phi1)/r1**6)
+                G2_m_1 = tf.math.reduce_sum(tf.math.exp(C*phi1)/r1**6)
+            else:
+                G2_p_1 = 0.0
+                G2_m_1 = 0.0
+
+            X2,r2 = X_out
+
+            phi2 = s2.model(X2) * to_V
+
+            G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C*phi2)/r2**6)
+            G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C*phi2)/r2**6)
+
+            phi_ens_pred = -kT/(2*qe) * tf.math.log(G2_p/G2_m) * 1000
+
+            loss += tf.square(phi_ens_pred - phi_ens_exp)
+
+        loss *= (1/n)
+
+        return loss
 
 
     def analytic(self,r):

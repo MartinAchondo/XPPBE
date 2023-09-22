@@ -142,13 +142,14 @@ class View_results_X():
                     'D': 1.0,
                     'N': 1.0,
                     'K': 1.0,
-                    'I': 1.0
+                    'I': 1.0,
+                    'E': 1.0
                     }
                 elif plot_w:
                     w = NN.w_hist
                 meshes_names = NN.mesh.meshes_names
                 if 'R' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_r)), w['R']*np.array(NN.loss_r),c[iter-1][0],label=f'Loss_r_{iter}')
+                    ax.semilogy(range(len(NN.loss_r)), w['R']*np.array(NN.loss_r),c[iter-1][0],label=f'Loss_R_{iter}')
                 if 'D' in meshes_names:
                     ax.semilogy(range(len(NN.loss_bD)), w['D']*np.array(NN.loss_bD),c[iter-1][1],label=f'Loss_bD_{iter}')
                 if 'N' in meshes_names:
@@ -158,6 +159,8 @@ class View_results_X():
                 if 'I' in meshes_names:
                     ax.semilogy(range(len(NN.loss_bI)), w['I']*np.array(NN.loss_bI),c[iter-1][4],label=f'Loss_bI_{iter}')
                 iter += 1
+            if 'E' in self.XPINN.PDE.mesh.domain_meshes_names:
+                ax.semilogy(range(len(self.XPINN.loss_exp)), w['E']*np.array(self.XPINN.loss_exp),'lime',label=f'Loss_E')
         
         ax.legend()
         ax.set_xlabel('$n: iterations$')
@@ -195,7 +198,8 @@ class View_results_X():
                 if 'I' in meshes_names:
                     ax.semilogy(range(len(w['I'])), w['I'], c[iter-1][4],label=f'w_I_{iter}')
             iter += 1
-    
+        if 'E' in self.XPINN.PDE.mesh.domain_meshes_names:
+            ax.semilogy(range(len(w['E'])), w['E'],'lime',label=f'w_E')
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel('w: weights')

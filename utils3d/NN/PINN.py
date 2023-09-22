@@ -17,12 +17,7 @@ class PINN():
     def __init__(self):
        
         self.loss_hist = list()
-        self.loss_r = list()
-        self.loss_bD = list()
-        self.loss_bN = list()
-        self.loss_bK = list()
-        self.loss_P = list()
-        self.loss_bI = list()
+
         self.iter = 0
         self.lr = None
  
@@ -40,7 +35,8 @@ class PINN():
         w_d=1.0,
         w_n=1.0,
         w_i=1.0,
-        w_k=1.0):
+        w_k=1.0,
+        w_e=1.0):
 
         self.w = {
             'R': float(w_r),
@@ -48,7 +44,8 @@ class PINN():
             'N': float(w_n),
             'K': float(w_k),
             'I': float(w_i),
-            'P': 1.0,
+            'E': float(w_e),
+            'P': 1.0
         }
 
         self.w_hist = {
@@ -57,6 +54,7 @@ class PINN():
             'N': list(),
             'K': list(),
             'I': list(),
+            'E': list(),
             'P': list()
         }
         

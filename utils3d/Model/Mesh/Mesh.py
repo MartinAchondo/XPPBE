@@ -149,6 +149,9 @@ class Molecule_Mesh():
 
         self.read_create_meshes(Mesh)
 
+        self.domain_meshes_names = set()
+        self.domain_meshes_data = dict()
+
     
     def read_create_meshes(self, Mesh_class):
 
@@ -244,8 +247,111 @@ class Molecule_Mesh():
 
         #############################################################################
 
+        # N = int(mesh_length/mesh_dx)
+
         return mesh_interior, mesh_exterior
     
+
+    def adapt_meshes_domain(self,data,q_list):
+        type_b = data['type']
+        file = data['file']
+
+        path_files = os.path.join(os.getcwd(),'utils3d','Model','Molecules')
+
+        with open(os.path.join(path_files,self.molecule,file),'r') as f:
+            L_phi = dict()
+            for line in f:
+                res_n, phi = line.strip().split(' ')
+                L_phi[str(res_n)] = float(phi)
+
+        X_exp = list()
+
+        for q in q_list:
+            if q.atom_name == 'H' and str(q.res_num) in L_phi:
+                mesh_length = 6
+                mesh_dx = 0.5
+                N = int(mesh_length / mesh_dx)
+                x = np.linspace(q.x_q[0] - mesh_length / 2, q.x_q[0] + mesh_length / 2, num=N)
+                y = np.linspace(q.x_q[1] - mesh_length / 2, q.x_q[1] + mesh_length / 2, num=N)
+                z = np.linspace(q.x_q[2] - mesh_length / 2, q.x_q[2] + mesh_length / 2, num=N)
+
+                X, Y, Z = np.meshgrid(x, y, z)
+                pos_mesh = np.zeros((3, N * N * N))
+                pos_mesh[0, :] = X.flatten()
+                pos_mesh[1, :] = Y.flatten()
+                pos_mesh[2, :] = Z.flatten()
+
+                for q_check in q_list:
+
+                    x_diff = q_check.x_q[0] - pos_mesh[0, :]
+                    y_diff = q_check.x_q[1] - pos_mesh[1, :]
+                    z_diff = q_check.x_q[2] - pos_mesh[2, :]
+            
+                    r_q_mesh = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+
+                    explode_local_index = np.nonzero(r_q_mesh >= q_check.r_explode)[0]
+
+                    pos_mesh = pos_mesh[:, explode_local_index]
+
+
+                explode_points = pos_mesh.transpose() #n,3 shape
+
+                interior_points_bool = self.mesh.contains(explode_points)
+                interior_points = explode_points[interior_points_bool]
+                
+                exterior_points_bool = ~interior_points_bool  
+                exterior_points = explode_points[exterior_points_bool]
+
+                exterior_distances = np.linalg.norm(exterior_points, axis=1)
+                exterior_points = exterior_points[exterior_distances <= self.R_exterior]
+
+                X1 = tf.constant(interior_points, dtype=self.DTYPE)
+                X2 = tf.constant(exterior_points, dtype=self.DTYPE)
+
+                x_diff = q.x_q[0] - interior_points[:,0]
+                y_diff = q.x_q[1] - interior_points[:,1]
+                z_diff = q.x_q[2] - interior_points[:,2]
+                r1 = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+
+                r1 = tf.constant(r1, dtype=self.DTYPE)
+                r1 = tf.reshape(r1,[r1.shape[0],1])
+
+                x_diff = q.x_q[0] - exterior_points[:,0]
+                y_diff = q.x_q[1] - exterior_points[:,1]
+                z_diff = q.x_q[2] - exterior_points[:,2]
+                r2 = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+
+                r2 = tf.constant(r2, dtype=self.DTYPE)
+                r2 = tf.reshape(r2,[r2.shape[0],1])
+
+                # convert X1,r1 and X2,r2 to datasets
+                X_in = self.create_Datasets(X1,r1)
+                X_out = self.create_Datasets(X2,r2)
+                phi_ens = tf.constant(L_phi[str(q.res_num)] , dtype=self.DTYPE)
+
+                X_exp.append((X_in,X_out,phi_ens))
+                self.domain_meshes_names.add(type_b)
+        
+        self.domain_meshes_data[type_b] = X_exp
+
+
+
+    def create_Dataset(cls,X):
+        dataset_X = tf.data.Dataset.from_tensor_slices(X)
+        if len(X) == 0:
+            return None
+        dataset_X = dataset_X.shuffle(buffer_size=len(X))
+        X_batches = dataset_X.batch(int(len(X)))
+        return next(iter(X_batches))
+
+    def create_Datasets(cls, X, Y):
+        dataset_XY = tf.data.Dataset.from_tensor_slices((X, Y))
+        if len(X) == 0:
+            return None
+        dataset_XY = dataset_XY.shuffle(buffer_size=len(X))
+        XY_batches = dataset_XY.batch(int(len(X)))
+        return next(iter(XY_batches))
+
 
     def plot_molecule(self):
         mesh = self.mesh
@@ -315,8 +421,12 @@ if __name__=='__main__':
               'dR_exterior': 8
              }
 
-    molecule_mesh = Molecule_Mesh('1ubq', N_points)
+    molecule_mesh = Molecule_Mesh('sphere', N_points)
+    mesh_domain = {'type': 'E', 'file': 'data_experimental.dat'}
 
-    #molecule_mesh.plot_molecule()
+    # path_files = os.path.join(os.getcwd(),'utils3d','Model','Molecules')
+    # q_list = get_charges_list(os.path.join(path_files,'sphere','sphere'+'.pqr'))
+    # molecule_mesh.adapt_meshes_domain(mesh_domain,q_list)
+    # #molecule_mesh.plot_molecule()
 
 

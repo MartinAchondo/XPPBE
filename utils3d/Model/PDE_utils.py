@@ -20,6 +20,7 @@ class PDE_utils():
         L['K'] = 0.0
         L['I'] = 0.0
         L['P'] = 0.0
+        L['E'] = 0.0
 
         #residual
         if 'R' in self.mesh.meshes_names: 
@@ -82,6 +83,7 @@ class PDE_utils():
         L['I'] = 0.0
         L['K'] = 0.0
         L['P'] = 0.0
+        L['E'] = 0.0
 
         #residual
         if 'P' in self.mesh.meshes_names:

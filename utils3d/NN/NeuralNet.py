@@ -63,7 +63,7 @@ class NeuralNet(tf.keras.Model):
             
             
         # Output layer
-        self.out = tf.keras.layers.Dense(output_dim,name=f'layer_output') # Doesnt have an activation function?
+        self.out = tf.keras.layers.Dense(output_dim,name=f'layer_output') 
 
 
     def build_Net(self):

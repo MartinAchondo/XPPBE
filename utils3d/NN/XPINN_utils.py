@@ -29,6 +29,8 @@ class XPINN_utils():
         self.loss_bI2 = list()
         self.loss_bK2 = list()
 
+        self.loss_exp = list()
+
         self.iter = 0
         self.lr = None
 
@@ -67,6 +69,7 @@ class XPINN_utils():
         self.loss_bN2 = list(df['N2'])
         self.loss_bI2 = list(df['I2'])
         self.loss_bK2 = list(df['K2'])
+        self.loss_exp = list(df['E'])
         self.iter = len(self.loss_hist) 
         self.add_losses_NN()
 
@@ -84,7 +87,8 @@ class XPINN_utils():
                    'D2': list(map(lambda tensor: tensor.numpy(),self.loss_bD2)),
                    'N2': list(map(lambda tensor: tensor.numpy(),self.loss_bN2)),
                    'K2': list(map(lambda tensor: tensor.numpy(),self.loss_bK2)),
-                   'I2': list(map(lambda tensor: tensor.numpy(),self.loss_bI2))
+                   'I2': list(map(lambda tensor: tensor.numpy(),self.loss_bI2)),
+                   'E': list(map(lambda tensor: tensor.numpy(),self.loss_exp))
                 }
         df = pd.DataFrame.from_dict(df_dict)
         path_save = os.path.join(dir_save,'loss.csv')
@@ -172,6 +176,8 @@ class XPINN_utils():
         self.loss_bI2.append(L2[1]['I'])
         self.loss_bK2.append(L2[1]['K'])
 
+        self.loss_exp.append(L1[1]['E'])
+
         loss = L1[0] + L2[0]
         self.current_loss = loss.numpy()
         self.loss_hist.append(self.current_loss)
@@ -180,6 +186,8 @@ class XPINN_utils():
 
         for solver in self.solvers:
             for t in solver.L_names:
+                solver.w_hist[t].append(solver.w[t])
+            for t in self.PDE.mesh.domain_meshes_names:
                 solver.w_hist[t].append(solver.w[t])
 
         self.iter+=1

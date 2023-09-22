@@ -86,6 +86,9 @@ def main():
         meshes_out['5'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_known.dat'}
         PBE_model.PDE_out.mesh.adapt_meshes(meshes_out)
 
+        mesh_domain = {'type': 'E', 'file': 'data_experimental.dat'}
+        PBE_model.mesh.adapt_meshes_domain(mesh_domain,PBE_model.q_list)
+
 
         XPINN_solver = XPINN(PINN)
         XPINN_solver.adapt_PDEs(PBE_model)
@@ -94,7 +97,8 @@ def main():
                 'w_d': 1,
                 'w_n': 1,
                 'w_i': 1,
-                'w_k': 1
+                'w_k': 1,
+                'w_e': 1
                 }
 
         XPINN_solver.adapt_weights([weights,weights])
@@ -130,10 +134,10 @@ def main():
 
         iters_save_model = 0
 
-        precondition = True
+        precondition = False
         N_precond = 100
 
-        N_iters = 200
+        N_iters = 50
 
         XPINN_solver.folder_path = folder_path
 
