@@ -58,7 +58,7 @@ class PINN():
             'P': list()
         }
         
-        self.L_names = ['R','D','N','K','I','P']
+        self.L_names = ['R','D','N','K','I','P','E']
         
 
     def adapt_optimizer(self,optimizer,lr,lr_p=0.001):

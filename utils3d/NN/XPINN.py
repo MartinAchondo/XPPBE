@@ -35,7 +35,8 @@ class XPINN(XPINN_utils):
         L = self.loss_PINN(s1,X_batch,precond=precond)
         if not precond:    
             L['I'] += self.PDE.get_loss_I(s1,s2,X_batch['I'])
-            L['E'] += self.PDE.get_loss_experimental(s1,s2,self.PDE.mesh.domain_meshes_data['E'])
+            if 'E' in self.PDE.mesh.domain_meshes_names:
+                L['E'] += self.PDE.get_loss_experimental(s1,s2,self.PDE.mesh.domain_meshes_data['E'])
 
         loss = 0
         for t in s1.mesh.meshes_names:

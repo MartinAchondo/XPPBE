@@ -135,7 +135,7 @@ def main():
         iters_save_model = 0
 
         precondition = False
-        N_precond = 100
+        N_precond = 40
 
         N_iters = 50
 

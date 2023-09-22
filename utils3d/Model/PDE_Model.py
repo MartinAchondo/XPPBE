@@ -94,9 +94,6 @@ class PBE(PDE_utils):
         # [(X1,X2,phi_ens),...]
         # X contains Xi and ri (a point and the radius to the charge)
 
-        if 'E' not in self.mesh.domain_meshes_names:
-            return 0.0
-
         qe = 1.60217663e-19
         eps0 = 8.8541878128e-12
         ang_to_m = 1e-10
