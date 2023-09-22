@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 class PINN():
     
-    def __init__(self):
+    DTYPE='float32'
 
-        self.DTYPE='float32'
+    def __init__(self):
        
         self.loss_hist = list()
         self.loss_r = list()
@@ -26,20 +26,21 @@ class PINN():
         self.iter = 0
         self.lr = None
  
+    def adapt_PDE(self,PDE):
+        self.PDE = PDE
+        self.adapt_mesh()
 
-    def adapt_mesh(self, mesh,
+    def adapt_mesh(self):
+        self.mesh = self.PDE.mesh
+        self.lb = tf.constant(self.mesh.lb, dtype=self.DTYPE)
+        self.ub = tf.constant(self.mesh.ub, dtype=self.DTYPE)
+
+    def adapt_weights(self,
         w_r=1.0,
         w_d=1.0,
         w_n=1.0,
         w_i=1.0,
         w_k=1.0):
-
-        logger.info("> Adapting Mesh")
-        
-        self.mesh = mesh
-        self.lb = mesh.lb
-        self.ub = mesh.ub
-        self.PDE.adapt_PDE_mesh(self.mesh)
 
         self.w = {
             'R': float(w_r),
@@ -60,28 +61,22 @@ class PINN():
         }
         
         self.L_names = ['R','D','N','K','I','P']
-
-        logger.info("Mesh adapted")
         
 
-    def create_NeuralNet(self,NN_class,lr,*args,**kwargs):
-        logger.info("> Creating NeuralNet")
-        self.model = NN_class(self.mesh.lb, self.mesh.ub,*args,**kwargs)
-        self.model.build_Net()
+    def adapt_optimizer(self,optimizer,lr,lr_p=0.001):
+        self.optimizer_name = optimizer
         self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
-        logger.info("Neural Network created")
+        self.lr_p = lr_p
 
-    def adapt_PDE(self,PDE):
-        logger.info("> Adapting PDE")
-        self.PDE = PDE
-        logger.info("PDE adapted")
+    def create_NeuralNet(self,NN_class,*args,**kwargs):
+        self.model = NN_class(self.lb, self.ub,*args,**kwargs)
+        self.model.build_Net()
 
-    def load_NeuralNet(self,directory,name,lr):
+    def load_NeuralNet(self,directory,name):
         logger.info("> Adapting NeuralNet")
         path = os.path.join(os.getcwd(),directory,name)
         NN_model = tf.keras.models.load_model(path, compile=False)
         self.model = NN_model
-        self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
         logger.info("Neural Network adapted")
         
         path_load = os.path.join(path,'w_hist.csv')
@@ -103,7 +98,3 @@ class PINN():
         path_save = os.path.join(os.path.join(dir_path,name),'w_hist.csv')
         df.to_csv(path_save)
  
-
-        
-
-

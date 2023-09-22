@@ -19,8 +19,6 @@ class View_results():
         self.save = save
         self.directory = directory
         self.data = data
-        if self.data:
-            self.Excel_writer = pd.ExcelWriter(os.path.join(directory,'results.xlsx'), engine='openpyxl')
 
         self.NN = NN
         self.model = NN.model
@@ -31,137 +29,6 @@ class View_results():
 
         if not X:
             self.loss_last = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
-
-    def close_file(self):
-        self.Excel_writer.close()
-        logger.info(f'Excel created: {"results.xlsx"}')
-
-    def plot_loss_history(self, flag=True, ax=None):
-        if not ax:
-            fig = plt.figure(figsize=(7, 5))
-            ax = fig.add_subplot(111)
-
-        ax.semilogy(range(len(self.NN.loss_hist)), self.NN.loss_hist, 'k-', label='Loss')
-
-        if flag:
-            ax.semilogy(range(len(self.NN.loss_r)), self.NN.loss_r, 'r-', label='Loss_r')
-            ax.semilogy(range(len(self.NN.loss_bD)), self.NN.loss_bD, 'b-', label='Loss_bD')
-            ax.semilogy(range(len(self.NN.loss_bN)), self.NN.loss_bN, 'g-', label='Loss_bN')
-            ax.semilogy(range(len(self.NN.loss_bK)), self.NN.loss_bK, 'm-', label='Loss_bK')
-
-        ax.legend()
-        ax.set_xlabel('$n: iterations$')
-        ax.set_ylabel(r'$\mathcal{L}: Losses$')
-        text_l = r'$\phi_{\theta}$'
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {self.loss_last}')
-        ax.grid()
-
-        if self.save:
-            path = 'loss_history.png'
-            path_save = os.path.join(self.directory,path)
-            fig.savefig(path_save)
-            logger.info(f'Loss history Plot saved: {path}')
-
-            if self.data:
-                d = {'Residual': list(map(lambda tensor: tensor.numpy(), self.NN.loss_r)),
-                     'Dirichlet': list(map(lambda tensor: tensor.numpy(), self.NN.loss_bD)),
-                     'Neumann': list(map(lambda tensor: tensor.numpy(), self.NN.loss_bN))
-                     }
-                df = pd.DataFrame(d)
-                df.to_excel(self.Excel_writer, sheet_name='Losses', index=False)
-                
-        return ax
-    
-    def plot_u_plane(self,N=200):
-        x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
-        x = tf.reshape(x,[x.shape[0],1])
-        y = tf.ones((N,1), dtype=self.DTYPE)*0
-        z = tf.ones((N,1), dtype=self.DTYPE)*0
-        X = tf.concat([x, y, z], axis=1)
-        U = self.model(X)
-
-        fig, ax = plt.subplots()
-
-        ax.plot(x[:,0], U[:,0], label='Solution of PDE', c='b')
-        ax.set_xlabel('r')
-        ax.set_ylabel(r'$\phi_{\theta}$')
-
-        loss = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
-        text_l = r'$\phi_{\theta}$'
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {loss}')
-
-        ax.grid()
-        ax.legend()
-
-        if self.save:
-            path = 'solution.png'
-            path_save = os.path.join(self.directory,path)
-            fig.savefig(path_save)
-            logger.info(f'Solution Plot saved: {path}')
-
-            if self.data:
-                d = {'x': x[:,0],
-                    'u': U[:,0]}
-                df = pd.DataFrame(d)
-                df.to_excel(self.Excel_writer, sheet_name='Solution', index=False)
-
-
-    def plot_u_domain_contour(self,N=100):
-        x,y,z,u = self.get_u_domain(N)
-        plane = np.abs(z)<10**-4
-    
-        fig, ax = plt.subplots()
-
-        s = ax.scatter(x[plane], y[plane], c=u[plane])
-        fig.colorbar(s, ax=ax)
-
-        loss = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
-        text_l = r'$\phi_{\theta}$'
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {loss}')
-
-        if self.save:
-            path = 'contour.png'
-            path_save = os.path.join(self.directory,path)
-            fig.savefig(path_save)
-            logger.info(f'Contour Plot saved: {path}')
-
-
-    def plot_aprox_analytic(self,N=200):
-        x = tf.constant(np.linspace(1, self.ub[0], 200, dtype=self.DTYPE))
-        x = tf.reshape(x,[x.shape[0],1])
-        y = tf.ones((N,1), dtype=self.DTYPE)*0
-        z = tf.ones((N,1), dtype=self.DTYPE)*0
-        X = tf.concat([x, y, z], axis=1)
-        U = self.model(X)
-
-        fig, ax = plt.subplots() 
-
-        ax.plot(x[:,0],U[:,0], c='b', label='Aproximated')
-
-        U2 = self.NN.PDE.analytic(x,y,z)
-        ax.plot(x[:,0],U2[:,0], c='r', label='Analytic')
-
-        ax.set_xlabel('r')
-        ax.set_ylabel(r'$\phi_{\theta}$')
-        if np.max(U[:,0]) > 0:
-            ur = np.max(U[:,0])*1.2
-        else:
-            ur = 1
-        #ax.set_ylim([np.min(U[:,0])*1.2,ur])
-
-        loss = np.format_float_scientific(self.NN.loss_hist[-1], unique=False, precision=3)
-        text_l = r'$\phi_{\theta}$'
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.NN.N_iters}, Loss: {loss}')
-
-        ax.grid()
-        ax.legend()
-
-
-        if self.save:
-            path = 'solution_analytic.png'
-            path_save = os.path.join(self.directory,path)
-            fig.savefig(path_save)
-            logger.info(f'Solution Plot saved: {path}')
 
      
     def get_grid(self,N=100):
@@ -201,15 +68,6 @@ class View_results():
         return loss.numpy(),L
 
 
-    def plot_loss(self,N=100):
-        Xgrid,x,y,z = self.get_grid(N)
-        self.NN.x,self.NN.y,self.NN.z = self.mesh.get_X(Xgrid)
-        loss = self.NN.get_r()
-        plane = np.abs(z)<10**-4
-        plt.scatter(x.flatten()[plane],y.flatten()[plane],c=tf.square(loss).numpy()[plane], norm=matplotlib.colors.LogNorm())
-        plt.colorbar();
-
-
     def evaluate_u_point(self,X):
         X_input = tf.constant([X])
         U_output = self.model(X_input)
@@ -235,38 +93,6 @@ class View_results():
         Xgrid,X,Y,Z = self.get_grid(N)
         upred = self.model(tf.cast(Xgrid,self.DTYPE))
         return X.flatten(),Y.flatten(),Z.flatten(),upred.numpy()
-
-    def plot_u_domain_surface(self,N=100,alpha1=35,alpha2=135):
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-
-        x,y,z,u = self.get_u_domain(N)
-        plane = np.abs(z)<10**-4
-        ax.scatter(x[plane], y[plane],u[plane], c=u[plane])
-        ax.view_init(alpha1,alpha2)
-        ax.set_xlabel('$x$')
-        ax.set_ylabel('$y$');
-
-
-    def plot_loss_analytic(self,N=200):
-        x = tf.constant(np.linspace(0, self.ub[0], 200, dtype=self.DTYPE))
-        x = tf.reshape(x,[x.shape[0],1])
-        y = tf.ones((N,1), dtype=self.DTYPE)*0
-        z = tf.ones((N,1), dtype=self.DTYPE)*0
-        X = tf.concat([x, y, z], axis=1)
-        U = self.model(X)
-        U2 = self.NN.PDE.analytic(x,y,z)
-
-        error = tf.square(U-U2)
-        plt.plot(x[:,0],error[:,0], c='r', label='Error')
-
-        plt.legend()
-        plt.xlabel('x')
-        plt.ylabel('Error')
-        plt.yscale('log');
-
-
-
 
 
 
@@ -372,7 +198,7 @@ class View_results_X():
     
         ax.legend()
         ax.set_xlabel('$n: iterations$')
-        ax.set_ylabel(r'$\mathcal{L}: Losses$')
+        ax.set_ylabel('w: weights')
         text_l = r'$\phi_{\theta}$'
         ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
         ax.grid()
@@ -390,9 +216,14 @@ class View_results_X():
         labels = ['Inside', 'Outside']
         colr = ['r','b']
         i = 0
-        df = pd.DataFrame()
+
+        self.Post[0].rmin = 0
+        self.Post[0].rmax = 1
+        self.Post[1].rmin = 1
+        self.Post[1].rmax = 8
+
         for post_obj in self.Post:
-            r = tf.constant(np.linspace(post_obj.mesh.ins_domain['rmin'], post_obj.mesh.ins_domain['rmax'], N, dtype=self.DTYPE))
+            r = tf.constant(np.linspace(post_obj.rmin,post_obj.rmax, N, dtype=self.DTYPE))
             r = tf.reshape(r,[r.shape[0],1])
             theta = tf.ones((N,1), dtype=self.DTYPE)*theta
             phi = tf.ones((N,1), dtype=self.DTYPE)*phi
@@ -403,13 +234,6 @@ class View_results_X():
 
             X = tf.concat([x, y, z], axis=1)
             U = post_obj.model(X)
-
-            if self.data:
-                d = {'x': x[:,0],
-                    'u': U[:,0]}
-                df2 = pd.DataFrame(d)
-                frames = [df, df2]
-                df = pd.concat(frames)
             
             ax.plot(r[:,0],U[:,0], label=labels[i], c=colr[i])
             i += 1
@@ -428,10 +252,6 @@ class View_results_X():
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
             logger.info(f'Solution Plot saved: {path}')
-
-            if self.data:
-                df.to_excel(self.Excel_writer, sheet_name='Solution', index=False)
-
 
     def plot_u_domain_contour(self, N=50):
         fig, ax = plt.subplots()
@@ -459,11 +279,9 @@ class View_results_X():
         
         flag = True
         fig, ax = plt.subplots() 
+
         for post_obj,NN in zip(self.Post,self.NN):
-            rmin = post_obj.mesh.ins_domain['rmin']
-            if rmin < 0:
-                rmin = 0.05
-            r = tf.constant(np.linspace(rmin, post_obj.mesh.ins_domain['rmax'], N, dtype=self.DTYPE))
+            r = tf.constant(np.linspace(post_obj.rmin,post_obj.rmax, N, dtype=self.DTYPE))
             r = tf.reshape(r,[r.shape[0],1])
             theta = tf.ones((N,1), dtype=self.DTYPE)*theta
             phi = tf.ones((N,1), dtype=self.DTYPE)*phi
@@ -480,7 +298,7 @@ class View_results_X():
                 flag = False
             else:
                 ax.plot(r[:,0],U[:,0], c='b')
-        r = np.linspace(self.Post[0].mesh.ins_domain['rmax']/10, self.Post[-1].mesh.ins_domain['rmax'], 200, dtype=self.DTYPE)
+        r = np.linspace(0.2, 8, 200, dtype=self.DTYPE)
 
         U2 = self.XPINN.PDE.analytic(r)
         ax.plot(r,U2, c='r', label='Analytic', linestyle='--')

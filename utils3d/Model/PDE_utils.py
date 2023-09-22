@@ -4,29 +4,13 @@ import numpy as np
 
 class PDE_utils():
 
+    DTYPE = 'float32'
+    pi = tf.constant(np.pi, dtype=DTYPE)
+
     def __init__(self):
 
-        self.DTYPE='float32'
-        self.pi = tf.constant(np.pi, dtype=self.DTYPE)
         self.maintain_precond = False
-    
-    def set_domain(self,X):
-        x,y,z = X
-        self.xmin,self.xmax = x
-        self.ymin,self.ymax = y
-        self.zmin,self.zmax = z
-
-        lb = tf.constant([self.xmin, self.ymin,self.zmin], dtype=self.DTYPE)
-        ub = tf.constant([self.xmax, self.ymax,self.zmax], dtype=self.DTYPE)
-
-        return (lb,ub)
-    
-
-    def adapt_PDE_mesh(self,mesh):
-        self.mesh = mesh
-        self.lb = mesh.lb
-        self.ub = mesh.ub
-        
+            
     
     def get_loss(self, X_batches, model):
         L = dict()
@@ -39,8 +23,8 @@ class PDE_utils():
 
         #residual
         if 'R' in self.mesh.meshes_names: 
-            X = X_batches['R']
-            loss_r = self.residual_loss(self.mesh,model,self.mesh.get_X(X))
+            X,SU = X_batches['R']
+            loss_r = self.residual_loss(self.mesh,model,self.mesh.get_X(X),SU)
             L['R'] += loss_r    
 
         #dirichlet 
@@ -64,7 +48,7 @@ class PDE_utils():
         return L
 
 
-    # Dirichlet
+
     def dirichlet_loss(self,mesh,model,XD,UD):
         Loss_d = 0
         u_pred = model(XD)
@@ -81,7 +65,7 @@ class PDE_utils():
         Loss_n += loss
         return Loss_n
     
-        # Dirichlet
+
     def data_known_loss(self,mesh,model,XK,UK):
         Loss_d = 0
         u_pred = model(XK)
@@ -101,12 +85,11 @@ class PDE_utils():
 
         #residual
         if 'P' in self.mesh.meshes_names:
-            X = X_batches['P'] 
-            loss_p = self.preconditioner(self.mesh,model,self.mesh.get_X(X))
-            L['P'] += loss_p   
+            X,U = X_batches['P']
+            loss_p = self.data_known_loss(self.mesh,model,X,U)
+            L['P'] += loss_p  
             
         return L
-
 
     ####################################################################################################################################################
 
@@ -121,23 +104,6 @@ class PDE_utils():
 
 
     ####################################################################################################################################################
-
-
-    # Boundary Surface
-
-    def surface(r,theta,phi):
-        x = r*np.sin(theta)*np.cos(phi)
-        y = r*np.sin(theta)*np.sin(phi)
-        z = r*np.cos(theta)
-
-        return (x,y,z)
-    
-
-    def normal_vector(self,X):
-        x,y,z = X
-        norm_vn = tf.sqrt(x**2+y**2+z**2)
-        n = X/norm_vn
-        return n
 
     # Differential operators
 
@@ -174,10 +140,10 @@ class PDE_utils():
 
         return (u_x,u_y,u_z)
     
-    def directional_gradient(self,mesh,model,X,n):
+    def directional_gradient(self,mesh,model,X,n_v):
         gradient = self.gradient(mesh,model,X)
         dir_deriv = 0
         for j in range(3):
-            dir_deriv += n[j]*gradient[j]
+            dir_deriv += n_v[j]*gradient[j]
 
         return dir_deriv

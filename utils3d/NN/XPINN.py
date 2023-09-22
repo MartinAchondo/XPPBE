@@ -19,7 +19,7 @@ class XPINN(XPINN_utils):
 
         self.solver1, self.solver2 = PINN(), PINN()
         self.solvers = [self.solver1,self.solver2]
-        self.alpha_w = 0.7    
+          
         super().__init__()       
     
     
@@ -35,6 +35,7 @@ class XPINN(XPINN_utils):
         L = self.loss_PINN(s1,X_batch,precond=precond)
         if not precond:    
             L['I'] += self.PDE.get_loss_I(s1,s2,X_batch['I'])
+            # L['E'] += self.PDE.get_loss_experimental(s1,s2)
 
         loss = 0
         for t in s1.mesh.meshes_names:
@@ -42,7 +43,7 @@ class XPINN(XPINN_utils):
         return loss,L
     
 
-    def get_grad(self,X_batch,solver,solver_ex, w, precond):
+    def get_grad(self,X_batch,solver,solver_ex, w, precond=False):
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(solver.model.trainable_variables)
             loss,L = self.get_loss(X_batch,solver,solver_ex, w, precond)
@@ -114,27 +115,58 @@ class XPINN(XPINN_utils):
     
 
     def check_adapt_new_weights(self,adapt_now):
+        
         if adapt_now:
-            for solver in self.solvers:
-                loss_wo_w = sum(solver.L.values())
-                for t in solver.mesh.meshes_names:
-                    eps = 1e-9
-                    w = float(loss_wo_w/(solver.L[t]+eps))
-                    solver.w[t] = self.alpha_w*solver.w[t] + (1-self.alpha_w)*w
+            TX_b1, TX_b2 = self.create_generators_shuffle(True)
+            X_b1 = self.get_batches(TX_b1)
+            X_b2 = self.get_batches(TX_b2) 
+
+            self.modify_weights_by(self.solver1,self.solver2,X_b1) 
+            self.modify_weights_by(self.solver2,self.solver1,X_b2) 
+            
+
+    def modify_weights_by(self,solver,solver_ex,X_b):
+        
+        flag = 'gradients'
+        self.alpha_w = 0.7  
+
+        L = dict()
+        if flag == 'gradients':
+            with tf.GradientTape(persistent=True) as tape:
+                tape.watch(solver.model.trainable_variables)
+                _,L_loss = self.get_loss(X_b,solver,solver_ex, solver.w)
+
+            for t in solver.mesh.meshes_names:
+                loss = L_loss[t]
+                grads = tape.gradient(loss, solver.model.trainable_variables)
+                grads = [grad if grad is not None else tf.zeros_like(var) for grad, var in zip(grads, solver.model.trainable_variables)]
+                gradient_norm = tf.sqrt(sum([tf.reduce_sum(tf.square(g)) for g in grads]))
+                L[t] = gradient_norm
+            del tape
+
+        elif flag == 'values':
+            for t in solver.mesh.meshes_names:
+                _,L = self.get_loss(X_b,solver,solver_ex, solver.w) 
+
+        loss_wo_w = sum(L.values())
+        for t in solver.mesh.meshes_names:
+            eps = 1e-9
+            w = float(loss_wo_w/(L[t]+eps))
+            solver.w[t] = self.alpha_w*solver.w[t] + (1-self.alpha_w)*w     
 
 
     def create_optimizers(self, precond=False):
-        if not precond:
-            optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
-            optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
-            optimizers = [optim1,optim2]
-            return optimizers
-        elif precond:           
-            lr = 0.001
-            optim1P = tf.keras.optimizers.Adam(learning_rate=lr)
-            optim2P = tf.keras.optimizers.Adam(learning_rate=lr)
-            optimizers_p = [optim1P,optim2P]
-            return optimizers_p
+        if self.optimizer_name == 'Adam':
+            if not precond:
+                optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
+                optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
+                optimizers = [optim1,optim2]
+                return optimizers
+            elif precond:           
+                optim1P = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr_p)
+                optim2P = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr_p)
+                optimizers_p = [optim1P,optim2P]
+                return optimizers_p
 
 
     def solve(self,N=1000, precond=False, N_precond=10, save_model=0, adapt_weights=False, adapt_w_iter=1, shuffle = True, shuffle_iter = 500):

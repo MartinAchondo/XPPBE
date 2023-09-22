@@ -11,8 +11,10 @@ logger = logging.getLogger(__name__)
 
 class XPINN_utils():
 
+    DTYPE='float32'
+
     def __init__(self):
-        self.DTYPE = 'float32'
+
         self.loss_hist = list()
 
         self.loss_r1 = list()
@@ -30,21 +32,24 @@ class XPINN_utils():
         self.iter = 0
         self.lr = None
 
-
     def adapt_PDEs(self,PDE):
         self.PDE = PDE
-        for solver,pde,union in zip(self.solvers,PDE.PDEs,PDE.uns):
+        for solver,pde in zip(self.solvers, PDE.get_PDEs):
             solver.adapt_PDE(pde)
-            solver.un = union
-
-    def adapt_meshes(self,meshes,weights):
-        for solver,mesh,weight in zip(self.solvers,meshes,weights):
-            solver.adapt_mesh(mesh,**weight)
         self.adapt_data_batches()
 
-    def create_NeuralNets(self,NN_class,lrs,hyperparameters):
-        for solver,lr,hyperparameter in zip(self.solvers,lrs,hyperparameters):
-            solver.create_NeuralNet(NN_class,lr,**hyperparameter)
+    def adapt_weights(self,weights):
+        for solver,weight in zip(self.solvers,weights):
+            solver.adapt_weights(**weight) 
+
+    def create_NeuralNets(self,NN_class,hyperparameters):
+        for solver,hyperparameter in zip(self.solvers,hyperparameters):
+            solver.create_NeuralNet(NN_class,**hyperparameter)
+
+    def adapt_optimizers(self,optimizer,lrs,lr_p=0.001):
+        for solver,lr in zip(self.solvers,lrs):
+            solver.adapt_optimizer(optimizer,lr,lr_p)
+        self.optimizer_name = optimizer
 
     def load_NeuralNets(self,dir_load,names,lrs):   
         for solver,lr,name in zip(self.solvers,lrs,names):
