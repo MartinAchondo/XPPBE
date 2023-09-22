@@ -11,7 +11,10 @@ class Mesh():
 
     DTYPE='float32'
 
-    def __init__(self):
+    def __init__(self,name,molecule):
+
+        self.name = name
+        self.molecule = molecule
 
         self.X_R = None
         self.XU_D = None
@@ -45,14 +48,18 @@ class Mesh():
             if not 'noise' in bl:
                 bl['noise'] = False
 
-            X = self.prior_data[type_b]
+            if type_b in self.prior_data:
+                X = self.prior_data[type_b]
 
-            if type_b in ('R','D','K','N'):    
+            if type_b in ('R','D','K','N','P'):    
                 x,y,z = self.get_X(X)
-                if fun == None:
+                if value != None:
                     U = self.value_u_b(x, y, z, value=value)
-                else:
+                elif fun != None:
                     U = fun(x, y, z)
+                else:
+                    file = bl['file']
+                    X,U = self.read_file_data(file)
                 self.data_mesh[type_b] = self.create_Datasets(X,U)
             
             elif type_b in ('I'):
@@ -67,6 +74,34 @@ class Mesh():
             
         del self.prior_data
 
+    def read_file_data(self,file):
+        x_b, y_b, z_b, phi_b = list(), list(), list(), list()
+
+        path_files = os.path.join(os.getcwd(),'utils3d','Model','Molecules')
+
+        with open(os.path.join(path_files,self.molecule,file),'r') as f:
+            for line in f:
+                condition, x, y, z, phi = line.strip().split(' ')
+
+                if int(condition) == self.name:
+                    x_b.append(float(x))
+                    y_b.append(float(y))
+                    z_b.append(float(z))
+                    phi_b.append(float(phi))
+
+        x_b = tf.constant(np.array(x_b, dtype=self.DTYPE))
+        y_b = tf.constant(np.array(y_b, dtype=self.DTYPE))
+        z_b = tf.constant(np.array(z_b, dtype=self.DTYPE))
+        phi_b = tf.constant(np.array(phi_b, dtype=self.DTYPE))
+
+        x_b = tf.reshape(x_b,[x_b.shape[0],1])
+        y_b = tf.reshape(y_b,[y_b.shape[0],1])
+        z_b = tf.reshape(z_b,[z_b.shape[0],1])
+        phi_b = tf.reshape(phi_b,[phi_b.shape[0],1])
+    
+        X = tf.concat([x_b, y_b, z_b], axis=1)
+
+        return X,phi_b
 
     @classmethod
     def get_X(cls,X):
@@ -101,9 +136,10 @@ class Mesh():
 
 class Molecule_Mesh():
 
+    DTYPE = 'float32'
+    pi = np.pi
+
     def __init__(self, molecule, N_points, N_batches=1):
-        self.DTYPE = 'float32'
-        self.pi = np.pi
 
         for key, value in N_points.items():
             setattr(self, key, value)
@@ -151,8 +187,8 @@ class Molecule_Mesh():
 
     def create_mesh_objs(self, Mesh_class):
         
-        mesh_interior = Mesh_class()
-        mesh_exterior = Mesh_class()
+        mesh_interior = Mesh_class(name=1, molecule=self.molecule)
+        mesh_exterior = Mesh_class(name=2, molecule=self.molecule)
 
         #########################################################################
 

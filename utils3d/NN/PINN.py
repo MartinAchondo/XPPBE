@@ -62,19 +62,21 @@ class PINN():
         
         self.L_names = ['R','D','N','K','I','P']
         
- 
-    def create_NeuralNet(self,NN_class,lr,*args,**kwargs):
+
+    def adapt_optimizer(self,optimizer,lr,lr_p=0.001):
+        self.optimizer_name = optimizer
+        self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
+        self.lr_p = lr_p
+
+    def create_NeuralNet(self,NN_class,*args,**kwargs):
         self.model = NN_class(self.lb, self.ub,*args,**kwargs)
         self.model.build_Net()
-        self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
 
-
-    def load_NeuralNet(self,directory,name,lr):
+    def load_NeuralNet(self,directory,name):
         logger.info("> Adapting NeuralNet")
         path = os.path.join(os.getcwd(),directory,name)
         NN_model = tf.keras.models.load_model(path, compile=False)
         self.model = NN_model
-        self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
         logger.info("Neural Network adapted")
         
         path_load = os.path.join(path,'w_hist.csv')

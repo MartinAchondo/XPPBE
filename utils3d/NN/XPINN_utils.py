@@ -42,9 +42,14 @@ class XPINN_utils():
         for solver,weight in zip(self.solvers,weights):
             solver.adapt_weights(**weight) 
 
-    def create_NeuralNets(self,NN_class,lrs,hyperparameters):
-        for solver,lr,hyperparameter in zip(self.solvers,lrs,hyperparameters):
-            solver.create_NeuralNet(NN_class,lr,**hyperparameter)
+    def create_NeuralNets(self,NN_class,hyperparameters):
+        for solver,hyperparameter in zip(self.solvers,hyperparameters):
+            solver.create_NeuralNet(NN_class,**hyperparameter)
+
+    def adapt_optimizers(self,optimizer,lrs,lr_p=0.001):
+        for solver,lr in zip(self.solvers,lrs):
+            solver.adapt_optimizer(optimizer,lr,lr_p)
+        self.optimizer_name = optimizer
 
     def load_NeuralNets(self,dir_load,names,lrs):   
         for solver,lr,name in zip(self.solvers,lrs,names):

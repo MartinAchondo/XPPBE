@@ -156,17 +156,17 @@ class XPINN(XPINN_utils):
 
 
     def create_optimizers(self, precond=False):
-        if not precond:
-            optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
-            optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
-            optimizers = [optim1,optim2]
-            return optimizers
-        elif precond:           
-            lr = 0.001
-            optim1P = tf.keras.optimizers.Adam(learning_rate=lr)
-            optim2P = tf.keras.optimizers.Adam(learning_rate=lr)
-            optimizers_p = [optim1P,optim2P]
-            return optimizers_p
+        if self.optimizer_name == 'Adam':
+            if not precond:
+                optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
+                optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
+                optimizers = [optim1,optim2]
+                return optimizers
+            elif precond:           
+                optim1P = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr_p)
+                optim2P = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr_p)
+                optimizers_p = [optim1P,optim2P]
+                return optimizers_p
 
 
     def solve(self,N=1000, precond=False, N_precond=10, save_model=0, adapt_weights=False, adapt_w_iter=1, shuffle = True, shuffle_iter = 500):

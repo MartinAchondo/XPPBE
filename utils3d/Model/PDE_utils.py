@@ -48,7 +48,7 @@ class PDE_utils():
         return L
 
 
-    # Dirichlet
+
     def dirichlet_loss(self,mesh,model,XD,UD):
         Loss_d = 0
         u_pred = model(XD)
@@ -65,7 +65,7 @@ class PDE_utils():
         Loss_n += loss
         return Loss_n
     
-        # Dirichlet
+
     def data_known_loss(self,mesh,model,XK,UK):
         Loss_d = 0
         u_pred = model(XK)
@@ -74,6 +74,22 @@ class PDE_utils():
         return Loss_d
 
 
+    def get_loss_preconditioner(self, X_batches, model):
+        L = dict()
+        L['R'] = 0.0
+        L['D'] = 0.0
+        L['N'] = 0.0
+        L['I'] = 0.0
+        L['K'] = 0.0
+        L['P'] = 0.0
+
+        #residual
+        if 'P' in self.mesh.meshes_names:
+            X,U = X_batches['P']
+            loss_p = self.data_known_loss(self.mesh,model,X,U)
+            L['P'] += loss_p  
+            
+        return L
 
     ####################################################################################################################################################
 
