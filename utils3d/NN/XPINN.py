@@ -61,7 +61,7 @@ class XPINN(XPINN_utils):
         if self.precondition:
             optimizer1P,optimizer2P = self.create_optimizers(precond=True)
 
-        #@tf.function
+        @tf.function
         def train_step(X_batch, ws,precond=False):
             X_batch1, X_batch2 = X_batch
             loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1, self.solver1,self.solver2, ws[0], precond)
