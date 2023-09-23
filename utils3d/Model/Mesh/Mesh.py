@@ -61,10 +61,6 @@ class Mesh():
                     file = bl['file']
                     X,U = self.read_file_data(file)
                 self.solver_mesh_data[type_b] = self.create_Datasets(X,U)
-            
-            elif type_b in ('I'):
-                N = self.normal
-                self.solver_mesh_data[type_b] = self.create_Datasets(X,N)
 
             self.solver_mesh_names.add(type_b)
             if type_b in self.solver_mesh_N:
@@ -155,7 +151,7 @@ class Molecule_Mesh():
     
     def read_create_meshes(self, Mesh_class):
 
-        path_files = os.path.join(os.getcwd(),'utils3d','Model','Molecules')
+        path_files = os.path.join(os.getcwd(),'utils3d','Model','Mesh')
 
         with open(os.path.join(path_files,self.molecule,self.molecule+'.face'),'r') as face_f:
             face = face_f.read()
@@ -177,12 +173,10 @@ class Molecule_Mesh():
 
         self.interior_obj, self.exterior_obj = self.create_mesh_objs(Mesh_class)
 
-        self.interior_obj.normal = self.normal
         self.interior_obj.lb = [-self.R_mol,-self.R_mol,-self.R_mol]
         self.interior_obj.ub = [self.R_mol,self.R_mol,self.R_mol]
         self.interior_obj.N_batches = self.N_batches
 
-        self.exterior_obj.normal = self.normal
         self.exterior_obj.lb = [-self.R_exterior,-self.R_exterior,-self.R_exterior]
         self.exterior_obj.ub = [self.R_exterior,self.R_exterior,self.R_exterior]    
         self.exterior_obj.N_batches = self.N_batches
@@ -205,7 +199,6 @@ class Molecule_Mesh():
         interior_points = points[interior_points_bool]
 
         mesh_interior.prior_data['R'] = tf.constant(interior_points)
-        mesh_interior.prior_data['I'] = tf.constant(self.verts, dtype=self.DTYPE)
 
         #########################################################################
 
@@ -242,7 +235,6 @@ class Molecule_Mesh():
         z_bl = tf.reshape(z_bl,[z_bl.shape[0],1])
     
         mesh_exterior.prior_data['R'] = tf.constant(exterior_points)
-        mesh_exterior.prior_data['I'] = tf.constant(self.verts, dtype=self.DTYPE)
         mesh_exterior.prior_data['D'] = tf.concat([x_bl, y_bl, z_bl], axis=1)
 
         #############################################################################
@@ -253,88 +245,97 @@ class Molecule_Mesh():
     
 
     def adapt_meshes_domain(self,data,q_list):
-        type_b = data['type']
-        file = data['file']
+        
+        for bl in data.values():
+            type_b = bl['type']
 
-        if type_b == 'E':
+            if type_b in ('I'):
+                N = self.normal
+                X = tf.constant(self.verts, dtype=self.DTYPE)
+                for mesh_obj in [self.interior_obj,self.exterior_obj]:
+                    mesh_obj.solver_mesh_data[type_b] = mesh_obj.create_Datasets(X,N)                
+                    mesh_obj.solver_mesh_names.add(type_b)    
+                    mesh_obj.solver_mesh_N[type_b] = len(X)
 
-            path_files = os.path.join(os.getcwd(),'utils3d','Model','Molecules')
+            elif type_b == 'E':
+                file = bl['file']
+                path_files = os.path.join(os.getcwd(),'utils3d','Model','Molecules')
 
-            with open(os.path.join(path_files,self.molecule,file),'r') as f:
-                L_phi = dict()
-                for line in f:
-                    res_n, phi = line.strip().split(' ')
-                    L_phi[str(res_n)] = float(phi)
+                with open(os.path.join(path_files,self.molecule,file),'r') as f:
+                    L_phi = dict()
+                    for line in f:
+                        res_n, phi = line.strip().split(' ')
+                        L_phi[str(res_n)] = float(phi)
 
-            X_exp = list()
+                X_exp = list()
 
-            for q in q_list:
-                if q.atom_name == 'H' and str(q.res_num) in L_phi:
-                    mesh_length = 10
-                    mesh_dx = 1
-                    N = int(mesh_length / mesh_dx)
-                    x = np.linspace(q.x_q[0] - mesh_length / 2, q.x_q[0] + mesh_length / 2, num=N)
-                    y = np.linspace(q.x_q[1] - mesh_length / 2, q.x_q[1] + mesh_length / 2, num=N)
-                    z = np.linspace(q.x_q[2] - mesh_length / 2, q.x_q[2] + mesh_length / 2, num=N)
+                for q in q_list:
+                    if q.atom_name == 'H' and str(q.res_num) in L_phi:
+                        mesh_length = 10
+                        mesh_dx = 1
+                        N = int(mesh_length / mesh_dx)
+                        x = np.linspace(q.x_q[0] - mesh_length / 2, q.x_q[0] + mesh_length / 2, num=N)
+                        y = np.linspace(q.x_q[1] - mesh_length / 2, q.x_q[1] + mesh_length / 2, num=N)
+                        z = np.linspace(q.x_q[2] - mesh_length / 2, q.x_q[2] + mesh_length / 2, num=N)
 
-                    X, Y, Z = np.meshgrid(x, y, z)
-                    pos_mesh = np.zeros((3, N * N * N))
-                    pos_mesh[0, :] = X.flatten()
-                    pos_mesh[1, :] = Y.flatten()
-                    pos_mesh[2, :] = Z.flatten()
+                        X, Y, Z = np.meshgrid(x, y, z)
+                        pos_mesh = np.zeros((3, N * N * N))
+                        pos_mesh[0, :] = X.flatten()
+                        pos_mesh[1, :] = Y.flatten()
+                        pos_mesh[2, :] = Z.flatten()
 
-                    for q_check in q_list:
+                        for q_check in q_list:
 
-                        x_diff = q_check.x_q[0] - pos_mesh[0, :]
-                        y_diff = q_check.x_q[1] - pos_mesh[1, :]
-                        z_diff = q_check.x_q[2] - pos_mesh[2, :]
-                
-                        r_q_mesh = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
-
-                        explode_local_index = np.nonzero(r_q_mesh >= q_check.r_explode)[0]
-
-                        pos_mesh = pos_mesh[:, explode_local_index]
-
-
-                    explode_points = pos_mesh.transpose() #n,3 shape
-
-                    interior_points_bool = self.mesh.contains(explode_points)
-                    interior_points = explode_points[interior_points_bool]
+                            x_diff = q_check.x_q[0] - pos_mesh[0, :]
+                            y_diff = q_check.x_q[1] - pos_mesh[1, :]
+                            z_diff = q_check.x_q[2] - pos_mesh[2, :]
                     
-                    exterior_points_bool = ~interior_points_bool  
-                    exterior_points = explode_points[exterior_points_bool]
+                            r_q_mesh = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
 
-                    exterior_distances = np.linalg.norm(exterior_points, axis=1)
-                    exterior_points = exterior_points[exterior_distances <= self.R_exterior]
+                            explode_local_index = np.nonzero(r_q_mesh >= q_check.r_explode)[0]
 
-                    X1 = tf.constant(interior_points, dtype=self.DTYPE)
-                    X2 = tf.constant(exterior_points, dtype=self.DTYPE)
+                            pos_mesh = pos_mesh[:, explode_local_index]
 
-                    x_diff = q.x_q[0] - interior_points[:,0]
-                    y_diff = q.x_q[1] - interior_points[:,1]
-                    z_diff = q.x_q[2] - interior_points[:,2]
-                    r1 = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
 
-                    r1 = tf.constant(r1, dtype=self.DTYPE)
-                    r1 = tf.reshape(r1,[r1.shape[0],1])
+                        explode_points = pos_mesh.transpose() #n,3 shape
 
-                    x_diff = q.x_q[0] - exterior_points[:,0]
-                    y_diff = q.x_q[1] - exterior_points[:,1]
-                    z_diff = q.x_q[2] - exterior_points[:,2]
-                    r2 = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+                        interior_points_bool = self.mesh.contains(explode_points)
+                        interior_points = explode_points[interior_points_bool]
+                        
+                        exterior_points_bool = ~interior_points_bool  
+                        exterior_points = explode_points[exterior_points_bool]
 
-                    r2 = tf.constant(r2, dtype=self.DTYPE)
-                    r2 = tf.reshape(r2,[r2.shape[0],1])
+                        exterior_distances = np.linalg.norm(exterior_points, axis=1)
+                        exterior_points = exterior_points[exterior_distances <= self.R_exterior]
 
-                    # convert X1,r1 and X2,r2 to datasets
-                    X_in = self.create_Datasets(X1,r1)
-                    X_out = self.create_Datasets(X2,r2)
-                    phi_ens = tf.constant(L_phi[str(q.res_num)] , dtype=self.DTYPE)
+                        X1 = tf.constant(interior_points, dtype=self.DTYPE)
+                        X2 = tf.constant(exterior_points, dtype=self.DTYPE)
 
-                    X_exp.append((X_in,X_out,phi_ens))
+                        x_diff = q.x_q[0] - interior_points[:,0]
+                        y_diff = q.x_q[1] - interior_points[:,1]
+                        z_diff = q.x_q[2] - interior_points[:,2]
+                        r1 = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
 
-            self.domain_mesh_names.add(type_b)
-            self.domain_mesh_data[type_b] = X_exp
+                        r1 = tf.constant(r1, dtype=self.DTYPE)
+                        r1 = tf.reshape(r1,[r1.shape[0],1])
+
+                        x_diff = q.x_q[0] - exterior_points[:,0]
+                        y_diff = q.x_q[1] - exterior_points[:,1]
+                        z_diff = q.x_q[2] - exterior_points[:,2]
+                        r2 = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+
+                        r2 = tf.constant(r2, dtype=self.DTYPE)
+                        r2 = tf.reshape(r2,[r2.shape[0],1])
+
+                        # convert X1,r1 and X2,r2 to datasets
+                        X_in = self.create_Datasets(X1,r1)
+                        X_out = self.create_Datasets(X2,r2)
+                        phi_ens = tf.constant(L_phi[str(q.res_num)] , dtype=self.DTYPE)
+
+                        X_exp.append((X_in,X_out,phi_ens))
+
+                self.domain_mesh_names.add(type_b)
+                self.domain_mesh_data[type_b] = X_exp
 
 
 

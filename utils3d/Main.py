@@ -73,21 +73,21 @@ def main():
 
         meshes_in = dict()
         meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
-        meshes_in['2'] = {'type':'I', 'value':None, 'fun':None}
-        meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-        meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_known.dat'}
+        meshes_in['2'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+        meshes_in['3'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_known.dat'}
         PBE_model.PDE_in.mesh.adapt_meshes(meshes_in)
 
         meshes_out = dict()
         meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
-        meshes_out['2'] = {'type':'I', 'value':None, 'fun':None}
-        meshes_out['3'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: PBE_model.border_value(x,y,z)}
-        meshes_out['4'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-        meshes_out['5'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_known.dat'}
+        meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: PBE_model.border_value(x,y,z)}
+        meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+        meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_known.dat'}
         PBE_model.PDE_out.mesh.adapt_meshes(meshes_out)
 
-        mesh_domain = {'type': 'E', 'file': 'data_experimental.dat'}
-        PBE_model.mesh.adapt_meshes_domain(mesh_domain,PBE_model.q_list)
+        meshes_domain = dict()
+        meshes_domain['1'] = {'type': 'E', 'file': 'data_experimental.dat'}
+        meshes_domain['2'] = {'type':'I', 'value':None, 'fun':None}
+        PBE_model.mesh.adapt_meshes_domain(meshes_domain,PBE_model.q_list)
 
 
         XPINN_solver = XPINN(PINN)
@@ -130,7 +130,7 @@ def main():
 
 
         adapt_weights = True
-        adapt_w_iter = 20
+        adapt_w_iter = 30
 
         iters_save_model = 0
 
