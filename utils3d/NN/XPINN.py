@@ -23,34 +23,33 @@ class XPINN(XPINN_utils):
         super().__init__()       
     
     
-    def loss_PINN(self, pinn, X_batch, precond=False):
+    def loss_PINN(self, solver, X_batch, precond=False):
         if precond:
-            L = pinn.PDE.get_loss_preconditioner(X_batch, pinn.model)
+            L = solver.PDE.get_loss_preconditioner_PINN(X_batch, solver.model)
         elif not precond:
-            L = pinn.PDE.get_loss(X_batch, pinn.model)
+            L = solver.PDE.get_loss_PINN(X_batch, solver.model)
         return L
 
 
-    def get_loss(self, X_batch, s1, s2, w, precond=False):
-        L = self.loss_PINN(s1,X_batch,precond=precond)
+    def get_loss(self, X_batch, X_domain, solvers_t, solvers_i, w, precond=False):
+        s1,_ = solvers_i
+        L1 = self.loss_PINN(s1,X_batch,precond=precond)
         if not precond:    
-            L['I'] += self.PDE.get_loss_I(s1,s2,X_batch['I'])
-            if 'E' in self.PDE.mesh.domain_meshes_names:
-                L['E'] += self.PDE.get_loss_experimental(self.solver1,self.solver2,self.PDE.mesh.domain_meshes_data['E'])
+            L2 = self.PDE.get_loss_XPINN(solvers_t,solvers_i,X_batch,X_domain)
+            L = {k: L1.get(k, 0) + L2.get(k, 0) for k in set(L1) | set(L2)}
+            loss = 0
+            for t in s1.Mesh_names:
+                loss += w[t]*L[t]
+            return loss,L
+        elif precond:
+            return L1['P'],L1
+            
 
-        loss = 0
-        for t in s1.mesh.meshes_names:
-            loss += w[t]*L[t]
-        for t in self.PDE.mesh.domain_meshes_names:
-            loss += w[t]*L[t]
-        return loss,L
-    
-
-    def get_grad(self,X_batch,solver,solver_ex, w, precond=False):
+    def get_grad(self,X_batch,X_domain,solvers_t,solvers_i, w, precond=False):
         with tf.GradientTape(persistent=True) as tape:
-            tape.watch(solver.model.trainable_variables)
-            loss,L = self.get_loss(X_batch,solver,solver_ex, w, precond)
-        g = tape.gradient(loss, solver.model.trainable_variables)
+            tape.watch(solvers_i[0].model.trainable_variables)
+            loss,L = self.get_loss(X_batch, X_domain,solvers_t,solvers_i, w, precond)
+        g = tape.gradient(loss, solvers_i[0].model.trainable_variables)
         del tape
         return loss, L, g
     
@@ -62,10 +61,10 @@ class XPINN(XPINN_utils):
             optimizer1P,optimizer2P = self.create_optimizers(precond=True)
 
         @tf.function
-        def train_step(X_batch, ws,precond=False):
+        def train_step(X_batch,X_domain, ws,precond=False):
             X_batch1, X_batch2 = X_batch
-            loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1, self.solver1,self.solver2, ws[0], precond)
-            loss2, L_loss2, grad_theta2 = self.get_grad(X_batch2, self.solver2,self.solver1, ws[1], precond)
+            loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1,X_domain,self.solvers ,[self.solver1,self.solver2], ws[0], precond)
+            loss2, L_loss2, grad_theta2 = self.get_grad(X_batch2,X_domain,self.solvers ,[self.solver2,self.solver1], ws[1], precond)
 
             optimizer1.apply_gradients(zip(grad_theta1, self.solver1.model.trainable_variables))
             optimizer2.apply_gradients(zip(grad_theta2, self.solver2.model.trainable_variables))
@@ -77,8 +76,8 @@ class XPINN(XPINN_utils):
         @tf.function
         def train_step_precond(X_batch, ws, precond=True):
             X_batch1, X_batch2 = X_batch
-            loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1, self.solver1,self.solver2, ws[0], precond)
-            loss2, L_loss2, grad_theta2 = self.get_grad(X_batch2, self.solver2,self.solver1, ws[1], precond)
+            loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1,None,None ,[self.solver1,self.solver2], ws[0], precond)
+            loss2, L_loss2, grad_theta2 = self.get_grad(X_batch2,None,None ,[self.solver2,self.solver1], ws[1], precond)
 
             optimizer1P.apply_gradients(zip(grad_theta1, self.solver1.model.trainable_variables))
             optimizer2P.apply_gradients(zip(grad_theta2, self.solver2.model.trainable_variables))
@@ -100,6 +99,7 @@ class XPINN(XPINN_utils):
             
             self.check_adapt_new_weights(self.adapt_w_now)
             TX_b1, TX_b2 = self.create_generators_shuffle(self.shuffle_now)
+            X_domain = self.get_domain_data()
 
             for n_b in range(self.N_batches):
 
@@ -107,7 +107,7 @@ class XPINN(XPINN_utils):
                 X_b2 = self.get_batches(TX_b2)    
 
                 if not self.precondition:
-                    L1_b,L2_b = train_step((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])   
+                    L1_b,L2_b = train_step((X_b1,X_b2), X_domain, ws=[self.solver1.w,self.solver2.w])   
 
                 elif self.precondition:        
                     L1_b,L2_b = train_step_precond((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
@@ -123,23 +123,24 @@ class XPINN(XPINN_utils):
             TX_b1, TX_b2 = self.create_generators_shuffle(True)
             X_b1 = self.get_batches(TX_b1)
             X_b2 = self.get_batches(TX_b2) 
+            X_domain = self.get_domain_data()
 
-            self.modify_weights_by(self.solver1,self.solver2,X_b1) 
-            self.modify_weights_by(self.solver2,self.solver1,X_b2) 
+            self.modify_weights_by(self.solvers,[self.solver1,self.solver2],X_b1,X_domain) 
+            self.modify_weights_by(self.solvers,[self.solver2,self.solver1],X_b2,X_domain) 
             
 
-    def modify_weights_by(self,solver,solver_ex,X_b):
+    def modify_weights_by(self,solvers_t,solvers_i,X_batch,X_domain):
         
-        flag = 'gradients'
-        self.alpha_w = 0.7  
-
+        flag = 'values'
+        self.alpha_w = 0.1
+        solver = solvers_i[0]
         L = dict()
         if flag == 'gradients':
             with tf.GradientTape(persistent=True) as tape:
                 tape.watch(solver.model.trainable_variables)
-                _,L_loss = self.get_loss(X_b,solver,solver_ex, solver.w)
+                _,L_loss = self.get_loss(X_batch, X_domain, solvers_t, solvers_i, solver.w)
 
-            for t in solver.mesh.meshes_names:
+            for t in solver.Mesh_names:
                 loss = L_loss[t]
                 grads = tape.gradient(loss, solver.model.trainable_variables)
                 grads = [grad if grad is not None else tf.zeros_like(var) for grad, var in zip(grads, solver.model.trainable_variables)]
@@ -148,11 +149,10 @@ class XPINN(XPINN_utils):
             del tape
 
         elif flag == 'values':
-            for t in solver.mesh.meshes_names:
-                _,L = self.get_loss(X_b,solver,solver_ex, solver.w) 
+            _,L = self.get_loss(X_batch, X_domain, solvers_t, solvers_i, solver.w) 
 
         loss_wo_w = sum(L.values())
-        for t in solver.mesh.meshes_names:
+        for t in solver.Mesh_names:
             eps = 1e-9
             w = float(loss_wo_w/(L[t]+eps))
             solver.w[t] = self.alpha_w*solver.w[t] + (1-self.alpha_w)*w     

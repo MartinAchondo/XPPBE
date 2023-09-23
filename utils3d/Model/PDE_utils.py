@@ -8,46 +8,36 @@ class PDE_utils():
     pi = tf.constant(np.pi, dtype=DTYPE)
 
     def __init__(self):
-
-        self.maintain_precond = False
-            
+        pass
     
-    def get_loss(self, X_batches, model):
-        L = dict()
-        L['R'] = 0.0
-        L['D'] = 0.0
-        L['N'] = 0.0
-        L['K'] = 0.0
-        L['I'] = 0.0
-        L['P'] = 0.0
-        L['E'] = 0.0
+    def get_loss_PINN(self, X_batches, model):
+        L = self.create_L()
 
         #residual
-        if 'R' in self.mesh.meshes_names: 
+        if 'R' in self.mesh.solver_mesh_names: 
             X,SU = X_batches['R']
             loss_r = self.residual_loss(self.mesh,model,self.mesh.get_X(X),SU)
             L['R'] += loss_r    
 
         #dirichlet 
-        if 'D' in self.mesh.meshes_names:
+        if 'D' in self.mesh.solver_mesh_names:
             X,U = X_batches['D']
             loss_d = self.dirichlet_loss(self.mesh,model,X,U)
             L['D'] += loss_d
 
         #neumann
-        if 'N' in self.mesh.meshes_names:
+        if 'N' in self.mesh.solver_mesh_names:
             X,U = X_batches['K']
             loss_n = self.neumann_loss(self.mesh,model,X,U)
             L['N'] += loss_n
 
         # data known
-        if 'K' in self.mesh.meshes_names:
+        if 'K' in self.mesh.solver_mesh_names:
             X,U = X_batches['K']
             loss_k = self.data_known_loss(self.mesh,model,X,U)
             L['K'] += loss_k    
 
         return L
-
 
 
     def dirichlet_loss(self,mesh,model,XD,UD):
@@ -57,7 +47,6 @@ class PDE_utils():
         Loss_d += loss
         return Loss_d
 
-
     def neumann_loss(self,mesh,model,XN,UN,V=None):
         Loss_n = 0
         X = mesh.get_X(XN)
@@ -66,33 +55,45 @@ class PDE_utils():
         Loss_n += loss
         return Loss_n
     
-
     def data_known_loss(self,mesh,model,XK,UK):
         Loss_d = 0
         u_pred = model(XK)
         loss = tf.reduce_mean(tf.square(UK - u_pred)) 
         Loss_d += loss
         return Loss_d
+    
+    def get_loss_XPINN(self,solvers_t,solvers_i,X_batch,X_domain):
+        L = self.create_L()
 
+        L['I'] += self.get_loss_I(solvers_i[0],solvers_i[1],X_batch['I'])
 
-    def get_loss_preconditioner(self, X_batches, model):
-        L = dict()
-        L['R'] = 0.0
-        L['D'] = 0.0
-        L['N'] = 0.0
-        L['I'] = 0.0
-        L['K'] = 0.0
-        L['P'] = 0.0
-        L['E'] = 0.0
+        if 'E' in self.mesh.domain_mesh_names:
+            L['E'] += self.get_loss_experimental(solvers_t,X_domain)
+
+        return L
+
+    def get_loss_preconditioner_PINN(self, X_batches, model):
+        L = self.create_L()
 
         #residual
-        if 'P' in self.mesh.meshes_names:
+        if 'P' in self.mesh.solver_mesh_names:
             X,U = X_batches['P']
             loss_p = self.data_known_loss(self.mesh,model,X,U)
             L['P'] += loss_p  
             
         return L
-
+    
+    @classmethod
+    def create_L(cls):
+        L = dict()
+        L['R'] = tf.constant(0.0, dtype=cls.DTYPE)
+        L['D'] = tf.constant(0.0, dtype=cls.DTYPE)
+        L['N'] = tf.constant(0.0, dtype=cls.DTYPE)
+        L['I'] = tf.constant(0.0, dtype=cls.DTYPE)
+        L['K'] = tf.constant(0.0, dtype=cls.DTYPE)
+        L['P'] = tf.constant(0.0, dtype=cls.DTYPE)
+        L['E'] = tf.constant(0.0, dtype=cls.DTYPE)
+        return L
     ####################################################################################################################################################
 
     # Define boundary condition

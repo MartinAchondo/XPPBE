@@ -71,16 +71,14 @@ class PINN():
         self.model.build_Net()
 
     def load_NeuralNet(self,directory,name):
-        logger.info("> Adapting NeuralNet")
         path = os.path.join(os.getcwd(),directory,name)
         NN_model = tf.keras.models.load_model(path, compile=False)
         self.model = NN_model
-        logger.info("Neural Network adapted")
         
         path_load = os.path.join(path,'w_hist.csv')
         df = pd.read_csv(path_load)
 
-        for t in self.mesh.meshes_names:
+        for t in self.mesh.solver_mesh_names:
             self.w_hist[t] = list(df[t])
             self.w[t] = self.w_hist[t][-1]
        

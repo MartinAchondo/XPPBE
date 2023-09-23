@@ -37,9 +37,11 @@ class XPINN_utils():
 
     def adapt_PDEs(self,PDE):
         self.PDE = PDE
+        self.mesh = self.PDE.mesh
         for solver,pde in zip(self.solvers, PDE.get_PDEs):
             solver.adapt_PDE(pde)
         self.adapt_data_batches()
+        self.set_mesh_names()
 
     def adapt_weights(self,weights):
         for solver,weight in zip(self.solvers,weights):
@@ -105,8 +107,8 @@ class XPINN_utils():
         self.L_X_solvers = list()
         for solver in self.solvers:
             L_batches = dict()
-            for t in solver.mesh.meshes_names:
-                L_batches[t] = solver.mesh.data_mesh[t]
+            for t in solver.mesh.solver_mesh_names:
+                L_batches[t] = solver.mesh.solver_mesh_data[t]
             self.L_X_solvers.append(L_batches)
         self.N_batches = solver.mesh.N_batches
         
@@ -122,18 +124,20 @@ class XPINN_utils():
             L = dict()
             for t in set_batches:
                 if shuffle:
-                    L[t] = generator(set_batches[t].shuffle(buffer_size=solver.mesh.meshes_N[t]))
+                    L[t] = generator(set_batches[t].shuffle(buffer_size=solver.mesh.solver_mesh_N[t]))
                 elif not shuffle:
                     L[t] = generator(set_batches[t])
             L_X_generators.append(L)
         return L_X_generators
-
 
     def get_batches(self, TX_b):
         X_b = dict()
         for t in TX_b:
             X_b[t] = next(TX_b[t])
         return X_b
+
+    def get_domain_data(self):
+        return self.PDE.mesh.domain_mesh_data
 
 
     def checkers_iterations(self):
@@ -155,8 +159,9 @@ class XPINN_utils():
             self.precondition = False
             for data,solver in zip(self.L_X_solvers,self.solvers):
                 del data['P']
-                solver.mesh.data_mesh['P'] = None
-                solver.mesh.meshes_names.remove('P')
+                solver.mesh.solver_mesh_data['P'] = None
+                solver.mesh.solver_mesh_names.remove('P')
+                solver.Mesh_names.remove('P')
         
         if self.iter % 2 == 0:
             self.pbar.set_description("Loss: {:6.4e}".format(self.current_loss))
@@ -164,6 +169,10 @@ class XPINN_utils():
         return [0.0, dict()],[0.0, dict()]
 
 
+    def set_mesh_names(self):
+        for solver in self.solvers:
+            solver.Mesh_names = solver.mesh.solver_mesh_names.union(self.mesh.domain_mesh_names)
+ 
 
     def callback(self, L1,L2):
 

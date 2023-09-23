@@ -134,7 +134,7 @@ class View_results_X():
         ax.semilogy(range(len(self.XPINN.loss_hist)), self.XPINN.loss_hist,'k-',label='Loss')
         if flag: 
             iter = 1
-            c = [['r','b','g','c','m'],['salmon','royalblue','springgreen','aqua', 'pink']]
+            c = [['r','b','g','c','m','lime'],['salmon','royalblue','springgreen','aqua', 'pink','yellowgreen']]
             for NN in self.NN:
                 if not plot_w:
                     w = {
@@ -147,7 +147,7 @@ class View_results_X():
                     }
                 elif plot_w:
                     w = NN.w_hist
-                meshes_names = NN.mesh.meshes_names
+                meshes_names = NN.Mesh_names
                 if 'R' in meshes_names:
                     ax.semilogy(range(len(NN.loss_r)), w['R']*np.array(NN.loss_r),c[iter-1][0],label=f'Loss_R_{iter}')
                 if 'D' in meshes_names:
@@ -158,10 +158,9 @@ class View_results_X():
                     ax.semilogy(range(len(NN.loss_bK)), w['K']*np.array(NN.loss_bK),c[iter-1][3],label=f'Loss_bK_{iter}')
                 if 'I' in meshes_names:
                     ax.semilogy(range(len(NN.loss_bI)), w['I']*np.array(NN.loss_bI),c[iter-1][4],label=f'Loss_bI_{iter}')
-                iter += 1
-            if 'E' in self.XPINN.PDE.mesh.domain_meshes_names:
-                ax.semilogy(range(len(self.XPINN.loss_exp)), w['E']*np.array(self.XPINN.loss_exp),'lime',label=f'Loss_E')
-        
+                if 'E' in meshes_names:
+                    ax.semilogy(range(len(self.XPINN.loss_exp)), w['E']*np.array(self.XPINN.loss_exp),c[iter-1][5],label=f'Loss_E_{iter}')
+                iter += 1      
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel(r'$\mathcal{L}: Losses$')
@@ -182,11 +181,11 @@ class View_results_X():
             ax = fig.add_subplot(111)
 
         iter = 1
-        c = [['r','b','g','c','m'],['salmon','royalblue','springgreen','aqua', 'pink']]
+        c = [['r','b','g','c','m','lime'],['salmon','royalblue','springgreen','aqua', 'pink','yellowgreen']]
         for NN in self.NN:
             if True:
                 w = NN.w_hist
-                meshes_names = NN.mesh.meshes_names
+                meshes_names = NN.Mesh_names
                 if 'R' in meshes_names:
                     ax.semilogy(range(len(w['R'])), w['R'], c[iter-1][0],label=f'w_R_{iter}')
                 if 'D' in meshes_names:
@@ -197,9 +196,9 @@ class View_results_X():
                     ax.semilogy(range(len(w['K'])), w['K'], c[iter-1][3],label=f'w_K_{iter}')
                 if 'I' in meshes_names:
                     ax.semilogy(range(len(w['I'])), w['I'], c[iter-1][4],label=f'w_I_{iter}')
+                if 'E' in meshes_names:
+                    ax.semilogy(range(len(w['E'])), w['E'],c[iter-1][5],label=f'w_E_{iter}')
             iter += 1
-        if 'E' in self.XPINN.PDE.mesh.domain_meshes_names:
-            ax.semilogy(range(len(w['E'])), w['E'],'lime',label=f'w_E')
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel('w: weights')

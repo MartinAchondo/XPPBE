@@ -52,7 +52,7 @@ def main():
                 'epsilon_1':  1,
                 'epsilon_2': 80,
                 'kappa': 0.125,
-                'kT' : 4.11e-21 
+                'T' : 300 
                 }
 
         N_points = {'N_interior': 21,
@@ -129,15 +129,15 @@ def main():
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
 
-        adapt_weights = False
-        adapt_w_iter = 1000
+        adapt_weights = True
+        adapt_w_iter = 20
 
         iters_save_model = 0
 
-        precondition = False
-        N_precond = 40
+        precondition = True
+        N_precond = 10
 
-        N_iters = 4
+        N_iters = 50
 
         XPINN_solver.folder_path = folder_path
 

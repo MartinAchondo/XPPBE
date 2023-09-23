@@ -8,9 +8,14 @@ from Model.Molecules.Charges import get_charges_list
 
 class PBE(PDE_utils):
 
+    qe = 1.60217663e-19
+    eps0 = 8.8541878128e-12     
+    kb = 1.380649e-23              
+    Na = 6.02214076e23
+
     def __init__(self, inputs, mesh, model):
         
-        self.sigma = 0.04
+        self.sigma = 0.04        
 
         self.mesh = mesh
 
@@ -90,43 +95,57 @@ class PBE(PDE_utils):
         return loss
     
 
-    def get_loss_experimental(self,s1,s2,X_exp):
+    def get_loss_experimental(self,solvers,X_exp):
+        
+        return 100.1
 
-        qe = 1.60217663e-19
-        eps0 = 8.8541878128e-12       # Coulumb / Volt x Meter
+        to_V = self.qe/(self.eps0 * ang_to_m)   
         ang_to_m = 1e-10
-        to_V = qe/(eps0 * ang_to_m)   # Volt x Amstrong
-        kT = 4.11e-21                 # Joule
-        Na = 6.02214076e23   
-        C = qe/kT                     # Coulumb / Joule  (Volt)
+        kT = self.kb*self.T
+        C = self.qe/kT                
 
-        loss = 0.0
+        loss = tf.constant(0.0, dtype=self.DTYPE)
         n = len(X_exp)
+
+        s1,s2 = solvers
 
         for X_in,X_out,phi_ens_exp in X_exp:
 
             if X_in != None:
                 X1,r1 = X_in
-                phi1 = s1.model(X1) * to_V
-                G2_p_1 =  tf.math.reduce_sum(tf.math.exp(-C*phi1)/r1**6)
-                G2_m_1 = tf.math.reduce_sum(tf.math.exp(C*phi1)/r1**6)
+                C_phi1 = s1.model(X1) * to_V * C
+                G2_p_1 =  tf.math.reduce_sum(tf.math.exp(-C_phi1)/r1**6)
+                G2_m_1 = tf.math.reduce_sum(tf.math.exp(C_phi1)/r1**6)
             else:
                 G2_p_1 = 0.0
                 G2_m_1 = 0.0
 
             X2,r2 = X_out
 
-            phi2 = s2.model(X2) * to_V 
+            C_phi2 = s2.model(X2) * to_V * C
 
-            G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C*phi2)/r2**6)
-            G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C*phi2)/r2**6)
+            print(np.max(np.abs(C_phi2 - 6*tf.math.log(r2))))
+            print(np.max(np.abs(-C_phi2 - 6*tf.math.log(r2))))
+            print(np.max(np.abs(C_phi2)))
+            print(np.max(np.abs(6*tf.math.log(r2))))
+            #G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2)/r2**6)
+            #G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2)/r2**6)
 
-            phi_ens_pred = -kT/(2*qe) * tf.math.log(G2_p/G2_m) * 1000   # mV ??
+            G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2-6*tf.math.log(r2)))
+            G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2-6*tf.math.log(r2)))
+
+            phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000   # mV ??
 
             loss += tf.square(phi_ens_pred - phi_ens_exp)
 
         loss *= (1/n)
 
+        # loss_e = tf.cond(
+        #     tf.math.logical_or(tf.math.is_inf(loss), tf.math.is_nan(loss)),
+        #     true_fn=lambda: tf.constant(0.0, dtype=self.DTYPE),
+        #     false_fn=lambda: loss
+        #     )
+        
         return loss
 
 
