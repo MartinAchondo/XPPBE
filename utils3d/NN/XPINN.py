@@ -121,11 +121,16 @@ class XPINN(XPINN_utils):
     def check_adapt_new_weights(self,adapt_now):
         
         if adapt_now:
-            TX_b1, TX_b2 = self.create_generators_shuffle_solver(True)
-            TX_d = self.create_generators_shuffle_domain(True)
-            X_b1 = self.get_batches_solver(TX_b1)
-            X_b2 = self.get_batches_solver(TX_b2)
-            X_d = self.get_batches_domain(TX_d) 
+
+            TX_b1, TX_b2 = self.create_generators_shuffle_solver(False)
+            TX_d = self.create_generators_shuffle_domain(False)
+            for n_b in range(self.N_batches):
+                if n_b == 0:
+                    X_b1 = self.get_batches_solver(TX_b1)
+                    X_b2 = self.get_batches_solver(TX_b2)
+                    X_d = self.get_batches_domain(TX_d) 
+                else:
+                    pass
 
             self.modify_weights_by(self.solvers,[self.solver1,self.solver2],X_b1,X_d) 
             self.modify_weights_by(self.solvers,[self.solver2,self.solver1],X_b2,X_d) 

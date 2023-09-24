@@ -7,7 +7,7 @@ import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
-from Model.Mesh.Mesh import Molecule_Mesh
+from Model.Mesh.Molecule_Mesh import Molecule_Mesh
 from Model.PDE_Model import PBE
 from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
@@ -48,22 +48,22 @@ logger.info('================================================')
 
 def main():
 
-        inputs = {'molecule': '1ubq',
+        inputs = {'molecule': 'sphere',
                 'epsilon_1':  1,
                 'epsilon_2': 80,
                 'kappa': 0.125,
                 'T' : 300 
                 }
 
-        N_points = {'N_interior': 22,
-                'N_exterior': 11,
-                'N_border': 11,
+        N_points = {'N_interior': 5,
+                'N_exterior': 5,
+                'N_border': 5,
                 'dR_exterior': 8
                 }
 
         Mol_mesh = Molecule_Mesh(inputs['molecule'], 
                                 N_points=N_points, 
-                                N_batches=1,
+                                N_batches=2,
                                 refinement=True,
                                 plot=False)
         
@@ -103,7 +103,7 @@ def main():
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
-                                   adapt_w_iter = 40,
+                                   adapt_w_iter = 30,
                                    adapt_w_method = 'gradients')             
 
         hyperparameters_in = {
@@ -132,9 +132,9 @@ def main():
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
         
-        N_iters = 20
+        N_iters = 80
 
-        precondition = True
+        precondition = False
         N_precond = 10
 
         iters_save_model = 0
