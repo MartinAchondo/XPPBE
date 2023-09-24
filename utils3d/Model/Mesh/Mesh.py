@@ -148,6 +148,7 @@ class Molecule_Mesh():
 
         self.domain_mesh_names = set()
         self.domain_mesh_data = dict()
+        self.domain_mesh_N = dict()
 
     
     def read_create_meshes(self, Mesh_class):
@@ -277,12 +278,12 @@ class Molecule_Mesh():
             if type_b in ('I'):
                 N = self.normal
                 X = tf.constant(self.verts, dtype=self.DTYPE)
-                for mesh_obj in [self.interior_obj,self.exterior_obj]:
-                    mesh_obj.solver_mesh_data[type_b] = mesh_obj.create_Datasets(X,N)                
-                    mesh_obj.solver_mesh_names.add(type_b)    
-                    mesh_obj.solver_mesh_N[type_b] = len(X)
+                X_I = self.interior_obj.create_Datasets(X, N)
+                self.domain_mesh_names.add(type_b)
+                self.domain_mesh_data[type_b] = X_I
+                self.domain_mesh_N[type_b] = len(X)
 
-            elif type_b == 'E':
+            elif type_b in ('E'):
                 file = bl['file']
                 path_files = os.path.join(os.getcwd(),'utils3d','Model','Molecules')
 
@@ -321,9 +322,7 @@ class Molecule_Mesh():
 
                             pos_mesh = pos_mesh[:, explode_local_index]
 
-
-                        explode_points = pos_mesh.transpose() #n,3 shape
-
+                        explode_points = pos_mesh.transpose()
                         interior_points_bool = self.mesh.contains(explode_points)
                         interior_points = explode_points[interior_points_bool]
                         
@@ -352,7 +351,6 @@ class Molecule_Mesh():
                         r2 = tf.constant(r2, dtype=self.DTYPE)
                         r2 = tf.reshape(r2,[r2.shape[0],1])
 
-                        # convert X1,r1 and X2,r2 to datasets
                         X_in = self.create_Datasets(X1,r1)
                         X_out = self.create_Datasets(X2,r2)
                         phi_ens = tf.constant(L_phi[str(q.res_num)] , dtype=self.DTYPE)

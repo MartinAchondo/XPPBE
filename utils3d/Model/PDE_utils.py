@@ -62,10 +62,11 @@ class PDE_utils():
         Loss_d += loss
         return Loss_d
     
-    def get_loss_XPINN(self,solvers_t,solvers_i,X_batch,X_domain):
+    def get_loss_XPINN(self,solvers_t,solvers_i,X_domain):
         L = self.create_L()
 
-        L['I'] += self.get_loss_I(solvers_i[0],solvers_i[1],X_batch['I'])
+        if 'I' in self.mesh.domain_mesh_names:
+            L['I'] += self.get_loss_I(solvers_i[0],solvers_i[1],X_domain['I'])
 
         if 'E' in self.mesh.domain_mesh_names:
             L['E'] += self.get_loss_experimental(solvers_t,X_domain['E'])

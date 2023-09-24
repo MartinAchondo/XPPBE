@@ -60,9 +60,9 @@ class XPINN_utils():
             solver.adapt_optimizer(optimizer,lr,lr_p)
         self.optimizer_name = optimizer
 
-    def load_NeuralNets(self,dir_load,names,lrs):   
-        for solver,lr,name in zip(self.solvers,lrs,names):
-            solver.load_NeuralNet(dir_load,name,lr)  
+    def load_NeuralNets(self,dir_load,names):   
+        for solver,name in zip(self.solvers,names):
+            solver.load_NeuralNet(dir_load,name)  
         path_load = os.path.join(dir_load,'loss.csv')
         df = pd.read_csv(path_load)
         self.loss_hist = list(df['TL'])
@@ -114,10 +114,14 @@ class XPINN_utils():
             for t in solver.mesh.solver_mesh_names:
                 L_batches[t] = solver.mesh.solver_mesh_data[t]
             self.L_X_solvers.append(L_batches)
-        self.N_batches = solver.mesh.N_batches
-        
-    
-    def create_generators_shuffle(self, shuffle):
+        self.N_batches = self.mesh.N_batches
+
+        self.L_X_domain = dict()
+        for t in self.mesh.domain_mesh_names:
+            self.L_X_domain[t] = self.mesh.domain_mesh_data[t]
+
+
+    def create_generators_shuffle_solver(self, shuffle):
 
         def generator(dataset):
             for batch in dataset:
@@ -133,19 +137,42 @@ class XPINN_utils():
                     L[t] = generator(set_batches[t])
             L_X_generators.append(L)
         return L_X_generators
-
-    def get_batches(self, TX_b):
+    
+    def get_batches_solver(self, TX_b):
         X_b = dict()
         for t in TX_b:
             X_b[t] = next(TX_b[t])
         return X_b
 
-    def get_domain_data(self):
-        return self.PDE.mesh.domain_mesh_data
+
+    def create_generators_shuffle_domain(self,shuffle):
+
+        def generator(dataset):
+            for batch in dataset:
+                yield batch
+
+        L = dict()
+        for t in self.L_X_domain:
+            if t in ('E'):
+                L[t] = self.L_X_domain[t]
+            elif t in ('I'):
+                if shuffle:
+                    L[t] = generator(self.L_X_domain[t].shuffle(buffer_size=self.mesh.domain_mesh_N[t]))
+                elif not shuffle:
+                    L[t] = generator(self.L_X_domain[t])
+        return L
+
+    def get_batches_domain(self, TX_b):
+        X_b = dict()
+        for t in TX_b:
+            if t in ('E'):
+                X_b[t] = TX_b[t]
+            elif t in ('I'):
+                X_b[t] = next(TX_b[t])
+        return X_b
 
 
     def checkers_iterations(self):
-
         # shuffle batches
         if self.shuffle and self.iter%self.shuffle_iter==0 and self.iter>1:
             self.shuffle_now = True
@@ -211,7 +238,6 @@ class XPINN_utils():
             if self.iter % self.save_model_iter == 0 and self.iter>1:
                 dir_save = os.path.join(self.folder_path,f'iter_{self.iter}')
                 self.save_models(dir_save, [f'model_1',f'model_2'])
-
 
 
     def batch_iter_callback(self,L,L_b):

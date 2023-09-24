@@ -85,20 +85,20 @@ def main():
         PBE_model.PDE_out.mesh.adapt_meshes(meshes_out)
 
         meshes_domain = dict()
-        meshes_domain['1'] = {'type': 'E', 'file': 'data_experimental.dat'}
-        meshes_domain['2'] = {'type':'I', 'value':None, 'fun':None}
+        meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
+        meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
         PBE_model.mesh.adapt_meshes_domain(meshes_domain,PBE_model.q_list)
        
         XPINN_solver = XPINN(PINN)
         XPINN_solver.adapt_PDEs(PBE_model)
 
         weights = {'w_r': 1,
-                'w_d': 1,
-                'w_n': 1,
-                'w_i': 1,
-                'w_k': 1,
-                'w_e': 1
-                }
+                   'w_d': 1,
+                   'w_n': 1,
+                   'w_i': 1,
+                   'w_k': 1,
+                   'w_e': 1
+                  }
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
@@ -131,7 +131,7 @@ def main():
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
         
-        N_iters = 60
+        N_iters = 20
 
         precondition = True
         N_precond = 10

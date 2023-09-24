@@ -78,7 +78,7 @@ class PINN():
         path_load = os.path.join(path,'w_hist.csv')
         df = pd.read_csv(path_load)
 
-        for t in self.mesh.solver_mesh_names:
+        for t in self.L_names:
             self.w_hist[t] = list(df[t])
             self.w[t] = self.w_hist[t][-1]
        

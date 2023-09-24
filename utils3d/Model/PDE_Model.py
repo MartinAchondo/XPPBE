@@ -140,7 +140,7 @@ class PBE(PDE_utils):
         #     false_fn=lambda: loss
         #     )
         
-        return 100.0
+        return loss
 
 
     def analytic(self,r):

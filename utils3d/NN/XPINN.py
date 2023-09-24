@@ -35,7 +35,7 @@ class XPINN(XPINN_utils):
         s1,_ = solvers_i
         L1 = self.loss_PINN(s1,X_batch,precond=precond)
         if not precond:    
-            L2 = self.PDE.get_loss_XPINN(solvers_t,solvers_i,X_batch,X_domain)
+            L2 = self.PDE.get_loss_XPINN(solvers_t,solvers_i,X_domain)
             L = {k: L1.get(k, 0) + L2.get(k, 0) for k in set(L1) | set(L2)}
             loss = 0
             for t in s1.Mesh_names:
@@ -98,16 +98,17 @@ class XPINN(XPINN_utils):
             L1,L2 = self.checkers_iterations()
             
             self.check_adapt_new_weights(self.adapt_w_now)
-            TX_b1, TX_b2 = self.create_generators_shuffle(self.shuffle_now)
-            X_domain = self.get_domain_data()
+            TX_b1, TX_b2 = self.create_generators_shuffle_solver(self.shuffle_now)
+            TX_d = self.create_generators_shuffle_domain(self.shuffle_now)
 
             for n_b in range(self.N_batches):
 
-                X_b1 = self.get_batches(TX_b1)
-                X_b2 = self.get_batches(TX_b2)    
+                X_b1 = self.get_batches_solver(TX_b1)
+                X_b2 = self.get_batches_solver(TX_b2)   
+                X_d = self.get_batches_domain(TX_d) 
 
                 if not self.precondition:
-                    L1_b,L2_b = train_step((X_b1,X_b2), X_domain, ws=[self.solver1.w,self.solver2.w])   
+                    L1_b,L2_b = train_step((X_b1,X_b2), X_d, ws=[self.solver1.w,self.solver2.w])   
 
                 elif self.precondition:        
                     L1_b,L2_b = train_step_precond((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
@@ -120,13 +121,14 @@ class XPINN(XPINN_utils):
     def check_adapt_new_weights(self,adapt_now):
         
         if adapt_now:
-            TX_b1, TX_b2 = self.create_generators_shuffle(True)
-            X_b1 = self.get_batches(TX_b1)
-            X_b2 = self.get_batches(TX_b2) 
-            X_domain = self.get_domain_data()
+            TX_b1, TX_b2 = self.create_generators_shuffle_solver(True)
+            TX_d = self.create_generators_shuffle_domain(True)
+            X_b1 = self.get_batches_solver(TX_b1)
+            X_b2 = self.get_batches_solver(TX_b2)
+            X_d = self.get_batches_domain(TX_d) 
 
-            self.modify_weights_by(self.solvers,[self.solver1,self.solver2],X_b1,X_domain) 
-            self.modify_weights_by(self.solvers,[self.solver2,self.solver1],X_b2,X_domain) 
+            self.modify_weights_by(self.solvers,[self.solver1,self.solver2],X_b1,X_d) 
+            self.modify_weights_by(self.solvers,[self.solver2,self.solver1],X_b2,X_d) 
             
 
     def modify_weights_by(self,solvers_t,solvers_i,X_batch,X_domain):
@@ -189,7 +191,6 @@ class XPINN(XPINN_utils):
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
 
         self.add_losses_NN()
-
 
 
 
