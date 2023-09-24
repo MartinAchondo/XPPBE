@@ -68,7 +68,7 @@ class PDE_utils():
         L['I'] += self.get_loss_I(solvers_i[0],solvers_i[1],X_batch['I'])
 
         if 'E' in self.mesh.domain_mesh_names:
-            L['E'] += self.get_loss_experimental(solvers_t,X_domain)
+            L['E'] += self.get_loss_experimental(solvers_t,X_domain['E'])
 
         return L
 

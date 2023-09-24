@@ -55,17 +55,17 @@ def main():
                 'T' : 300 
                 }
 
-        N_points = {'N_interior': 21,
+        N_points = {'N_interior': 22,
                 'N_exterior': 11,
                 'N_border': 11,
                 'dR_exterior': 8
                 }
 
-        N_batches = 1
-
         Mol_mesh = Molecule_Mesh(inputs['molecule'], 
-                                N_points, 
-                                N_batches)
+                                N_points=N_points, 
+                                N_batches=1,
+                                refinement=True)
+        
         PBE_model = PBE(inputs,
                         mesh=Mol_mesh, 
                         model='linear'
@@ -88,8 +88,7 @@ def main():
         meshes_domain['1'] = {'type': 'E', 'file': 'data_experimental.dat'}
         meshes_domain['2'] = {'type':'I', 'value':None, 'fun':None}
         PBE_model.mesh.adapt_meshes_domain(meshes_domain,PBE_model.q_list)
-
-
+       
         XPINN_solver = XPINN(PINN)
         XPINN_solver.adapt_PDEs(PBE_model)
 
@@ -101,7 +100,10 @@ def main():
                 'w_e': 1
                 }
 
-        XPINN_solver.adapt_weights([weights,weights])
+        XPINN_solver.adapt_weights([weights,weights],
+                                   adapt_weights = True,
+                                   adapt_w_iter = 40,
+                                   adapt_w_method = 'gradients')             
 
         hyperparameters_in = {
                         'input_shape': (None,3),
@@ -128,25 +130,19 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-
-        adapt_weights = True
-        adapt_w_iter = 30
-
-        iters_save_model = 0
+        
+        N_iters = 60
 
         precondition = True
         N_precond = 10
 
-        N_iters = 50
-
+        iters_save_model = 0
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 
                         precond = precondition, 
                         N_precond = N_precond,  
                         save_model = iters_save_model, 
-                        adapt_weights = adapt_weights, 
-                        adapt_w_iter = adapt_w_iter,
                         shuffle = False, 
                         shuffle_iter = 150 )
 
@@ -155,13 +151,13 @@ def main():
 
         Post.plot_loss_history();
         Post.plot_loss_history(plot_w=True);
-
-        Post.plot_u_plane();
-        # Post.plot_u_domain_contour();
-        Post.plot_aprox_analytic();
-        # Post.plot_interface();
         Post.plot_weights_history();
 
+        Post.plot_u_plane();
+        Post.plot_aprox_analytic();
+        Post.plot_interface();
+
+        # Post.plot_u_domain_contour();
 
 if __name__=='__main__':
     main()

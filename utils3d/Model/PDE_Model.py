@@ -96,11 +96,9 @@ class PBE(PDE_utils):
     
 
     def get_loss_experimental(self,solvers,X_exp):
-        
-        return 100.1
 
-        to_V = self.qe/(self.eps0 * ang_to_m)   
         ang_to_m = 1e-10
+        to_V = self.qe/(self.eps0 * ang_to_m)   
         kT = self.kb*self.T
         C = self.qe/kT                
 
@@ -124,17 +122,13 @@ class PBE(PDE_utils):
 
             C_phi2 = s2.model(X2) * to_V * C
 
-            print(np.max(np.abs(C_phi2 - 6*tf.math.log(r2))))
-            print(np.max(np.abs(-C_phi2 - 6*tf.math.log(r2))))
-            print(np.max(np.abs(C_phi2)))
-            print(np.max(np.abs(6*tf.math.log(r2))))
-            #G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2)/r2**6)
-            #G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2)/r2**6)
+            G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2)/r2**6)
+            G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2)/r2**6)
 
-            G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2-6*tf.math.log(r2)))
-            G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2-6*tf.math.log(r2)))
+            # G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2-6*tf.math.log(r2)))
+            # G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2-6*tf.math.log(r2)))
 
-            phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000   # mV ??
+            phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000 
 
             loss += tf.square(phi_ens_pred - phi_ens_exp)
 
@@ -146,7 +140,7 @@ class PBE(PDE_utils):
         #     false_fn=lambda: loss
         #     )
         
-        return loss
+        return 100.0
 
 
     def analytic(self,r):

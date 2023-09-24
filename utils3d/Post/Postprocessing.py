@@ -256,7 +256,7 @@ class View_results_X():
             fig.savefig(path_save)
             logger.info(f'Solution Plot saved: {path}')
 
-    def plot_u_domain_contour(self, N=50):
+    def plot_u_domain_contour(self, N=35):
         fig, ax = plt.subplots()
         vmax,vmin = self.get_max_min()
         for post_obj in self.Post:

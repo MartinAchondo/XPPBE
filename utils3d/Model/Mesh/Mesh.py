@@ -6,6 +6,7 @@ import trimesh
 import matplotlib.pyplot as plt
 import plotly.express as px
 
+from Model.Molecules.Charges import import_charges_from_pqr
 
 class Mesh():
 
@@ -77,7 +78,7 @@ class Mesh():
 
         with open(os.path.join(path_files,self.molecule,file),'r') as f:
             for line in f:
-                condition, x, y, z, phi = line.strip().split(' ')
+                condition, x, y, z, phi = line.strip().split()
 
                 if int(condition) == self.name:
                     x_b.append(float(x))
@@ -135,13 +136,13 @@ class Molecule_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, N_points, N_batches=1):
+    def __init__(self, molecule, N_points, refinement=True, N_batches=1):
 
         for key, value in N_points.items():
             setattr(self, key, value)
         self.N_batches = N_batches
-
         self.molecule = molecule
+        self.refinement = refinement
 
         self.read_create_meshes(Mesh)
 
@@ -197,6 +198,30 @@ class Molecule_Mesh():
         points = np.stack((X.ravel(), Y.ravel(), Z.ravel()), axis=1)
         interior_points_bool = self.mesh.contains(points)
         interior_points = points[interior_points_bool]
+
+        if self.refinement:
+            path_files = os.path.join(os.getcwd(),'utils3d','Model','Molecules')
+            _,Lx_q,_,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
+
+            delta = 0.04
+            dx = np.array([delta,0.0,0.0])
+            dy = np.array([0.0,delta,0.0])
+            dz = np.array([0.0,0.0,delta])
+
+            n_q = Lx_q.shape[0]
+            X_temp = np.zeros((n_q*7,3))
+
+            for i,x_q in enumerate(Lx_q):
+                c = 1
+                x_q = x_q - self.centroid
+                X_temp[i*7,:] = x_q
+                for k in [-1,1]:
+                    X_temp[i*7+c,:] = x_q + k*dx
+                    X_temp[i*7+c+1,:] = x_q + k*dy
+                    X_temp[i*7+c+2,:] = x_q + k*dz
+                    c = 4
+            X_in = tf.constant(X_temp, dtype=self.DTYPE)
+            interior_points = tf.concat([interior_points,X_in], axis=0)
 
         mesh_interior.prior_data['R'] = tf.constant(interior_points)
 
@@ -264,7 +289,7 @@ class Molecule_Mesh():
                 with open(os.path.join(path_files,self.molecule,file),'r') as f:
                     L_phi = dict()
                     for line in f:
-                        res_n, phi = line.strip().split(' ')
+                        res_n, phi = line.strip().split()
                         L_phi[str(res_n)] = float(phi)
 
                 X_exp = list()
@@ -367,19 +392,19 @@ class Molecule_Mesh():
 
         fig, ax = plt.subplots()
 
-        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.prior_data['R'])
+        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.solver_mesh_data['R'])
         plane = np.abs(zm) < 0.5
         ax.scatter(xm[plane], ym[plane], c='r', marker='.', alpha=0.1)
 
-        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.prior_data['R'])
+        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.solver_mesh_data['R'])
         plane = np.abs(zm) < 2
         ax.scatter(xm[plane], ym[plane], c='g', marker='.', alpha=0.1)
 
-        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.prior_data['I'])
+        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.solver_mesh_data['I'])
         plane = np.abs(zm) < 0.1
         ax.scatter(xm[plane], ym[plane], c='b', marker='.', alpha=0.3)
 
-        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.prior_data['D'])
+        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.solver_mesh_data['D'])
         plane = np.abs(zm) < 2
         ax.scatter(xm[plane], ym[plane], c='m', marker='.', alpha=0.1)
 

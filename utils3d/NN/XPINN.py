@@ -131,11 +131,10 @@ class XPINN(XPINN_utils):
 
     def modify_weights_by(self,solvers_t,solvers_i,X_batch,X_domain):
         
-        flag = 'values'
         self.alpha_w = 0.1
         solver = solvers_i[0]
         L = dict()
-        if flag == 'gradients':
+        if self.adapt_w_method == 'gradients':
             with tf.GradientTape(persistent=True) as tape:
                 tape.watch(solver.model.trainable_variables)
                 _,L_loss = self.get_loss(X_batch, X_domain, solvers_t, solvers_i, solver.w)
@@ -148,7 +147,7 @@ class XPINN(XPINN_utils):
                 L[t] = gradient_norm
             del tape
 
-        elif flag == 'values':
+        elif self.adapt_w_method == 'values':
             _,L = self.get_loss(X_batch, X_domain, solvers_t, solvers_i, solver.w) 
 
         loss_wo_w = sum(L.values())
@@ -172,13 +171,10 @@ class XPINN(XPINN_utils):
                 return optimizers_p
 
 
-    def solve(self,N=1000, precond=False, N_precond=10, save_model=0, adapt_weights=False, adapt_w_iter=1, shuffle = True, shuffle_iter = 500):
+    def solve(self,N=1000, precond=False, N_precond=10, save_model=0, shuffle=True, shuffle_iter = 500):
 
         self.precondition = precond
         self.save_model_iter = save_model if save_model != 0 else N
-
-        self.adapt_weights = adapt_weights
-        self.adapt_w_iter = adapt_w_iter
 
         self.shuffle = shuffle
         self.shuffle_iter = shuffle_iter 
