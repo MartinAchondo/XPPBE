@@ -136,20 +136,20 @@ class Molecule_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, N_points, refinement=True, N_batches=1):
+    def __init__(self, molecule, N_points, refinement=True, N_batches=1, plot=False):
 
         for key, value in N_points.items():
             setattr(self, key, value)
         self.N_batches = N_batches
         self.molecule = molecule
         self.refinement = refinement
+        self.plot = plot
 
         self.read_create_meshes(Mesh)
 
         self.domain_mesh_names = set()
         self.domain_mesh_data = dict()
         self.domain_mesh_N = dict()
-
     
     def read_create_meshes(self, Mesh_class):
 
@@ -189,6 +189,7 @@ class Molecule_Mesh():
         mesh_interior = Mesh_class(name=1, molecule=self.molecule)
         mesh_exterior = Mesh_class(name=2, molecule=self.molecule)
 
+        # N = int(mesh_length/mesh_dx)
         #########################################################################
 
         xspace = np.linspace(-self.R_mol, self.R_mol, self.N_interior, dtype=self.DTYPE)
@@ -222,9 +223,12 @@ class Molecule_Mesh():
                     X_temp[i*7+c+2,:] = x_q + k*dz
                     c = 4
             X_in = tf.constant(X_temp, dtype=self.DTYPE)
-            interior_points = tf.concat([interior_points,X_in], axis=0)
+            interior_points_2 = tf.concat([interior_points,X_in], axis=0)
 
-        mesh_interior.prior_data['R'] = tf.constant(interior_points)
+        else:
+            interior_points_2 = interior_points
+
+        mesh_interior.prior_data['R'] = tf.constant(interior_points_2)
 
         #########################################################################
 
@@ -265,7 +269,15 @@ class Molecule_Mesh():
 
         #############################################################################
 
-        # N = int(mesh_length/mesh_dx)
+        if self.plot:
+            X_plot = dict()
+            X_plot['Inner Domain'] = interior_points
+            X_plot['Charges'] = X_temp
+            X_plot['Interface'] = self.verts
+            X_plot['Outer Domain'] = exterior_points
+            X_plot['Outer Border'] = np.column_stack((X_bl.ravel(), Y_bl.ravel(), Z_bl.ravel()))
+            self.save_data_plot(X_plot)
+
 
         return mesh_interior, mesh_exterior
     
@@ -294,11 +306,12 @@ class Molecule_Mesh():
                         L_phi[str(res_n)] = float(phi)
 
                 X_exp = list()
+                all_explode_points = list()
 
                 for q in q_list:
                     if q.atom_name == 'H' and str(q.res_num) in L_phi:
-                        mesh_length = 10
-                        mesh_dx = 1
+                        mesh_length = 30
+                        mesh_dx = 2
                         N = int(mesh_length / mesh_dx)
                         x = np.linspace(q.x_q[0] - mesh_length / 2, q.x_q[0] + mesh_length / 2, num=N)
                         y = np.linspace(q.x_q[1] - mesh_length / 2, q.x_q[1] + mesh_length / 2, num=N)
@@ -357,9 +370,16 @@ class Molecule_Mesh():
 
                         X_exp.append((X_in,X_out,phi_ens))
 
+                        if self.plot:
+                            all_explode_points.append(explode_points[np.linalg.norm(explode_points, axis=1) <= self.R_exterior])
+
                 self.domain_mesh_names.add(type_b)
                 self.domain_mesh_data[type_b] = X_exp
 
+                if self.plot:
+                    X_plot = dict()
+                    X_plot['Experimental'] = np.concatenate(all_explode_points)
+                    self.save_data_plot(X_plot)
 
 
     def create_Dataset(cls,X):
@@ -378,6 +398,14 @@ class Molecule_Mesh():
         XY_batches = dataset_XY.batch(int(len(X)))
         return next(iter(XY_batches))
 
+    def save_data_plot(self,X_plot):
+        path_files = os.path.join(os.getcwd(),'utils3d','Post','Plot3d','data')
+        os.makedirs(path_files, exist_ok=True)
+
+        for subset_name, subset_data in X_plot.items():
+            file_name = os.path.join(path_files,f'{subset_name}.csv')
+            np.savetxt(file_name, subset_data, delimiter=',', header='X,Y,Z', comments='')
+
 
     def plot_molecule(self):
         mesh = self.mesh
@@ -390,19 +418,19 @@ class Molecule_Mesh():
 
         fig, ax = plt.subplots()
 
-        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.solver_mesh_data['R'])
+        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.prior_data['R'])
         plane = np.abs(zm) < 0.5
         ax.scatter(xm[plane], ym[plane], c='r', marker='.', alpha=0.1)
 
-        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.solver_mesh_data['R'])
+        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.prior_data['R'])
         plane = np.abs(zm) < 2
         ax.scatter(xm[plane], ym[plane], c='g', marker='.', alpha=0.1)
 
-        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.solver_mesh_data['I'])
+        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.prior_data['I'])
         plane = np.abs(zm) < 0.1
         ax.scatter(xm[plane], ym[plane], c='b', marker='.', alpha=0.3)
 
-        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.solver_mesh_data['D'])
+        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.prior_data['D'])
         plane = np.abs(zm) < 2
         ax.scatter(xm[plane], ym[plane], c='m', marker='.', alpha=0.1)
 
@@ -414,29 +442,6 @@ class Molecule_Mesh():
         ax.set_ylim([-self.R_exterior,self.R_exterior])
 
         plt.show()
-
-
-    def plot_mesh_3d(self):
-
-        fig = px.scatter_3d()
-
-        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.prior_data['R'])
-        fig.add_scatter3d(x=xm, y=ym, z=zm, mode="markers", marker=dict(size=5, color="red"), name="Inner Points")
-
-        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.prior_data['R'])
-        fig.add_scatter3d(x=xm, y=ym, z=zm, mode="markers", marker=dict(size=5, color="blue"), name="Outer Points")
-
-        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.prior_data['I'])
-        fig.add_scatter3d(x=xm, y=ym, z=zm, mode="markers", marker=dict(size=5, color="green"), name="Interface Points")
-
-        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.prior_data['D'])
-        fig.add_scatter3d(x=xm, y=ym, z=zm, mode="markers", marker=dict(size=5, color="yellow"), name="Border Points")
-
-
-        fig.update_layout(scene=dict(xaxis_title="X", yaxis_title="Y", zaxis_title="Z"))
-
-        fig.show()
-
 
 
 if __name__=='__main__':

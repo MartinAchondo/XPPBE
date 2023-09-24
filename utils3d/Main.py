@@ -48,7 +48,7 @@ logger.info('================================================')
 
 def main():
 
-        inputs = {'molecule': 'sphere',
+        inputs = {'molecule': '1ubq',
                 'epsilon_1':  1,
                 'epsilon_2': 80,
                 'kappa': 0.125,
@@ -64,7 +64,8 @@ def main():
         Mol_mesh = Molecule_Mesh(inputs['molecule'], 
                                 N_points=N_points, 
                                 N_batches=1,
-                                refinement=True)
+                                refinement=True,
+                                plot=False)
         
         PBE_model = PBE(inputs,
                         mesh=Mol_mesh, 

@@ -3,3 +3,4 @@
 *.face linguist-detectable=false
 *.vert linguist-detectable=false
 *.dat linguist-detectable=false
+*.html linguist-language=JavaScript
