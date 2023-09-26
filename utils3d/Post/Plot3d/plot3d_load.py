@@ -11,7 +11,8 @@ def create_and_save_3d_scatter_plot_plotly(subsets_directory, filename):
         'Interface': 'purple',
         'Outer Domain': 'lightblue',
         'Outer Border': 'orange',
-        'Experimental': 'cyan'
+        'Experimental': 'cyan',
+        'test': 'red'
     }
 
     csv_files = [file for file in os.listdir(subsets_directory) if file.endswith('.csv')]

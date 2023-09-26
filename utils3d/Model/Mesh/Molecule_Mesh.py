@@ -196,17 +196,11 @@ class Molecule_Mesh():
                         z = np.linspace(q.x_q[2] - mesh_length / 2, q.x_q[2] + mesh_length / 2, num=N)
 
                         X, Y, Z = np.meshgrid(x, y, z)
-                        pos_mesh = np.zeros((3, N * N * N))
-                        pos_mesh[0, :] = X.flatten()
-                        pos_mesh[1, :] = Y.flatten()
-                        pos_mesh[2, :] = Z.flatten()
+                        pos_mesh = np.stack((X.flatten(), Y.flatten(), Z.flatten()), axis=0)
 
                         for q_check in q_list:
 
-                            x_diff = q_check.x_q[0] - pos_mesh[0, :]
-                            y_diff = q_check.x_q[1] - pos_mesh[1, :]
-                            z_diff = q_check.x_q[2] - pos_mesh[2, :]
-                    
+                            x_diff, y_diff, z_diff = q_check.x_q[:, np.newaxis] - pos_mesh
                             r_q_mesh = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
 
                             explode_local_index = np.nonzero(r_q_mesh >= q_check.r_explode)[0]
@@ -226,27 +220,12 @@ class Molecule_Mesh():
                         X1 = tf.constant(interior_points, dtype=self.DTYPE)
                         X2 = tf.constant(exterior_points, dtype=self.DTYPE)
 
-                        x_diff = q.x_q[0] - interior_points[:,0]
-                        y_diff = q.x_q[1] - interior_points[:,1]
-                        z_diff = q.x_q[2] - interior_points[:,2]
-                        r1 = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
-
-                        r1 = tf.constant(r1, dtype=self.DTYPE)
-                        r1 = tf.reshape(r1,[r1.shape[0],1])
-
-                        x_diff = q.x_q[0] - exterior_points[:,0]
-                        y_diff = q.x_q[1] - exterior_points[:,1]
-                        z_diff = q.x_q[2] - exterior_points[:,2]
-                        r2 = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
-
-                        r2 = tf.constant(r2, dtype=self.DTYPE)
-                        r2 = tf.reshape(r2,[r2.shape[0],1])
-
-                        X_in = self.create_Datasets(X1,r1)
-                        X_out = self.create_Datasets(X2,r2)
+                        X_in = self.create_Dataset(X1)
+                        X_out = self.create_Dataset(X2)
                         phi_ens = tf.constant(L_phi[str(q.res_num)] , dtype=self.DTYPE)
+                        xq = tf.reshape(tf.constant(q.x_q, dtype=self.DTYPE), (1,3))
 
-                        X_exp.append((X_in,X_out,phi_ens))
+                        X_exp.append((X_in,X_out,xq,phi_ens))
 
                         if self.plot:
                             all_explode_points.append(explode_points[np.linalg.norm(explode_points, axis=1) <= self.R_exterior])

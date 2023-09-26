@@ -107,21 +107,19 @@ class PBE(PDE_utils):
 
         s1,s2 = solvers
 
-        for X_in,X_out,phi_ens_exp in X_exp:
+        for X_in,X_out,x_q,phi_ens_exp in X_exp:
 
             if X_in != None:
-                X1,r1 = X_in
-                C_phi1 = s1.model(X1) * to_V * C
+                C_phi1 = s1.model(X_in) * to_V * C 
+                r1 = tf.sqrt(tf.reduce_sum(tf.square(x_q - X_in), axis=1))
                 G2_p_1 =  tf.math.reduce_sum(tf.math.exp(-C_phi1)/r1**6)
                 G2_m_1 = tf.math.reduce_sum(tf.math.exp(C_phi1)/r1**6)
             else:
                 G2_p_1 = 0.0
                 G2_m_1 = 0.0
 
-            X2,r2 = X_out
-
-            C_phi2 = s2.model(X2) * to_V * C
-
+            C_phi2 = s2.model(X_out) * to_V * C
+            r2 = tf.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1))
             G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2)/r2**6)
             G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2)/r2**6)
 

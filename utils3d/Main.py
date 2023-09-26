@@ -55,9 +55,9 @@ def main():
                 'T' : 300 
                 }
 
-        N_points = {'N_interior': 5,
-                'N_exterior': 5,
-                'N_border': 5,
+        N_points = {'N_interior': 26,
+                'N_exterior': 27,
+                'N_border': 27,
                 'dR_exterior': 8
                 }
 
@@ -65,7 +65,7 @@ def main():
                                 N_points=N_points, 
                                 N_batches=2,
                                 refinement=True,
-                                plot=False)
+                                plot=True)
         
         PBE_model = PBE(inputs,
                         mesh=Mol_mesh, 
@@ -132,7 +132,7 @@ def main():
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
         
-        N_iters = 80
+        N_iters = 6
 
         precondition = False
         N_precond = 10
