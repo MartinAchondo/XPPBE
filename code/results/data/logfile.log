@@ -1,0 +1,13 @@
+INFO - __main__: ================================================
+INFO - NN.XPINN:  Iterations: 6
+INFO - NN.XPINN:  Total steps: 12
+INFO - NN.XPINN:  Loss: 8.3311e+03
+INFO - NN.XPINN: Computation time: 0 minutes
+INFO - matplotlib.mathtext: Substituting symbol L from STIXNonUnicode
+INFO - Post.Postprocessing: Loss history Plot saved: loss_history.png
+INFO - matplotlib.mathtext: Substituting symbol L from STIXNonUnicode
+INFO - Post.Postprocessing: Loss history Plot saved: loss_history_w.png
+INFO - Post.Postprocessing: Loss history Plot saved: weights_history.png
+INFO - Post.Postprocessing: Solution Plot saved: solution.png
+INFO - Post.Postprocessing: Analytic Plot saved: analytic.png
+INFO - Post.Postprocessing: Interface Plot saved: interface.png

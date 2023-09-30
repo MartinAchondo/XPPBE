@@ -38,3 +38,6 @@ ubq/
 utils3d/Post/Plot3d/data/
 utils3d/Post/Plot3d/1ubq_data/
 *.html
+/.results
+/.test
+requirements.txt
