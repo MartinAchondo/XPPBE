@@ -35,9 +35,13 @@ utils3d/Post/NN/
 /past_codes
 /saved_codes
 ubq/
-utils3d/Post/Plot3d/data/
-utils3d/Post/Plot3d/1ubq_data/
+code/Post/Plot3d/data/
+code/Post/Plot3d/1ubq_data/
 *.html
 /.results
 /.test
 requirements.txt
+code/results/
+code/resultss/
+code/Post/Plot3d/data_X/
+code/Post/Plot3d/1ubq_data_X/
