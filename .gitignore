@@ -26,9 +26,7 @@ putty.bash
 # Data directories
 code/Post/Plot3d/data/
 code/Post/Plot3d/1ubq_data/
-
-# HTML files
-*.html
+code/Post/Plot3d/Plots/
 
 # Results and test directories
 code/results
