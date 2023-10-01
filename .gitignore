@@ -1,47 +1,38 @@
-/others
-/.others
+# Environment-related files
 /.venv
-/saved_models
-/.saved_models
-commands.txt
+
+# IDE-specific files
 /.vscode
-*__pycache__
-/.classes
-.log
+
+# Compiled Python files
+__pycache__/
+
+# Log files
+*.log
+
+# Shell script files
 pscp.bash
 putty.bash
-PLAN.txt
-/results_saved
-*saved_models
-/tests
-*PLAN
-/results
-/results_main
+
+# Test-related directories
 /tests
 /test
-Copy_model.py
-info.txt
-INFOR.txt
-/resultss
-/resultsss
-/results_old
-PLAN_Q.txt
-/test_Q
-/PDE_Solvers_Q
-/PDE_Solvers
-utils3d/results/
-utils3d/Post/DCM/
-utils3d/Post/NN/
+/.test
+
+# Past code and saved code directories
 /past_codes
 /saved_codes
-ubq/
+
+# Data directories
 code/Post/Plot3d/data/
 code/Post/Plot3d/1ubq_data/
+
+# HTML files
 *.html
+
+# Results and test directories
+code/results
 /.results
-/.test
-requirements.txt
-code/results/
-code/resultss/
-code/Post/Plot3d/data_X/
-code/Post/Plot3d/1ubq_data_X/
+
+# Saved models directories
+saved_models/
