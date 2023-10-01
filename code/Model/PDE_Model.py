@@ -13,11 +13,12 @@ class PBE(PDE_utils):
     kb = 1.380649e-23              
     Na = 6.02214076e23
 
-    def __init__(self, inputs, mesh, model):
+    def __init__(self, inputs, mesh, model,path):
         
         self.sigma = 0.04        
 
         self.mesh = mesh
+        self.main_path = path
 
         self.inputs = inputs
         for key, value in inputs.items():
@@ -43,7 +44,7 @@ class PBE(PDE_utils):
 
 
     def get_charges(self):
-        path_files = os.path.join(os.getcwd(),'code','Model','Molecules')
+        path_files = os.path.join(self.main_path,'Model','Molecules')
         self.q_list = get_charges_list(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
         for charge in self.q_list:
             for i in range(3):

@@ -62,6 +62,7 @@ class XPINN_utils():
 
     def load_NeuralNets(self,dir_load,names):   
         for solver,name in zip(self.solvers,names):
+            solver.adapt_weights()
             solver.load_NeuralNet(dir_load,name)  
         path_load = os.path.join(dir_load,'loss.csv')
         df = pd.read_csv(path_load)

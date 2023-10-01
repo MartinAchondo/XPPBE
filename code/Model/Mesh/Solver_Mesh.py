@@ -7,10 +7,11 @@ class Solver_Mesh():
 
     DTYPE='float32'
 
-    def __init__(self,name,molecule):
+    def __init__(self,name,molecule,path):
 
         self.name = name
         self.molecule = molecule
+        self.main_path = path
 
         self.X_R = None
         self.XU_D = None
@@ -69,7 +70,7 @@ class Solver_Mesh():
     def read_file_data(self,file):
         x_b, y_b, z_b, phi_b = list(), list(), list(), list()
 
-        path_files = os.path.join(os.getcwd(),'code','Model','Molecules')
+        path_files = os.path.join(self.main_path,'Model','Molecules')
 
         with open(os.path.join(path_files,self.molecule,file),'r') as f:
             for line in f:

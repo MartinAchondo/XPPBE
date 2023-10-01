@@ -14,7 +14,7 @@ class Molecule_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, N_points, refinement=True, N_batches=1, plot=False):
+    def __init__(self, molecule, N_points, refinement=True, N_batches=1, plot=False, path=''):
 
         for key, value in N_points.items():
             setattr(self, key, value)
@@ -22,6 +22,7 @@ class Molecule_Mesh():
         self.molecule = molecule
         self.refinement = refinement
         self.plot = plot
+        self.main_path = path
 
         self.read_create_meshes(Solver_Mesh)
 
@@ -31,7 +32,7 @@ class Molecule_Mesh():
     
     def read_create_meshes(self, Mesh_class):
 
-        path_files = os.path.join(os.getcwd(),'code','Model','Mesh')
+        path_files = os.path.join(self.main_path,'Model','Mesh')
 
         with open(os.path.join(path_files,self.molecule,self.molecule+'.face'),'r') as face_f:
             face = face_f.read()
@@ -64,8 +65,8 @@ class Molecule_Mesh():
 
     def create_mesh_objs(self, Mesh_class):
         
-        mesh_interior = Mesh_class(name=1, molecule=self.molecule)
-        mesh_exterior = Mesh_class(name=2, molecule=self.molecule)
+        mesh_interior = Mesh_class(name=1, molecule=self.molecule, path=self.main_path)
+        mesh_exterior = Mesh_class(name=2, molecule=self.molecule, path=self.main_path)
 
         # N = int(mesh_length/mesh_dx)
         #########################################################################
@@ -80,7 +81,7 @@ class Molecule_Mesh():
         interior_points = points[interior_points_bool]
 
         if self.refinement:
-            path_files = os.path.join(os.getcwd(),'code','Model','Molecules')
+            path_files = os.path.join(self.main_path,'Model','Molecules')
             _,Lx_q,_,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
 
             delta = 0.04
@@ -175,7 +176,7 @@ class Molecule_Mesh():
 
             elif type_b in ('E'):
                 file = bl['file']
-                path_files = os.path.join(os.getcwd(),'code','Model','Molecules')
+                path_files = os.path.join(self.main_path,'Model','Molecules')
 
                 with open(os.path.join(path_files,self.molecule,file),'r') as f:
                     L_phi = dict()
@@ -256,7 +257,7 @@ class Molecule_Mesh():
         return next(iter(XY_batches))
 
     def save_data_plot(self,X_plot):
-        path_files = os.path.join(os.getcwd(),'code','Post','Plot3d','data')
+        path_files = os.path.join(self.main_path,'Post','Plot3d','data')
         os.makedirs(path_files, exist_ok=True)
 
         for subset_name, subset_data in X_plot.items():
