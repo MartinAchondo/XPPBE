@@ -13,6 +13,7 @@ class NeuralNet(tf.keras.Model):
                  kernel_initializer='glorot_normal',
                  architecture_Net='FCNN',
                  num_fourier_features=32,  # Number of Fourier features
+                 fourier_sigma=3,
                  **kwargs):
         super().__init__(**kwargs)
 
@@ -24,6 +25,7 @@ class NeuralNet(tf.keras.Model):
         self.ub = ub
         self.architecture_Net = architecture_Net
         self.num_fourier_features = num_fourier_features
+        self.sigma = fourier_sigma
 
         # Scale layer
         self.scale = tf.keras.layers.Lambda(
@@ -31,7 +33,12 @@ class NeuralNet(tf.keras.Model):
             name=f'layer_input')
 
         # Fourier feature layer
-        self.fourier_features = tf.keras.layers.Dense(num_fourier_features, activation=None, name='fourier_features')
+        self.fourier_features = tf.keras.layers.Dense(num_fourier_features, 
+                                                      activation=None, 
+                                                      use_bias=False,
+                                                      trainable=False, 
+                                                      kernel_initializer=tf.initializers.RandomNormal(stddev=self.sigma),
+                                                      name='fourier_features')
         self.fourier_scale = tf.constant(2.0 * np.pi, dtype=tf.float32)  # Scaling factor for frequencies
 
         # FCNN architecture

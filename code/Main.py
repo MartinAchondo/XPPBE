@@ -119,16 +119,18 @@ def main():
 
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
 
+        print(XPINN_solver.solver1.model.summary())
+
         optimizer = 'Adam'
         lr = ([1000,1600],[1e-2,5e-3,5e-4])
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
         
-        N_iters = 100
+        N_iters = 200
 
         precondition = True
-        N_precond = 30
+        N_precond = 200
 
         iters_save_model = 30
         XPINN_solver.folder_path = folder_path
