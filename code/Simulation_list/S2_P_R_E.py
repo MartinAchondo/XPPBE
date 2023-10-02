@@ -9,7 +9,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 from Model.Mesh.Molecule_Mesh import Molecule_Mesh
 from Model.PDE_Model import PBE
-from NN.NeuralNet_Fourier import NeuralNet
+from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
 from Post.Postprocessing import View_results
@@ -45,10 +45,10 @@ def main():
                 'T' : 300 
                 }
 
-        N_points = {'N_interior': 11,
-                'N_exterior': 11,
-                'N_border': 9,
-                'dR_exterior': 8
+        N_points = {'N_interior': 40,
+                'N_exterior': 40,
+                'N_border': 30,
+                'dR_exterior': 9
                 }
 
         Mol_mesh = Molecule_Mesh(inputs['molecule'], 
@@ -80,7 +80,7 @@ def main():
 
         meshes_domain = dict()
         meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
-        #meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+        meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
         PBE_model.mesh.adapt_meshes_domain(meshes_domain,PBE_model.q_list)
        
         XPINN_solver = XPINN(PINN)
@@ -95,14 +95,14 @@ def main():
                   }
 
         XPINN_solver.adapt_weights([weights,weights],
-                                   adapt_weights = True,
-                                   adapt_w_iter = 60,
+                                   adapt_weights = False,
+                                   adapt_w_iter = 4000,
                                    adapt_w_method = 'gradients')             
 
         hyperparameters_in = {
                         'input_shape': (None,3),
-                        'num_hidden_layers': 2,
-                        'num_neurons_per_layer': 20,
+                        'num_hidden_layers': 4,
+                        'num_neurons_per_layer': 160,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN'
@@ -110,8 +110,8 @@ def main():
 
         hyperparameters_out = {
                         'input_shape': (None,3),
-                        'num_hidden_layers': 2,
-                        'num_neurons_per_layer': 20,
+                        'num_hidden_layers': 4,
+                        'num_neurons_per_layer': 160,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN'
@@ -120,17 +120,17 @@ def main():
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
 
         optimizer = 'Adam'
-        lr = ([1000,1600],[1e-2,5e-3,5e-4])
+        lr = ([5000,8000],[1e-3,5e-4,1e-4])
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
         
-        N_iters = 100
+        N_iters = 12000
 
         precondition = True
-        N_precond = 30
+        N_precond = 2000
 
-        iters_save_model = 30
+        iters_save_model = 1000
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 

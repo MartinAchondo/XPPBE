@@ -121,11 +121,11 @@ class PBE(PDE_utils):
 
             C_phi2 = s2.model(X_out) * to_V * C
             r2 = tf.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1))
-            G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2)/r2**6)
-            G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2)/r2**6)
+            # G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2)/r2**6)
+            # G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2)/r2**6)
 
-            # G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2-6*tf.math.log(r2)))
-            # G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2-6*tf.math.log(r2)))
+            G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2-6*tf.math.log(r2)))
+            G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2-6*tf.math.log(r2)))
 
             phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000 
 
