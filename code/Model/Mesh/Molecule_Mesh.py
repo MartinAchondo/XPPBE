@@ -189,8 +189,8 @@ class Molecule_Mesh():
 
                 for q in q_list:
                     if q.atom_name == 'H' and str(q.res_num) in L_phi:
-                        mesh_length = 30
-                        mesh_dx = 2
+                        mesh_length = 13
+                        mesh_dx = 0.1
                         N = int(mesh_length / mesh_dx)
                         x = np.linspace(q.x_q[0] - mesh_length / 2, q.x_q[0] + mesh_length / 2, num=N)
                         y = np.linspace(q.x_q[1] - mesh_length / 2, q.x_q[1] + mesh_length / 2, num=N)
