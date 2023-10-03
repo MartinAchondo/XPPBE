@@ -18,6 +18,8 @@ pandas = "2.0.2"
 tqdm = "4.64.1"
 rtree = "1.0.1"
 ipykernel = "6.16.0"
+pydot = "^1.4.2"
+pydotplus = "^2.0.2"
 
 [tool.poetry.group.dev.dependencies]
 numba = "0.57.0"

@@ -9,7 +9,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 from Model.Mesh.Molecule_Mesh import Molecule_Mesh
 from Model.PDE_Model import PBE
-from NN.NeuralNet_Fourier import NeuralNet
+from NN.NeuralNet_Fourier_2 import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
 from Post.Postprocessing import View_results
@@ -97,7 +97,8 @@ def main():
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
                                    adapt_w_iter = 60,
-                                   adapt_w_method = 'gradients')             
+                                   adapt_w_method = 'gradients',
+                                   alpha = 0.3)             
 
         hyperparameters_in = {
                         'input_shape': (None,3),
@@ -119,7 +120,6 @@ def main():
 
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
 
-        print(XPINN_solver.solver1.model.summary())
 
         optimizer = 'Adam'
         lr = ([1000,1600],[1e-2,5e-3,5e-4])
@@ -127,12 +127,12 @@ def main():
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
         
-        N_iters = 200
+        N_iters = 100
 
         precondition = True
-        N_precond = 200
+        N_precond = 50
 
-        iters_save_model = 30
+        iters_save_model = 50
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 

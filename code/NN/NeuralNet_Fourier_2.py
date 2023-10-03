@@ -13,7 +13,7 @@ class NeuralNet(tf.keras.Model):
                  activation='tanh',
                  kernel_initializer='glorot_normal',
                  architecture_Net='FCNN',
-                 num_fourier_features=32,  # Number of Fourier features
+                 num_fourier_features=32, 
                  fourier_sigma=3,
                  **kwargs):
         super().__init__(**kwargs)
@@ -34,13 +34,17 @@ class NeuralNet(tf.keras.Model):
             name=f'layer_input')
 
         # Fourier feature layer
-        self.fourier_features = tf.keras.layers.Dense(num_fourier_features, 
+        self.fourier_features = tf.keras.Sequential(name=f'fourier_layer')
+        self.fourier_features.add(tf.keras.layers.Dense(num_fourier_features, 
                                                       activation=None, 
                                                       use_bias=False,
                                                       trainable=False, 
                                                       kernel_initializer=tf.initializers.RandomNormal(stddev=self.sigma),
-                                                      name='fourier_features')
-        self.fourier_scale = tf.constant(2.0 * np.pi, dtype=tf.float32)  # Scaling factor for frequencies
+                                                      name='fourier_features'))
+        class SinCosLayer(tf.keras.layers.Layer):
+            def call(self, Z):
+                return tf.concat([tf.sin(2.0*np.pi*Z), tf.cos(2.0*np.pi*Z)], axis=-1)
+        self.fourier_features.add(SinCosLayer(name='fourier_sincos_layer'))
 
         # FCNN architecture
         if self.architecture_Net == 'FCNN':
@@ -62,7 +66,6 @@ class NeuralNet(tf.keras.Model):
             for i in range(self.num_hidden_blocks):
                 block = tf.keras.Sequential(name=f"block_{i}")
                 block.add(tf.keras.layers.Dense(num_neurons_per_layer,
-                                                activation=tf.keras.activations.get(activation),
                                                 kernel_initializer=kernel_initializer))
                 block.add(tf.keras.layers.Dense(num_neurons_per_layer,
                                                 activation=tf.keras.activations.get(activation),
@@ -75,6 +78,8 @@ class NeuralNet(tf.keras.Model):
 
         # Output layer
         self.out = tf.keras.layers.Dense(output_dim, name=f'layer_output')
+        
+
 
     def build_Net(self):
         self.build(self.input_shape_N)
@@ -83,28 +88,26 @@ class NeuralNet(tf.keras.Model):
         if self.architecture_Net == 'FCNN':
             return self.call_FCNN(X)
         elif self.architecture_Net == 'ResNet':
-            return self.call_ResNet(X)
+           return self.call_ResNet(X)
 
     # Call NeuralNet functions with the desired architecture
 
     def call_FCNN(self, X):
         Z = self.scale(X)
-        Z = self.fourier_features(Z)  # Add Fourier features here
-        Z = tf.concat([tf.sin(self.fourier_scale * Z), tf.cos(self.fourier_scale * Z)], axis=-1) 
+        Z = self.fourier_features(Z) 
         for layer in self.hidden_layers:
             Z = layer(Z)
         return self.out(Z)
 
     def call_ResNet(self, X):
         Z = self.scale(X)
-        Z = self.fourier_features(Z)  # Add Fourier features here
-        Z = tf.concat([tf.sin(self.fourier_scale * Z), tf.cos(self.fourier_scale * Z)], axis=-1)  # Split into sine and cosine components
+        Z = self.fourier_features(Z)  
         Z = self.first(Z)
         for block in self.hidden_blocks:
             Z = block(Z) + Z
         Z = self.last(Z)
         return self.out(Z)
-
+    
 
     def plot_model(self):
         input_layer = tf.keras.layers.Input(shape=self.input_shape_N[1:], name='input')
@@ -119,6 +122,9 @@ class NeuralNet(tf.keras.Model):
                                     expand_nested=True,
                                     show_layer_activations=True,
                                     dpi = 150)
+        
+        self.build_Net()
+        print(self.summary(expand_nested=True))
 
 
 if __name__=='__main__':

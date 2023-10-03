@@ -43,10 +43,11 @@ class XPINN_utils():
         self.adapt_data_batches()
         self.set_mesh_names()
 
-    def adapt_weights(self,weights,adapt_weights=False,adapt_w_iter=2000,adapt_w_method='gradients'):
+    def adapt_weights(self,weights,adapt_weights=False,adapt_w_iter=2000,adapt_w_method='gradients',alpha=0.3):
         self.adapt_weights = adapt_weights
         self.adapt_w_iter = adapt_w_iter
         self.adapt_w_method = adapt_w_method
+        self.alpha_w = alpha
 
         for solver,weight in zip(self.solvers,weights):
             solver.adapt_weights(**weight) 

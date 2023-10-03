@@ -137,7 +137,6 @@ class XPINN(XPINN_utils):
 
     def modify_weights_by(self,solvers_t,solvers_i,X_batch,X_domain):
         
-        self.alpha_w = 0.1
         solver = solvers_i[0]
         L = dict()
         if self.adapt_w_method == 'gradients':
