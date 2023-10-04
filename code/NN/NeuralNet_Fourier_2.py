@@ -63,14 +63,19 @@ class NeuralNet(tf.keras.Model):
                                                kernel_initializer=kernel_initializer,
                                                name=f'layer_0')
             self.hidden_blocks = list()
+            self.hidden_blocks_activations = list()
             for i in range(self.num_hidden_blocks):
                 block = tf.keras.Sequential(name=f"block_{i}")
                 block.add(tf.keras.layers.Dense(num_neurons_per_layer,
-                                                kernel_initializer=kernel_initializer))
-                block.add(tf.keras.layers.Dense(num_neurons_per_layer,
                                                 activation=tf.keras.activations.get(activation),
                                                 kernel_initializer=kernel_initializer))
+                block.add(tf.keras.layers.Dense(num_neurons_per_layer,
+                                                activation=None,
+                                                kernel_initializer=kernel_initializer))
                 self.hidden_blocks.append(block)
+                activation_layer = tf.keras.layers.Activation(tf.keras.activations.get(activation))
+                self.hidden_blocks_activations.append(activation_layer)
+            
             self.last = tf.keras.layers.Dense(num_neurons_per_layer,
                                               activation=tf.keras.activations.get(activation),
                                               kernel_initializer=kernel_initializer,
@@ -103,8 +108,8 @@ class NeuralNet(tf.keras.Model):
         Z = self.scale(X)
         Z = self.fourier_features(Z)  
         Z = self.first(Z)
-        for block in self.hidden_blocks:
-            Z = block(Z) + Z
+        for block,activation in zip(self.hidden_blocks,self.hidden_blocks_activations):
+            Z = activation(block(Z) + Z)
         Z = self.last(Z)
         return self.out(Z)
     
@@ -134,7 +139,7 @@ if __name__=='__main__':
                 'num_neurons_per_layer': 100,
                 'output_dim': 1,
                 'activation': 'tanh',
-                'architecture_Net': 'FCNN'
+                'architecture_Net': 'ResNet'
         }
     model = NeuralNet(lb=-1,ub=1,**hyperparameters)
     model.plot_model()

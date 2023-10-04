@@ -9,7 +9,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 from Model.Mesh.Molecule_Mesh import Molecule_Mesh
 from Model.PDE_Model import PBE
-from NN.NeuralNet import NeuralNet
+from NN.NeuralNet_Fourier_2 import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
 from Post.Postprocessing import View_results
@@ -67,14 +67,14 @@ def main():
 
         meshes_in = dict()
         meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
-        meshes_in['2'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+        #meshes_in['2'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
         meshes_in['3'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
         PBE_model.PDE_in.mesh.adapt_meshes(meshes_in)
 
         meshes_out = dict()
         meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
         meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: PBE_model.border_value(x,y,z)}
-        meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+        #meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
         meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
         PBE_model.PDE_out.mesh.adapt_meshes(meshes_out)
 
@@ -95,8 +95,8 @@ def main():
                   }
 
         XPINN_solver.adapt_weights([weights,weights],
-                                   adapt_weights = False,
-                                   adapt_w_iter = 4000,
+                                   adapt_weights = True,
+                                   adapt_w_iter = 5000,
                                    adapt_w_method = 'gradients')             
 
         hyperparameters_in = {

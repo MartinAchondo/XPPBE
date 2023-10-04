@@ -53,7 +53,7 @@ def main():
 
         Mol_mesh = Molecule_Mesh(inputs['molecule'], 
                                 N_points=N_points, 
-                                N_batches=1,
+                                N_batches=4,
                                 refinement=True,
                                 plot=False,
                                 path=main_path
@@ -95,7 +95,7 @@ def main():
                   }
 
         XPINN_solver.adapt_weights([weights,weights],
-                                   adapt_weights = True,
+                                   adapt_weights = False,
                                    adapt_w_iter = 60,
                                    adapt_w_method = 'gradients',
                                    alpha = 0.3)             
@@ -127,12 +127,12 @@ def main():
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
         
-        N_iters = 100
+        N_iters = 10
 
         precondition = True
-        N_precond = 50
+        N_precond = 1000
 
-        iters_save_model = 50
+        iters_save_model = 0
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 

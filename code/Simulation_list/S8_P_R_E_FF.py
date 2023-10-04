@@ -9,7 +9,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 from Model.Mesh.Molecule_Mesh import Molecule_Mesh
 from Model.PDE_Model import PBE
-from NN.NeuralNet_Fourier import NeuralNet
+from NN.NeuralNet_Fourier_2 import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
 from Post.Postprocessing import View_results
@@ -80,7 +80,7 @@ def main():
 
         meshes_domain = dict()
         meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
-        #meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+        meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
         PBE_model.mesh.adapt_meshes_domain(meshes_domain,PBE_model.q_list)
        
         XPINN_solver = XPINN(PINN)
@@ -95,7 +95,7 @@ def main():
                   }
 
         XPINN_solver.adapt_weights([weights,weights],
-                                   adapt_weights = True,
+                                   adapt_weights = False,
                                    adapt_w_iter = 5000,
                                    adapt_w_method = 'gradients')             
 
@@ -127,7 +127,7 @@ def main():
         
         N_iters = 12000
 
-        precondition = False
+        precondition = True
         N_precond = 2000
 
         iters_save_model = 1000
