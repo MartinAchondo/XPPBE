@@ -58,7 +58,7 @@ class Solver_Mesh():
                     file = bl['file']
                     X,U = self.read_file_data(file)
                 self.solver_mesh_data[type_b] = self.create_Datasets(X,U)
-
+                
             self.solver_mesh_names.add(type_b)
             if type_b in self.solver_mesh_N:
                 self.solver_mesh_N[type_b] += len(X)
@@ -111,14 +111,14 @@ class Solver_Mesh():
     def create_Dataset(cls,X):
         dataset_X = tf.data.Dataset.from_tensor_slices(X)
         dataset_X = dataset_X.shuffle(buffer_size=len(X))
-        X_batches = dataset_X.batch(int(len(X)/cls.N_batches))
-        return X_batches
+        #X_batches = dataset_X.batch(int(len(X)/cls.N_batches))
+        return dataset_X
 
     def create_Datasets(cls, X, Y):
         dataset_XY = tf.data.Dataset.from_tensor_slices((X, Y))
         dataset_XY = dataset_XY.shuffle(buffer_size=len(X))
-        XY_batches = dataset_XY.batch(int(len(X)/cls.N_batches))
-        return XY_batches
+        #XY_batches = dataset_XY.batch(int(len(X)/cls.N_batches))
+        return dataset_XY
     
     def value_u_b(self,x, y, z, value):
         n = x.shape[0]

@@ -109,6 +109,11 @@ class PDE_utils():
 
     ####################################################################################################################################################
 
+    def aprox_exp(self,x):
+        aprox = 1.0 + x + x**2/2.0 + x**3/6.0 + x**4/24.0
+        return aprox
+
+
     # Differential operators
 
     def laplacian(self,mesh,model,X):

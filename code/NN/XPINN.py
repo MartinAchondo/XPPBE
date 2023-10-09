@@ -97,14 +97,20 @@ class XPINN(XPINN_utils):
             L1,L2 = self.checkers_iterations()
             
             self.check_adapt_new_weights(self.adapt_w_now)
-            TX_b1, TX_b2 = self.create_generators_shuffle_solver(self.shuffle_now)
-            TX_d = self.create_generators_shuffle_domain(self.shuffle_now)
-
+            
+            if self.sample_method=='batches':
+                TX_b1, TX_b2 = self.create_generators_shuffle_solver(self.shuffle_now)
+                TX_d = self.create_generators_shuffle_domain(self.shuffle_now)
+            
             for n_b in range(self.N_batches):
 
-                X_b1 = self.get_batches_solver(TX_b1)
-                X_b2 = self.get_batches_solver(TX_b2)   
-                X_d = self.get_batches_domain(TX_d) 
+                if self.sample_method=='batches':
+                    X_b1 = self.get_batches_solver(TX_b1)
+                    X_b2 = self.get_batches_solver(TX_b2)   
+                    X_d = self.get_batches_domain(TX_d) 
+                elif self.sample_method=='sample': 
+                    X_b1,X_b2 = self.get_samples_solver()
+                    X_d = self.get_sample_domain()
 
                 if not self.precondition:
                     L1_b,L2_b = train_step((X_b1,X_b2), X_d, ws=[self.solver1.w,self.solver2.w])   
@@ -121,15 +127,15 @@ class XPINN(XPINN_utils):
         
         if adapt_now:
 
-            TX_b1, TX_b2 = self.create_generators_shuffle_solver(False)
-            TX_d = self.create_generators_shuffle_domain(False)
-            for n_b in range(self.N_batches):
-                if n_b == 0:
-                    X_b1 = self.get_batches_solver(TX_b1)
-                    X_b2 = self.get_batches_solver(TX_b2)
-                    X_d = self.get_batches_domain(TX_d) 
-                else:
-                    pass
+            if self.sample_method=='batches':
+                TX_b1, TX_b2 = self.create_generators_shuffle_solver(False)
+                TX_d = self.create_generators_shuffle_domain(False)
+                X_b1 = self.get_batches_solver(TX_b1)
+                X_b2 = self.get_batches_solver(TX_b2)
+                X_d = self.get_batches_domain(TX_d) 
+            elif self.sample_method=='sample':
+                X_b1,X_b2 = self.get_samples_solver()
+                X_d = self.get_sample_domain()
 
             self.modify_weights_by(self.solvers,[self.solver1,self.solver2],X_b1,X_d) 
             self.modify_weights_by(self.solvers,[self.solver2,self.solver1],X_b2,X_d) 

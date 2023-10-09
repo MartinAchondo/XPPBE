@@ -355,6 +355,12 @@ class View_results_X():
             U = post_obj.model(XX_bl)
             ax.plot(phi_bl[:,0],U[:,0], label=labels[i], c=colr[i])
             i += 1
+
+        r = np.linspace(1, 1, 200, dtype=self.DTYPE)
+
+        U2 = self.XPINN.PDE.analytic(1.0)
+        u2 = phi_bl/phi_bl*U2
+        ax.plot(phi_bl, u2, c='g', label='Analytic', linestyle='--')
         
         ax.set_xlabel(r'$\beta$')
         ax.set_ylabel(r'$\phi_{\theta}$')

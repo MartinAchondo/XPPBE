@@ -9,7 +9,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 from Model.Mesh.Molecule_Mesh import Molecule_Mesh
 from Model.PDE_Model import PBE
-from NN.NeuralNet_Fourier_2 import NeuralNet
+from code.NN.NeuralNet_Fourier import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
 from Post.Postprocessing import View_results

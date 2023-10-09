@@ -112,20 +112,22 @@ class PBE(PDE_utils):
 
             if X_in != None:
                 C_phi1 = s1.model(X_in) * to_V * C 
-                r1 = tf.sqrt(tf.reduce_sum(tf.square(x_q - X_in), axis=1))
-                G2_p_1 =  tf.math.reduce_sum(tf.math.exp(-C_phi1)/r1**6)
-                G2_m_1 = tf.math.reduce_sum(tf.math.exp(C_phi1)/r1**6)
+                r1 = tf.sqrt(tf.reduce_sum(tf.square(x_q - X_in), axis=1, keepdims=True))
+                G2_p_1 =  tf.math.reduce_sum(self.aprox_exp(-C_phi1)/r1**6)
+                G2_m_1 = tf.math.reduce_sum(self.aprox_exp(C_phi1)/r1**6)
             else:
                 G2_p_1 = 0.0
                 G2_m_1 = 0.0
 
             C_phi2 = s2.model(X_out) * to_V * C
-            r2 = tf.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1))
-            # G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2)/r2**6)
-            # G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2)/r2**6)
 
-            G2_p = G2_p_1 + tf.math.reduce_sum(tf.math.exp(-C_phi2-6*tf.math.log(r2)))
-            G2_m = G2_m_1 + tf.math.reduce_sum(tf.math.exp(C_phi2-6*tf.math.log(r2)))
+            r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
+
+            # G2_p = G2_p_1 + tf.math.reduce_sum(self.aprox_exp(-C_phi2)/r2**6)
+            # G2_m = G2_m_1 + tf.math.reduce_sum(self.aprox_exp(C_phi2)/r2**6)
+
+            G2_p = G2_p_1 + tf.math.reduce_sum(self.aprox_exp(-C_phi2-6*tf.math.log(r2)))
+            G2_m = G2_m_1 + tf.math.reduce_sum(self.aprox_exp(C_phi2-6*tf.math.log(r2)))
 
             phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000 
 
@@ -133,20 +135,14 @@ class PBE(PDE_utils):
 
         loss *= (1/n)
 
-        # loss_e = tf.cond(
-        #     tf.math.logical_or(tf.math.is_inf(loss), tf.math.is_nan(loss)),
-        #     true_fn=lambda: tf.constant(0.0, dtype=self.DTYPE),
-        #     false_fn=lambda: loss
-        #     )
-        
         return loss
 
 
     def analytic(self,r):
         rI = 1
-        epsilon_1 = 1
-        epsilon_2 = 80
-        kappa = 0.125
+        epsilon_1 = self.epsilon_1
+        epsilon_2 = self.epsilon_2
+        kappa = self.kappa
         q = 1.0
 
         f_IN = lambda r: (q/(4*self.pi)) * ( 1/(epsilon_1*r) - 1/(epsilon_1*rI) + 1/(epsilon_2*(1+kappa*rI)*rI) )

@@ -36,6 +36,6 @@ def create_and_save_3d_scatter_plot_plotly(subsets_directory, filename):
     fig.write_html(os.path.join(path_files, filename))
 
 path_files = os.path.join(os.getcwd(),'code','Post','Plot3d','data')
-filename = '3d_plot.html'
+filename = 'plot3d.html'
 
 create_and_save_3d_scatter_plot_plotly(path_files, filename)

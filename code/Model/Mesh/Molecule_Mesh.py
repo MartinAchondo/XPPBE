@@ -14,11 +14,10 @@ class Molecule_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, N_points, refinement=True, N_batches=1, plot=False, path=''):
+    def __init__(self, molecule, N_points, refinement=False, plot=False, path=''):
 
         for key, value in N_points.items():
             setattr(self, key, value)
-        self.N_batches = N_batches
         self.molecule = molecule
         self.refinement = refinement
         self.plot = plot
@@ -56,11 +55,9 @@ class Molecule_Mesh():
 
         self.interior_obj.lb = [-self.R_mol,-self.R_mol,-self.R_mol]
         self.interior_obj.ub = [self.R_mol,self.R_mol,self.R_mol]
-        self.interior_obj.N_batches = self.N_batches
 
         self.exterior_obj.lb = [-self.R_exterior,-self.R_exterior,-self.R_exterior]
         self.exterior_obj.ub = [self.R_exterior,self.R_exterior,self.R_exterior]    
-        self.exterior_obj.N_batches = self.N_batches
 
 
     def create_mesh_objs(self, Mesh_class):
@@ -70,7 +67,7 @@ class Molecule_Mesh():
 
         # N = int(mesh_length/mesh_dx)
         #########################################################################
-
+        self.N_interior = int(2*self.R_mol/self.dx_interior)
         xspace = np.linspace(-self.R_mol, self.R_mol, self.N_interior, dtype=self.DTYPE)
         yspace = np.linspace(-self.R_mol, self.R_mol, self.N_interior, dtype=self.DTYPE)
         zspace = np.linspace(-self.R_mol, self.R_mol, self.N_interior, dtype=self.DTYPE)
@@ -112,6 +109,7 @@ class Molecule_Mesh():
         #########################################################################
 
         self.R_exterior =  self.R_mol+self.dR_exterior
+        self.N_exterior = int(2*self.R_exterior/self.dx_exterior)
         xspace = np.linspace(-self.R_exterior, self.R_exterior, self.N_exterior, dtype=self.DTYPE)
         yspace = np.linspace(-self.R_exterior, self.R_exterior, self.N_exterior, dtype=self.DTYPE)
         zspace = np.linspace(-self.R_exterior, self.R_exterior, self.N_exterior, dtype=self.DTYPE)
@@ -125,7 +123,6 @@ class Molecule_Mesh():
 
         exterior_distances = np.linalg.norm(exterior_points, axis=1)
         exterior_points = exterior_points[exterior_distances <= self.R_exterior]
-
 
         r_bl = np.linspace(self.R_exterior, self.R_exterior, self.N_border, dtype=self.DTYPE)
         theta_bl = np.linspace(0, self.pi, self.N_border, dtype=self.DTYPE)
@@ -189,8 +186,8 @@ class Molecule_Mesh():
 
                 for q in q_list:
                     if q.atom_name == 'H' and str(q.res_num) in L_phi:
-                        mesh_length = 13
-                        mesh_dx = 0.1
+                        mesh_length = self.R_exterior*2
+                        mesh_dx = self.dx_experimental
                         N = int(mesh_length / mesh_dx)
                         x = np.linspace(q.x_q[0] - mesh_length / 2, q.x_q[0] + mesh_length / 2, num=N)
                         y = np.linspace(q.x_q[1] - mesh_length / 2, q.x_q[1] + mesh_length / 2, num=N)
@@ -221,8 +218,8 @@ class Molecule_Mesh():
                         X1 = tf.constant(interior_points, dtype=self.DTYPE)
                         X2 = tf.constant(exterior_points, dtype=self.DTYPE)
 
-                        X_in = self.create_Dataset(X1)
-                        X_out = self.create_Dataset(X2)
+                        X_in = self.create_Dataset_and_Tensor(X1)
+                        X_out = self.create_Dataset_and_Tensor(X2)
                         phi_ens = tf.constant(L_phi[str(q.res_num)] , dtype=self.DTYPE)
                         xq = tf.reshape(tf.constant(q.x_q, dtype=self.DTYPE), (1,3))
 
@@ -240,21 +237,13 @@ class Molecule_Mesh():
                     self.save_data_plot(X_plot)
 
 
-    def create_Dataset(cls,X):
-        dataset_X = tf.data.Dataset.from_tensor_slices(X)
+    def create_Dataset_and_Tensor(cls,X):
         if len(X) == 0:
             return None
+        dataset_X = tf.data.Dataset.from_tensor_slices(X)
         dataset_X = dataset_X.shuffle(buffer_size=len(X))
         X_batches = dataset_X.batch(int(len(X)))
         return next(iter(X_batches))
-
-    def create_Datasets(cls, X, Y):
-        dataset_XY = tf.data.Dataset.from_tensor_slices((X, Y))
-        if len(X) == 0:
-            return None
-        dataset_XY = dataset_XY.shuffle(buffer_size=len(X))
-        XY_batches = dataset_XY.batch(int(len(X)))
-        return next(iter(XY_batches))
 
     def save_data_plot(self,X_plot):
         path_files = os.path.join(self.main_path,'Post','Plot3d','data')

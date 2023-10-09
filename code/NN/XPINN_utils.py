@@ -40,7 +40,7 @@ class XPINN_utils():
         self.mesh = self.PDE.mesh
         for solver,pde in zip(self.solvers, PDE.get_PDEs):
             solver.adapt_PDE(pde)
-        self.adapt_data_batches()
+        self.adapt_datasets()
         self.set_mesh_names()
 
     def adapt_weights(self,weights,adapt_weights=False,adapt_w_iter=2000,adapt_w_method='gradients',alpha=0.3):
@@ -60,6 +60,12 @@ class XPINN_utils():
         for solver,lr in zip(self.solvers,lrs):
             solver.adapt_optimizer(optimizer,lr,lr_p)
         self.optimizer_name = optimizer
+
+    def set_points_methods(self, sample_method='batches', N_batches=1, sample_size=1000):
+        self.sample_method = sample_method
+        self.N_batches = N_batches
+        self.sample_size = sample_size
+
 
     def load_NeuralNets(self,dir_load,names):   
         for solver,name in zip(self.solvers,names):
@@ -108,15 +114,49 @@ class XPINN_utils():
 
     ######################################################
 
+    #samples
 
-    def adapt_data_batches(self):
+    def get_random_sample(self, dataset, sample_size):
+        shuffled_dataset = dataset.shuffle(buffer_size=int(dataset.cardinality().numpy()))
+        random_sample = shuffled_dataset.take(sample_size)
+        sample_batch = random_sample.batch(batch_size=sample_size)
+        return next(iter(sample_batch))
+    
+    def get_samples_solver(self):
+        L_X_generators = list()
+        for set_batches in self.L_X_solvers:
+            L = dict()
+            for t in set_batches:
+                dataset = set_batches[t]
+                L[t] = self.get_random_sample(dataset, self.sample_size)
+            L_X_generators.append(L)
+        return L_X_generators
+    
+    def get_sample_domain(self):
+        L = dict()
+        for t in self.L_X_domain:
+            if t in ('E'):
+                L[t] = self.L_X_domain[t]
+            elif t in ('I'):
+                dataset = self.L_X_domain[t]
+                L[t] = self.get_random_sample(dataset, self.sample_size)
+        return L
+
+
+    #batches
+
+    def create_batches(self, dataset, num_batches=1):
+        batch_size = int(dataset.cardinality().numpy()/num_batches)
+        batches = dataset.batch(batch_size=batch_size)
+        return batches
+
+    def adapt_datasets(self):
         self.L_X_solvers = list()
         for solver in self.solvers:
             L_batches = dict()
             for t in solver.mesh.solver_mesh_names:
                 L_batches[t] = solver.mesh.solver_mesh_data[t]
             self.L_X_solvers.append(L_batches)
-        self.N_batches = self.mesh.N_batches
 
         self.L_X_domain = dict()
         for t in self.mesh.domain_mesh_names:
@@ -130,13 +170,14 @@ class XPINN_utils():
                 yield batch
 
         L_X_generators = list()
-        for set_batches,solver in zip(self.L_X_solvers,self.solvers):
+        for set_batches in self.L_X_solvers:
             L = dict()
             for t in set_batches:
                 if shuffle:
-                    L[t] = generator(set_batches[t].shuffle(buffer_size=solver.mesh.solver_mesh_N[t]))
+                    new_dataset = set_batches[t].shuffle(buffer_size=int(set_batches[t].cardinality().numpy()))
                 elif not shuffle:
-                    L[t] = generator(set_batches[t])
+                    new_dataset = set_batches[t]
+                L[t] = generator(self.create_batches(new_dataset,self.N_batches))
             L_X_generators.append(L)
         return L_X_generators
     
@@ -159,9 +200,10 @@ class XPINN_utils():
                 L[t] = self.L_X_domain[t]
             elif t in ('I'):
                 if shuffle:
-                    L[t] = generator(self.L_X_domain[t].shuffle(buffer_size=self.mesh.domain_mesh_N[t]))
+                    new_dataset = self.L_X_domain[t].shuffle(buffer_size=int(self.L_X_domain[t].cardinality().numpy()))
                 elif not shuffle:
-                    L[t] = generator(self.L_X_domain[t])
+                    new_dataset = self.L_X_domain[t]
+                L[t] = generator(self.create_batches(new_dataset,self.N_batches))
         return L
 
     def get_batches_domain(self, TX_b):
@@ -172,6 +214,9 @@ class XPINN_utils():
             elif t in ('I'):
                 X_b[t] = next(TX_b[t])
         return X_b
+
+
+    #utils
 
 
     def checkers_iterations(self):
@@ -205,7 +250,8 @@ class XPINN_utils():
     def set_mesh_names(self):
         for solver in self.solvers:
             solver.Mesh_names = solver.mesh.solver_mesh_names.union(self.mesh.domain_mesh_names)
- 
+        self.solver1.Mesh_names.remove('E')
+                
 
     def callback(self, L1,L2):
 
