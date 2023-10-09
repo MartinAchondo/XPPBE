@@ -22,6 +22,7 @@ class XPINN_utils():
         self.loss_bN1 = list()
         self.loss_bI1 = list()
         self.loss_bK1 = list()
+        self.loss_bQ = list()
 
         self.loss_r2 = list()
         self.loss_bD2 = list()
@@ -66,7 +67,6 @@ class XPINN_utils():
         self.N_batches = N_batches
         self.sample_size = sample_size
 
-
     def load_NeuralNets(self,dir_load,names):   
         for solver,name in zip(self.solvers,names):
             solver.adapt_weights()
@@ -79,6 +79,7 @@ class XPINN_utils():
         self.loss_bN1 = list(df['N1'])
         self.loss_bI1 = list(df['I1'])
         self.loss_bK1 = list(df['K1'])
+        self.loss_bQ = list(df['Q'])
         self.loss_r2 = list(df['R2'])
         self.loss_bD2 = list(df['D2'])
         self.loss_bN2 = list(df['N2'])
@@ -99,6 +100,7 @@ class XPINN_utils():
                    'N1': list(map(lambda tensor: tensor.numpy(),self.loss_bN1)),
                    'K1': list(map(lambda tensor: tensor.numpy(),self.loss_bK1)),
                    'I1': list(map(lambda tensor: tensor.numpy(),self.loss_bI1)),
+                   'Q': list(map(lambda tensor: tensor.numpy(),self.loss_bQ)),
                    'R2': list(map(lambda tensor: tensor.numpy(),self.loss_r2)),
                    'D2': list(map(lambda tensor: tensor.numpy(),self.loss_bD2)),
                    'N2': list(map(lambda tensor: tensor.numpy(),self.loss_bN2)),
@@ -127,8 +129,13 @@ class XPINN_utils():
         for set_batches in self.L_X_solvers:
             L = dict()
             for t in set_batches:
-                dataset = set_batches[t]
-                L[t] = self.get_random_sample(dataset, self.sample_size)
+                if t == 'Q':
+                    X = self.mesh.generate_complete_charges_dataset(self.PDE.q_list)
+                    SU = self.PDE.source(*self.mesh.interior_obj.get_X(X))
+                    L[t] = (X,SU)
+                else:
+                    dataset = set_batches[t]
+                    L[t] = self.get_random_sample(dataset, self.sample_size)
             L_X_generators.append(L)
         return L_X_generators
     
@@ -260,6 +267,7 @@ class XPINN_utils():
         self.loss_bN1.append(L1[1]['N'])
         self.loss_bI1.append(L1[1]['I'])
         self.loss_bK1.append(L1[1]['K'])
+        self.loss_bQ.append(L1[1]['Q'])
 
         self.loss_r2.append(L2[1]['R'])
         self.loss_bD2.append(L2[1]['D'])
@@ -309,6 +317,7 @@ class XPINN_utils():
         self.solver1.loss_bN = self.loss_bN1
         self.solver1.loss_bI = self.loss_bI1
         self.solver1.loss_bK = self.loss_bK1
+        self.solver1.loss_bQ = self.loss_bQ
 
         self.solver2.loss_r = self.loss_r2
         self.solver2.loss_bD = self.loss_bD2

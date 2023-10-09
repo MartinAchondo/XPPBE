@@ -48,7 +48,7 @@ class Solver_Mesh():
             if type_b in self.prior_data:
                 X = self.prior_data[type_b]
 
-            if type_b in ('R','D','K','N','P'):    
+            if type_b in ('R','D','K','N','P','Q'):    
                 x,y,z = self.get_X(X)
                 if value != None:
                     U = self.value_u_b(x, y, z, value=value)
@@ -58,7 +58,7 @@ class Solver_Mesh():
                     file = bl['file']
                     X,U = self.read_file_data(file)
                 self.solver_mesh_data[type_b] = self.create_Datasets(X,U)
-                
+
             self.solver_mesh_names.add(type_b)
             if type_b in self.solver_mesh_N:
                 self.solver_mesh_N[type_b] += len(X)

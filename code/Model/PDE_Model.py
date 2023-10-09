@@ -13,12 +13,12 @@ class PBE(PDE_utils):
     kb = 1.380649e-23              
     Na = 6.02214076e23
 
-    def __init__(self, inputs, mesh, model,path):
-        
-        self.sigma = 0.04        
+    def __init__(self, inputs, mesh, model,path):      
 
         self.mesh = mesh
         self.main_path = path
+
+        self.sigma = self.mesh.G_sigma
 
         self.inputs = inputs
         for key, value in inputs.items():

@@ -141,7 +141,8 @@ class View_results_X():
                     'N': 1.0,
                     'K': 1.0,
                     'I': 1.0,
-                    'E': 1.0
+                    'E': 1.0,
+                    'Q': 1.0
                     }
                 elif plot_w:
                     w = NN.w_hist
@@ -149,13 +150,15 @@ class View_results_X():
                 if 'R' in meshes_names:
                     ax.semilogy(range(len(NN.loss_r)), w['R']*np.array(NN.loss_r),c[iter-1][0],label=f'Loss_R_{iter}')
                 if 'D' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bD)), w['D']*np.array(NN.loss_bD),c[iter-1][1],label=f'Loss_bD_{iter}')
+                    ax.semilogy(range(len(NN.loss_bD)), w['D']*np.array(NN.loss_bD),c[iter-1][1],label=f'Loss_D_{iter}')
                 if 'N' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bN)), w['N']*np.array(NN.loss_bN),c[iter-1][2],label=f'Loss_bN_{iter}')
+                    ax.semilogy(range(len(NN.loss_bN)), w['N']*np.array(NN.loss_bN),c[iter-1][2],label=f'Loss_N_{iter}')
                 if 'K' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bK)), w['K']*np.array(NN.loss_bK),c[iter-1][3],label=f'Loss_bK_{iter}')
+                    ax.semilogy(range(len(NN.loss_bK)), w['K']*np.array(NN.loss_bK),c[iter-1][3],label=f'Loss_K_{iter}')
+                if 'Q' in meshes_names:
+                    ax.semilogy(range(len(NN.loss_bQ)), w['Q']*np.array(NN.loss_bQ),'gold',label=f'Loss_Q_{iter}')
                 if 'I' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bI)), w['I']*np.array(NN.loss_bI),c[iter-1][4],label=f'Loss_bI_{iter}')
+                    ax.semilogy(range(len(NN.loss_bI)), w['I']*np.array(NN.loss_bI),c[iter-1][4],label=f'Loss_I_{iter}')
                 if 'E' in meshes_names:
                     ax.semilogy(range(len(self.XPINN.loss_exp)), w['E']*np.array(self.XPINN.loss_exp),c[iter-1][5],label=f'Loss_E_{iter}')
                 iter += 1      
@@ -192,6 +195,8 @@ class View_results_X():
                     ax.semilogy(range(len(w['N'])), w['N'], c[iter-1][2],label=f'w_N_{iter}')
                 if 'K' in meshes_names:
                     ax.semilogy(range(len(w['K'])), w['K'], c[iter-1][3],label=f'w_K_{iter}')
+                if 'Q' in meshes_names:
+                    ax.semilogy(range(len(w['Q'])), w['Q'], 'gold',label=f'w_Q_{iter}')
                 if 'I' in meshes_names:
                     ax.semilogy(range(len(w['I'])), w['I'], c[iter-1][4],label=f'w_I_{iter}')
                 if 'E' in meshes_names:

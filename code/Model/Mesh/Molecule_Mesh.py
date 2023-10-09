@@ -14,12 +14,11 @@ class Molecule_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, N_points, refinement=False, plot=False, path=''):
+    def __init__(self, molecule, N_points, plot=False, path=''):
 
         for key, value in N_points.items():
             setattr(self, key, value)
         self.molecule = molecule
-        self.refinement = refinement
         self.plot = plot
         self.main_path = path
 
@@ -76,35 +75,21 @@ class Molecule_Mesh():
         points = np.stack((X.ravel(), Y.ravel(), Z.ravel()), axis=1)
         interior_points_bool = self.mesh.contains(points)
         interior_points = points[interior_points_bool]
+        mesh_interior.prior_data['R'] = tf.constant(interior_points)
 
-        if self.refinement:
-            path_files = os.path.join(self.main_path,'Model','Molecules')
-            _,Lx_q,_,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
+        #########################################################################
 
-            delta = 0.04
-            dx = np.array([delta,0.0,0.0])
-            dy = np.array([0.0,delta,0.0])
-            dz = np.array([0.0,0.0,delta])
+        path_files = os.path.join(self.main_path,'Model','Molecules')
+        _,Lx_q,_,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
 
-            n_q = Lx_q.shape[0]
-            X_temp = np.zeros((n_q*7,3))
+        for i,x_q in enumerate(Lx_q):
+            x_q = x_q - self.centroid
+            X_in = self.generate_charge_dataset(x_q)
 
-            for i,x_q in enumerate(Lx_q):
-                c = 1
-                x_q = x_q - self.centroid
-                X_temp[i*7,:] = x_q
-                for k in [-1,1]:
-                    X_temp[i*7+c,:] = x_q + k*dx
-                    X_temp[i*7+c+1,:] = x_q + k*dy
-                    X_temp[i*7+c+2,:] = x_q + k*dz
-                    c = 4
-            X_in = tf.constant(X_temp, dtype=self.DTYPE)
-            interior_points_2 = tf.concat([interior_points,X_in], axis=0)
-
-        else:
-            interior_points_2 = interior_points
-
-        mesh_interior.prior_data['R'] = tf.constant(interior_points_2)
+            if not 'Q' in mesh_interior.prior_data:
+                mesh_interior.prior_data['Q'] = X_in
+            else:
+                mesh_interior.prior_data['Q'] = tf.concat([mesh_interior.prior_data['Q'],X_in], axis=0)
 
         #########################################################################
 
@@ -148,7 +133,7 @@ class Molecule_Mesh():
         if self.plot:
             X_plot = dict()
             X_plot['Inner Domain'] = interior_points
-            X_plot['Charges'] = X_temp
+            X_plot['Charges'] = mesh_interior.prior_data['Q'].numpy()
             X_plot['Interface'] = self.verts
             X_plot['Outer Domain'] = exterior_points
             X_plot['Outer Border'] = np.column_stack((X_bl.ravel(), Y_bl.ravel(), Z_bl.ravel()))
@@ -157,6 +142,32 @@ class Molecule_Mesh():
 
         return mesh_interior, mesh_exterior
     
+
+    def generate_charge_dataset(self,x_q):            
+    
+        x_q_tensor = tf.constant(x_q, dtype=self.DTYPE)
+
+        sigma = self.G_sigma*1.5
+
+        r = sigma * tf.sqrt(tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=1))
+        theta = tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=2 * np.pi)
+        phi = tf.acos(2 * tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=1) - 1)
+
+        x_random = x_q[0] + r * tf.sin(phi) * tf.cos(theta)
+        y_random = x_q[1] + r * tf.sin(phi) * tf.sin(theta)
+        z_random = x_q[2] + r * tf.cos(phi)
+
+        X_in = tf.concat([tf.reshape(x_q_tensor,[1,3]), tf.stack([x_random, y_random, z_random], axis=-1) ], axis=0)
+
+        return X_in
+    
+    def generate_complete_charges_dataset(self,q_list):
+        X_temp = tf.zeros((0, 3), dtype=self.DTYPE)
+        for q in q_list:
+            X_in = self.generate_charge_dataset(q.x_q)
+            X_temp = tf.concat([X_temp,X_in], axis=0)
+        return X_temp
+
 
     def adapt_meshes_domain(self,data,q_list):
         

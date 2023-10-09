@@ -17,7 +17,12 @@ class PDE_utils():
         if 'R' in self.mesh.solver_mesh_names: 
             X,SU = X_batches['R']
             loss_r = self.residual_loss(self.mesh,model,self.mesh.get_X(X),SU)
-            L['R'] += loss_r    
+            L['R'] += loss_r   
+
+        if 'Q' in self.mesh.solver_mesh_names: 
+            X,SU = X_batches['Q']
+            loss_q = self.residual_loss(self.mesh,model,self.mesh.get_X(X),SU)
+            L['Q'] += loss_q 
 
         #dirichlet 
         if 'D' in self.mesh.solver_mesh_names:
@@ -91,6 +96,7 @@ class PDE_utils():
         L['D'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['N'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['I'] = tf.constant(0.0, dtype=cls.DTYPE)
+        L['Q'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['K'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['P'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['E'] = tf.constant(0.0, dtype=cls.DTYPE)

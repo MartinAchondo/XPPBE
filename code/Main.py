@@ -49,7 +49,9 @@ def main():
                 'dx_exterior': 0.5,
                 'N_border': 9,
                 'dR_exterior': 8,
-                'dx_experimental': 1
+                'dx_experimental': 1,
+                'N_pq': 10,
+                'G_sigma': 0.04
                 }
 
         Mol_mesh = Molecule_Mesh(inputs['molecule'], 
@@ -66,7 +68,7 @@ def main():
 
         meshes_in = dict()
         meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
-        #meshes_in['2'] = {'type':'RQ', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
+        meshes_in['2'] = {'type':'Q', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
         meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
         meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
         PBE_model.PDE_in.mesh.adapt_meshes(meshes_in)
