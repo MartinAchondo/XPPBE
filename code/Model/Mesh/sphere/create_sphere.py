@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 
-mesh = trimesh.creation.uv_sphere(radius=1.0, count=[30, 30])
+mesh = trimesh.creation.uv_sphere(radius=1.0, count=[140, 140])
 
 vertices = mesh.vertices
 faces = mesh.faces

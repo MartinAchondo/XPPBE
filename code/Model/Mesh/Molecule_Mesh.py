@@ -157,7 +157,7 @@ class Molecule_Mesh():
         y_random = x_q[1] + r * tf.sin(phi) * tf.sin(theta)
         z_random = x_q[2] + r * tf.cos(phi)
 
-        X_in = tf.concat([tf.reshape(x_q_tensor,[1,3]), tf.stack([x_random, y_random, z_random], axis=-1) ], axis=0)
+        X_in = tf.concat([tf.reshape(x_q_tensor,[1,3]), tf.stack([x_random, y_random, z_random], axis=-1)], axis=0)
 
         return X_in
     

@@ -9,7 +9,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 from Model.Mesh.Molecule_Mesh import Molecule_Mesh
 from Model.PDE_Model import PBE
-from code.NN.NeuralNet_Fourier import NeuralNet
+from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
 from Post.Postprocessing import View_results
@@ -45,16 +45,17 @@ def main():
                 'T' : 300 
                 }
 
-        N_points = {'N_interior': 40,
-                'N_exterior': 40,
-                'N_border': 30,
-                'dR_exterior': 9
+        N_points = {'dx_interior': 0.025,
+                'dx_exterior': 0.15,
+                'N_border': 60,
+                'dR_exterior': 8,
+                'dx_experimental': 0.1,
+                'N_pq': 100,
+                'G_sigma': 0.04
                 }
 
         Mol_mesh = Molecule_Mesh(inputs['molecule'], 
                                 N_points=N_points, 
-                                N_batches=1,
-                                refinement=True,
                                 plot=False,
                                 path=main_path
                                 )
@@ -67,15 +68,16 @@ def main():
 
         meshes_in = dict()
         meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
-        meshes_in['2'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-        meshes_in['3'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
+        meshes_in['2'] = {'type':'Q', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
+        #meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+        #meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
         PBE_model.PDE_in.mesh.adapt_meshes(meshes_in)
 
         meshes_out = dict()
         meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
         meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: PBE_model.border_value(x,y,z)}
-        meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-        meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
+        #meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+        #meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
         PBE_model.PDE_out.mesh.adapt_meshes(meshes_out)
 
         meshes_domain = dict()
@@ -84,6 +86,7 @@ def main():
         PBE_model.mesh.adapt_meshes_domain(meshes_domain,PBE_model.q_list)
        
         XPINN_solver = XPINN(PINN)
+
         XPINN_solver.adapt_PDEs(PBE_model)
 
         weights = {'w_r': 1,
@@ -96,13 +99,14 @@ def main():
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = False,
-                                   adapt_w_iter = 5000,
-                                   adapt_w_method = 'gradients')             
+                                   adapt_w_iter = 10,
+                                   adapt_w_method = 'gradients',
+                                   alpha = 0.3)             
 
         hyperparameters_in = {
                         'input_shape': (None,3),
                         'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 160,
+                        'num_neurons_per_layer': 200,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN'
@@ -111,7 +115,7 @@ def main():
         hyperparameters_out = {
                         'input_shape': (None,3),
                         'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 160,
+                        'num_neurons_per_layer': 200,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN'
@@ -119,16 +123,20 @@ def main():
 
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
 
+        XPINN_solver.set_points_methods(
+                sample_method='sample', 
+                N_batches=1, 
+                sample_size=4000)
+
         optimizer = 'Adam'
-        lr = ([5000,8000],[1e-3,5e-4,1e-4])
+        lr = ([2000,4000,6000],[1e-3,9e-4,8e-4,6e-4])
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        
-        N_iters = 12000
+        N_iters = 16000
 
-        precondition = True
-        N_precond = 2000
+        precondition = False
+        N_precond = 5
 
         iters_save_model = 1000
         XPINN_solver.folder_path = folder_path
@@ -138,7 +146,7 @@ def main():
                         N_precond = N_precond,  
                         save_model = iters_save_model, 
                         shuffle = False, 
-                        shuffle_iter = 150 )
+                        shuffle_iter = 7 )
 
 
         Post = View_results_X(XPINN_solver, View_results, save=True, directory=folder_path)
