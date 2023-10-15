@@ -45,9 +45,9 @@ def main():
                 'T' : 300 
                 }
 
-        N_points = {'dx_interior': 0.025,
-                'dx_exterior': 0.15,
-                'N_border': 60,
+        N_points = {'dx_interior': 0.04,
+                'dx_exterior': 0.25,
+                'N_border': 50,
                 'dR_exterior': 8,
                 'dx_experimental': 0.1,
                 'N_pq': 100,
