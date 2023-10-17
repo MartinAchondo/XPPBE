@@ -45,11 +45,11 @@ def main():
                 'T' : 300 
                 }
 
-        N_points = {'dx_interior': 0.04,
-                'dx_exterior': 0.25,
+        N_points = {'dx_interior': 0.049,
+                'dx_exterior': 0.42,
                 'N_border': 50,
                 'dR_exterior': 8,
-                'dx_experimental': 0.1,
+                'dx_experimental': 0.3,
                 'N_pq': 100,
                 'G_sigma': 0.04
                 }
