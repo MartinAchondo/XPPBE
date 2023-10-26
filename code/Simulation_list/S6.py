@@ -45,12 +45,12 @@ def main():
                 'T' : 300 
                 }
 
-        N_points = {'dx_interior': 0.049,
-                'dx_exterior': 0.42,
-                'N_border': 50,
+        N_points = {'dx_interior': 0.08,
+                'dx_exterior': 0.5,
+                'N_border': 40,
                 'dR_exterior': 8,
-                'dx_experimental': 0.3,
-                'N_pq': 100,
+                'dx_experimental': 0.4,
+                'N_pq': 50,
                 'G_sigma': 0.04
                 }
 
@@ -82,7 +82,7 @@ def main():
 
         meshes_domain = dict()
         meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
-        #meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+        meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
         PBE_model.mesh.adapt_meshes_domain(meshes_domain,PBE_model.q_list)
        
         XPINN_solver = XPINN(PINN)
@@ -94,14 +94,14 @@ def main():
                    'w_n': 1,
                    'w_i': 1,
                    'w_k': 1,
-                   'w_e': 1
+                   'w_e': 0.0001
                   }
 
         XPINN_solver.adapt_weights([weights,weights],
-                                   adapt_weights = True,
+                                   adapt_weights = False,
                                    adapt_w_iter = 1000,
                                    adapt_w_method = 'gradients',
-                                   alpha = 0.3)             
+                                   alpha = 0.8)             
 
         hyperparameters_in = {
                         'input_shape': (None,3),
@@ -124,16 +124,22 @@ def main():
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
 
         XPINN_solver.set_points_methods(
-                sample_method='sample', 
+                sample_method='batches', 
                 N_batches=1, 
                 sample_size=4000)
 
         optimizer = 'Adam'
-        lr = ([2000,4000,6000],[1e-3,9e-4,8e-4,6e-4])
+        #lr_s = ([1000,1600],[1e-2,5e-3,5e-4])
+        #lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr_s)
+        lr = tf.keras.optimizers.schedules.ExponentialDecay(
+                initial_learning_rate=0.001,
+                decay_steps=2000,
+                decay_rate=0.9,
+                staircase=True)
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 16000
+        N_iters = 10000
 
         precondition = False
         N_precond = 5

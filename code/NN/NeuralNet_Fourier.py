@@ -13,8 +13,8 @@ class NeuralNet(tf.keras.Model):
                  activation='tanh',
                  kernel_initializer='glorot_normal',
                  architecture_Net='FCNN',
-                 num_fourier_features=32, 
-                 fourier_sigma=3,
+                 num_fourier_features=256, 
+                 fourier_sigma=1,
                  **kwargs):
         super().__init__(**kwargs)
 

@@ -66,7 +66,7 @@ class PINN():
 
     def adapt_optimizer(self,optimizer,lr,lr_p=0.001):
         self.optimizer_name = optimizer
-        self.lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr)
+        self.lr = lr
         self.lr_p = lr_p
 
     def create_NeuralNet(self,NN_class,*args,**kwargs):

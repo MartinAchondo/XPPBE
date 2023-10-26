@@ -45,12 +45,12 @@ def main():
                 'T' : 300 
                 }
 
-        N_points = {'dx_interior': 0.049,
-                'dx_exterior': 0.42,
-                'N_border': 50,
+        N_points = {'dx_interior': 0.08,
+                'dx_exterior': 0.5,
+                'N_border': 40,
                 'dR_exterior': 8,
-                'dx_experimental': 0.3,
-                'N_pq': 100,
+                'dx_experimental': 0.4,
+                'N_pq': 50,
                 'G_sigma': 0.04
                 }
 
@@ -69,15 +69,15 @@ def main():
         meshes_in = dict()
         meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
         meshes_in['2'] = {'type':'Q', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
-        #meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-        #meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
+        meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+        meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
         PBE_model.PDE_in.mesh.adapt_meshes(meshes_in)
 
         meshes_out = dict()
         meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
         meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: PBE_model.border_value(x,y,z)}
-        #meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-        #meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
+        meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+        meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
         PBE_model.PDE_out.mesh.adapt_meshes(meshes_out)
 
         meshes_domain = dict()
@@ -94,14 +94,14 @@ def main():
                    'w_n': 1,
                    'w_i': 1,
                    'w_k': 1,
-                   'w_e': 1
+                   'w_e': 0.0001
                   }
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
                                    adapt_w_iter = 1000,
                                    adapt_w_method = 'gradients',
-                                   alpha = 0.3)             
+                                   alpha = 0.8)             
 
         hyperparameters_in = {
                         'input_shape': (None,3),
@@ -124,19 +124,25 @@ def main():
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
 
         XPINN_solver.set_points_methods(
-                sample_method='sample', 
+                sample_method='batches', 
                 N_batches=1, 
                 sample_size=4000)
 
         optimizer = 'Adam'
-        lr = ([2000,4000,6000],[1e-3,9e-4,8e-4,6e-4])
+        #lr_s = ([1000,1600],[1e-2,5e-3,5e-4])
+        #lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr_s)
+        lr = tf.keras.optimizers.schedules.ExponentialDecay(
+                initial_learning_rate=0.001,
+                decay_steps=2000,
+                decay_rate=0.9,
+                staircase=True)
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 16000
+        N_iters = 10000
 
-        precondition = False
-        N_precond = 5
+        precondition = True
+        N_precond = 1000
 
         iters_save_model = 1000
         XPINN_solver.folder_path = folder_path

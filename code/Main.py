@@ -9,7 +9,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 from Model.Mesh.Molecule_Mesh import Molecule_Mesh
 from Model.PDE_Model import PBE
-from NN.NeuralNet_Fourier import NeuralNet
+from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
 from Post.Postprocessing import View_results
@@ -82,7 +82,7 @@ def main():
 
         meshes_domain = dict()
         meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
-        meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+        #meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
         PBE_model.mesh.adapt_meshes_domain(meshes_domain,PBE_model.q_list)
        
         XPINN_solver = XPINN(PINN)
@@ -101,7 +101,7 @@ def main():
                                    adapt_weights = True,
                                    adapt_w_iter = 10,
                                    adapt_w_method = 'gradients',
-                                   alpha = 0.3)             
+                                   alpha = 0.7)             
 
         hyperparameters_in = {
                         'input_shape': (None,3),
@@ -124,16 +124,22 @@ def main():
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
 
         XPINN_solver.set_points_methods(
-                sample_method='sample', 
+                sample_method='batches', 
                 N_batches=1, 
                 sample_size=50)
 
         optimizer = 'Adam'
-        lr = ([1000,1600],[1e-2,5e-3,5e-4])
+        lr_s = ([1000,1600],[1e-2,5e-3,5e-4])
+        lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr_s)
+        lr = tf.keras.optimizers.schedules.ExponentialDecay(
+                initial_learning_rate=0.001,
+                decay_steps=2000,
+                decay_rate=0.9,
+                staircase=True)
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 20
+        N_iters = 10
 
         precondition = False
         N_precond = 5

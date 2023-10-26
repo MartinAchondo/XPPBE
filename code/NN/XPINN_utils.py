@@ -119,9 +119,9 @@ class XPINN_utils():
     #samples
 
     def get_random_sample(self, dataset, sample_size):
-        shuffled_dataset = dataset.shuffle(buffer_size=int(dataset.cardinality().numpy()))
-        random_sample = shuffled_dataset.take(sample_size)
-        sample_batch = random_sample.batch(batch_size=sample_size)
+        shuffled_dataset = dataset.shuffle(buffer_size=int(dataset.cardinality().numpy())) # work with numpy  
+        random_sample = shuffled_dataset.take(sample_size) # numpy
+        sample_batch = random_sample.batch(batch_size=sample_size) #tensor
         return next(iter(sample_batch))
     
     def get_samples_solver(self):
@@ -257,7 +257,8 @@ class XPINN_utils():
     def set_mesh_names(self):
         for solver in self.solvers:
             solver.Mesh_names = solver.mesh.solver_mesh_names.union(self.mesh.domain_mesh_names)
-        self.solver1.Mesh_names.remove('E')
+        if 'E' in self.solver1.Mesh_names:
+            self.solver1.Mesh_names.remove('E')
                 
 
     def callback(self, L1,L2):
