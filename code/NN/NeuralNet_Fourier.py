@@ -136,10 +136,10 @@ if __name__=='__main__':
     hyperparameters = {
                 'input_shape': (None,3),
                 'num_hidden_layers': 4,
-                'num_neurons_per_layer': 100,
+                'num_neurons_per_layer': 200,
                 'output_dim': 1,
                 'activation': 'tanh',
-                'architecture_Net': 'ResNet'
+                'architecture_Net': 'FCNN'
         }
     model = NeuralNet(lb=-1,ub=1,**hyperparameters)
     model.plot_model()

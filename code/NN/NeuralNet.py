@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+import os
 
 class NeuralNet(tf.keras.Model):
 
@@ -91,3 +91,36 @@ class NeuralNet(tf.keras.Model):
             Z = block(Z) + Z
         Z = self.last(Z)
         return self.out(Z)
+
+
+
+
+    def plot_model(self):
+        input_layer = tf.keras.layers.Input(shape=self.input_shape_N[1:], name='input')
+    
+        visual_model = tf.keras.models.Model(inputs=input_layer, outputs=self.call(input_layer))
+
+        main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)))
+        tf.keras.utils.plot_model(visual_model, to_file=os.path.join(main_path,'model_achitecture.png'),
+                                    show_shapes=True,
+                                    show_dtype=False,
+                                    show_layer_names=True,
+                                    expand_nested=True,
+                                    show_layer_activations=True,
+                                    dpi = 150)
+        
+        self.build_Net()
+        print(self.summary(expand_nested=True))
+
+
+if __name__=='__main__':
+    hyperparameters = {
+                'input_shape': (None,3),
+                'num_hidden_layers': 4,
+                'num_neurons_per_layer': 200,
+                'output_dim': 1,
+                'activation': 'tanh',
+                'architecture_Net': 'FCNN'
+        }
+    model = NeuralNet(lb=-1,ub=1,**hyperparameters)
+    model.plot_model()

@@ -128,9 +128,11 @@ def main():
                 N_batches=1, 
                 sample_size=4000)
 
-        optimizer = 'Adam'
+        
         #lr_s = ([1000,1600],[1e-2,5e-3,5e-4])
         #lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr_s)
+        
+        optimizer = 'Adam'
         lr = tf.keras.optimizers.schedules.ExponentialDecay(
                 initial_learning_rate=0.001,
                 decay_steps=2000,
