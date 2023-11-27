@@ -1,3 +1,0 @@
-simulation.solutes[0].results[“phi”].plot()
-simulation.solutes[0].results[“dphi”].plot()
-gridfunction

@@ -9,15 +9,18 @@ __pycache__/
 
 # Log files
 *.log
+*.html
 
 # Shell script files
 pscp.bash
 putty.bash
+pscp_pbj.bash
 
 # Test-related directories
 /tests
 /test
 /.test
+.ipynb_checkpoints/
 
 # Past code and saved code directories
 /past_codes
