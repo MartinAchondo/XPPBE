@@ -57,8 +57,9 @@ class Solver_Mesh():
                 else:
                     file = bl['file']
                     X,U = self.read_file_data(file)
-                    if type_b=='K' or type_b=='P':    # Sacar despues (solo pruebas)
-                        U = U*self.add_noise(U)
+                    #if type_b=='K' or type_b=='P':    # Sacar despues (solo pruebas)
+                    #    U = U*self.add_noise(U)
+                    #    print(type_b)
                 self.solver_mesh_data[type_b] = self.create_Datasets(X,U)
 
             self.solver_mesh_names.add(type_b)

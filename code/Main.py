@@ -36,58 +36,69 @@ logger.info('================================================')
 # Inputs
 ###############################################
 
-def main():
+class PDE():
 
-        inputs = {'molecule': 'sphere',
-                'epsilon_1':  1,
-                'epsilon_2': 80,
-                'kappa': 0.125,
-                'T' : 300 
-                }
+        def __init__(self):
+                
+                self.inputs = {'molecule': 'methanol',
+                                'epsilon_1':  1,
+                                'epsilon_2': 80,
+                                'kappa': 0.125,
+                                'T' : 300 
+                                }
+                
+                self.N_points = {'dx_interior': 0.2,
+                                'dx_exterior': 0.5,
+                                'N_border': 6,
+                                'dR_exterior': 10,
+                                'dx_experimental': 1,
+                                'N_pq': 10,
+                                'G_sigma': 0.04
+                                }
 
-        N_points = {'dx_interior': 0.2,
-                'dx_exterior': 0.5,
-                'N_border': 9,
-                'dR_exterior': 8,
-                'dx_experimental': 1,
-                'N_pq': 10,
-                'G_sigma': 0.04
-                }
-
-        Mol_mesh = Molecule_Mesh(inputs['molecule'], 
-                                N_points=N_points, 
+                self.Mol_mesh = Molecule_Mesh(self.inputs['molecule'], 
+                                N_points=self.N_points, 
                                 plot=False,
                                 path=main_path
                                 )
         
-        PBE_model = PBE(inputs,
-                        mesh=Mol_mesh, 
+                self.PBE_model = PBE(self.inputs,
+                        mesh=self.Mol_mesh, 
                         model='linear',
                         path=main_path
                         ) 
+                
+                self.meshes_in = dict()
+                self.meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
+                self.meshes_in['2'] = {'type':'Q', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
+                self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+                #self.meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
 
-        meshes_in = dict()
-        meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
-        meshes_in['2'] = {'type':'Q', 'value':None, 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
-        meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-        meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
-        PBE_model.PDE_in.mesh.adapt_meshes(meshes_in)
+                self.PBE_model.PDE_in.mesh.adapt_meshes(self.meshes_in)
 
-        meshes_out = dict()
-        meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
-        meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: PBE_model.border_value(x,y,z)}
-        meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-        meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
-        PBE_model.PDE_out.mesh.adapt_meshes(meshes_out)
+                self.meshes_out = dict()
+                self.meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
+                self.meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
+                self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+                #self.meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
+                self.PBE_model.PDE_out.mesh.adapt_meshes(self.meshes_out)
 
-        meshes_domain = dict()
-        meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
-        #meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
-        PBE_model.mesh.adapt_meshes_domain(meshes_domain,PBE_model.q_list)
-       
-        XPINN_solver = XPINN(PINN)
+                self.meshes_domain = dict()
+                self.meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
+                self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+                self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
+        
+                self.XPINN_solver = XPINN(PINN)
 
-        XPINN_solver.adapt_PDEs(PBE_model)
+                self.XPINN_solver.adapt_PDEs(self.PBE_model)
+
+
+def main():
+
+        sim = PDE()
+
+        XPINN_solver = sim.XPINN_solver
+
 
         weights = {'w_r': 1,
                    'w_d': 1,
@@ -139,7 +150,7 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 10
+        N_iters = 1
 
         precondition = False
         N_precond = 5

@@ -40,7 +40,7 @@ class Molecule_Mesh():
         self.faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
         verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(float)
         self.centroid = np.mean(verts, axis=0)
-        self.verts = verts - self.centroid
+        self.verts = verts #- self.centroid
 
         self.normal = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, 3:6].astype(np.float32)
 
@@ -147,8 +147,7 @@ class Molecule_Mesh():
     
         x_q_tensor = tf.constant(x_q, dtype=self.DTYPE)
 
-        sigma = self.G_sigma*1.5 # fraction of smallest radius  1/10 * R
-        sigma = 0.1
+        sigma = 0.5*0.2
         
         r = sigma * tf.sqrt(tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=1))
         theta = tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=2 * np.pi)
