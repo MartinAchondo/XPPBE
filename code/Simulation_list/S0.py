@@ -85,7 +85,7 @@ class PDE():
 
                 self.meshes_domain = dict()
                 self.meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
-                self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+                #self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
                 self.XPINN_solver = XPINN(PINN)
@@ -117,7 +117,7 @@ def main():
         hyperparameters_in = {
                         'input_shape': (None,3),
                         'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 200,
+                        'num_neurons_per_layer': 130,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN'
@@ -126,7 +126,7 @@ def main():
         hyperparameters_out = {
                         'input_shape': (None,3),
                         'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 200,
+                        'num_neurons_per_layer': 130,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN'

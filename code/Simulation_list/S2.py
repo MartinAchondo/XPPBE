@@ -85,7 +85,7 @@ class PDE():
 
                 self.meshes_domain = dict()
                 self.meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
-                self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+                #self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
                 self.XPINN_solver = XPINN(PINN)
