@@ -35,5 +35,13 @@ code/Post/Plot3d/Plots/
 code/results
 /.results
 
+code/temp
+code/S_test.py
 # Saved models directories
 saved_models/
+
+code/pbj/*
+code/pbj/*/
+!code/pbj/*.ipynb
+
+/.notes

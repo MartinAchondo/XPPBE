@@ -103,7 +103,7 @@ class XPINN(XPINN_utils):
                 TX_d = self.create_generators_shuffle_domain(self.shuffle_now)
             
             for n_b in range(self.N_batches):
-
+                
                 if self.sample_method=='batches':
                     X_b1 = self.get_batches_solver(TX_b1)
                     X_b2 = self.get_batches_solver(TX_b2)   

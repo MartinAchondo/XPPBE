@@ -39,14 +39,14 @@ class Molecule_Mesh():
 
         self.faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
         verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(float)
-        self.centroid = np.mean(verts, axis=0)
-        self.verts = verts #- self.centroid
+        self.centroid = np.mean(verts, axis=0)*0
+        self.verts = verts - self.centroid
 
         self.normal = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, 3:6].astype(np.float32)
 
-        R_max_mol = np.max(self.verts)
-        R_min_mol = np.min(self.verts)
-        self.R_mol = np.max([R_max_mol,R_min_mol])
+        r = np.sqrt(self.verts[:,0]**2 + self.verts[:,1]**2 + self.verts[:,2]**2)
+        R_max_mol = np.max(r)
+        self.R_mol = R_max_mol
 
         self.mesh = trimesh.Trimesh(vertices=self.verts, faces=self.faces)
 
