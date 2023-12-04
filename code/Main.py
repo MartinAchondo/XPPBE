@@ -57,6 +57,8 @@ class PDE():
                                 'G_sigma': 0.04
                                 }
 
+        def create_simuation(self):
+
                 self.Mol_mesh = Molecule_Mesh(self.inputs['molecule'], 
                                 N_points=self.N_points, 
                                 plot=False,
@@ -97,6 +99,7 @@ class PDE():
 def main():
 
         sim = PDE()
+        sim.create_simuation()
 
         XPINN_solver = sim.XPINN_solver
 
