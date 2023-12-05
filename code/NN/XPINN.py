@@ -59,7 +59,7 @@ class XPINN(XPINN_utils):
         if self.precondition:
             optimizer1P,optimizer2P = self.create_optimizers(precond=True)
 
-        #@tf.function
+        @tf.function
         def train_step(X_batch,X_domain, ws,precond=False):
             X_batch1, X_batch2 = X_batch
             loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1,X_domain,self.solvers ,[self.solver1,self.solver2], ws[0], precond)
@@ -85,6 +85,8 @@ class XPINN(XPINN_utils):
             L2 = [loss2,L_loss2]
             return L1,L2
 
+        X_b1,X_b2,X_d = self.get_all_batches()
+
         self.N_iters = N
         self.N_precond = N_precond
         self.N_steps = 0
@@ -95,48 +97,22 @@ class XPINN(XPINN_utils):
         for i in self.pbar:
 
             L1,L2 = self.checkers_iterations()
-            
             self.check_adapt_new_weights(self.adapt_w_now)
             
-            if self.sample_method=='batches':
-                TX_b1, TX_b2 = self.create_generators_shuffle_solver(self.shuffle_now)
-                TX_d = self.create_generators_shuffle_domain(self.shuffle_now)
-            
-            for n_b in range(self.N_batches):
-                
-                if self.sample_method=='batches':
-                    X_b1 = self.get_batches_solver(TX_b1)
-                    X_b2 = self.get_batches_solver(TX_b2)   
-                    X_d = self.get_batches_domain(TX_d) 
-                elif self.sample_method=='sample': 
-                    X_b1,X_b2 = self.get_samples_solver()
-                    X_d = self.get_sample_domain()
+            if not self.precondition:
+                L1_b,L2_b = train_step((X_b1,X_b2), X_d, ws=[self.solver1.w,self.solver2.w])   
 
-                if not self.precondition:
-                    L1_b,L2_b = train_step((X_b1,X_b2), X_d, ws=[self.solver1.w,self.solver2.w])   
+            elif self.precondition:        
+                L1_b,L2_b = train_step_precond((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
 
-                elif self.precondition:        
-                    L1_b,L2_b = train_step_precond((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
-
-                L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b)) 
-
+            L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b)) 
             self.callback(L1,L2)
     
 
     def check_adapt_new_weights(self,adapt_now):
         
         if adapt_now:
-
-            if self.sample_method=='batches':
-                TX_b1, TX_b2 = self.create_generators_shuffle_solver(False)
-                TX_d = self.create_generators_shuffle_domain(False)
-                X_b1 = self.get_batches_solver(TX_b1)
-                X_b2 = self.get_batches_solver(TX_b2)
-                X_d = self.get_batches_domain(TX_d) 
-            elif self.sample_method=='sample':
-                X_b1,X_b2 = self.get_samples_solver()
-                X_d = self.get_sample_domain()
-
+            X_b1,X_b2,X_d = self.get_all_batches()
             self.modify_weights_by(self.solvers,[self.solver1,self.solver2],X_b1,X_d) 
             self.modify_weights_by(self.solvers,[self.solver2,self.solver1],X_b2,X_d) 
             

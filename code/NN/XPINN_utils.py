@@ -116,6 +116,15 @@ class XPINN_utils():
 
     ######################################################
 
+    # Full batch
+    def get_all_batches(self):
+        TX_b1, TX_b2 = self.create_generators_shuffle_solver(False)
+        TX_d = self.create_generators_shuffle_domain(False)
+        X_b1 = self.get_batches_solver(TX_b1)
+        X_b2 = self.get_batches_solver(TX_b2)   
+        X_d = self.get_batches_domain(TX_d) 
+        return X_b1,X_b2,X_d
+
     #samples
 
     def get_random_sample(self, dataset, sample_size):

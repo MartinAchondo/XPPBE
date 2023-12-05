@@ -154,7 +154,7 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 10
+        N_iters = 100
 
         precondition = False
         N_precond = 5
