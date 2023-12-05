@@ -306,7 +306,7 @@ class View_results_X():
                 ax.plot(r[:,0],U[:,0], c='b')
         r = np.linspace(0.2, 8, 200, dtype=self.DTYPE)
 
-        U2 = self.XPINN.PDE.analytic(r)
+        U2 = self.XPINN.PDE.analytic_Born_Ion(r)
         ax.plot(r,U2, c='r', label='Analytic', linestyle='--')
             
         ax.set_xlabel('r')
@@ -363,7 +363,7 @@ class View_results_X():
 
         r = np.linspace(1, 1, 200, dtype=self.DTYPE)
 
-        U2 = self.XPINN.PDE.analytic(1.0)
+        U2 = self.XPINN.PDE.analytic_Born_Ion(1.0)
         u2 = phi_bl/phi_bl*U2
         ax.plot(phi_bl, u2, c='g', label='Analytic', linestyle='--')
         

@@ -139,7 +139,6 @@ class Molecule_Mesh():
             X_plot['Outer Border'] = np.column_stack((X_bl.ravel(), Y_bl.ravel(), Z_bl.ravel()))
             self.save_data_plot(X_plot)
 
-
         return mesh_interior, mesh_exterior
     
 
@@ -193,58 +192,57 @@ class Molecule_Mesh():
                         L_phi[str(res_n)] = float(phi)
 
                 X_exp = list()
-                all_explode_points = list()
+                X_exp_values = list()
 
+                mesh_length = self.R_exterior*2
+                mesh_dx = self.dx_experimental
+                N = int(mesh_length / mesh_dx)
+                x = np.linspace(-mesh_length / 2, mesh_length / 2, num=N)
+                y = np.linspace(-mesh_length / 2, mesh_length / 2, num=N)
+                z = np.linspace(-mesh_length / 2, mesh_length / 2, num=N)
+
+                X, Y, Z = np.meshgrid(x, y, z)
+                pos_mesh = np.stack((X.flatten(), Y.flatten(), Z.flatten()), axis=0)
+
+                for q_check in q_list:
+
+                    x_diff, y_diff, z_diff = q_check.x_q[:, np.newaxis] - pos_mesh
+                    r_q_mesh = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+                    explode_local_index = np.nonzero(r_q_mesh >= q_check.r_explode)[0]
+                    pos_mesh = pos_mesh[:, explode_local_index]
+
+                explode_points = pos_mesh.transpose()
+                interior_points_bool = self.mesh.contains(explode_points)
+                interior_points = explode_points[interior_points_bool]
+                
+                exterior_points_bool = ~interior_points_bool  
+                exterior_points = explode_points[exterior_points_bool]
+
+                exterior_distances = np.linalg.norm(exterior_points, axis=1)
+                exterior_points = exterior_points[exterior_distances <= self.R_exterior]
+
+                X1 = tf.constant(interior_points, dtype=self.DTYPE)
+                X2 = tf.constant(exterior_points, dtype=self.DTYPE)
+
+                X_in = self.create_Dataset_and_Tensor(X1)
+                X_out = self.create_Dataset_and_Tensor(X2)
+
+                X_exp.append((X_in,X_out))
+                
                 for q in q_list:
                     if q.atom_name == 'H' and str(q.res_num) in L_phi:
-                        mesh_length = self.R_exterior*2
-                        mesh_dx = self.dx_experimental
-                        N = int(mesh_length / mesh_dx)
-                        x = np.linspace(q.x_q[0] - mesh_length / 2, q.x_q[0] + mesh_length / 2, num=N)
-                        y = np.linspace(q.x_q[1] - mesh_length / 2, q.x_q[1] + mesh_length / 2, num=N)
-                        z = np.linspace(q.x_q[2] - mesh_length / 2, q.x_q[2] + mesh_length / 2, num=N)
 
-                        X, Y, Z = np.meshgrid(x, y, z)
-                        pos_mesh = np.stack((X.flatten(), Y.flatten(), Z.flatten()), axis=0)
-
-                        for q_check in q_list:
-
-                            x_diff, y_diff, z_diff = q_check.x_q[:, np.newaxis] - pos_mesh
-                            r_q_mesh = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
-
-                            explode_local_index = np.nonzero(r_q_mesh >= q_check.r_explode)[0]
-
-                            pos_mesh = pos_mesh[:, explode_local_index]
-
-                        explode_points = pos_mesh.transpose()
-                        interior_points_bool = self.mesh.contains(explode_points)
-                        interior_points = explode_points[interior_points_bool]
-                        
-                        exterior_points_bool = ~interior_points_bool  
-                        exterior_points = explode_points[exterior_points_bool]
-
-                        exterior_distances = np.linalg.norm(exterior_points, axis=1)
-                        exterior_points = exterior_points[exterior_distances <= self.R_exterior]
-
-                        X1 = tf.constant(interior_points, dtype=self.DTYPE)
-                        X2 = tf.constant(exterior_points, dtype=self.DTYPE)
-
-                        X_in = self.create_Dataset_and_Tensor(X1)
-                        X_out = self.create_Dataset_and_Tensor(X2)
                         phi_ens = tf.constant(L_phi[str(q.res_num)] , dtype=self.DTYPE)
                         xq = tf.reshape(tf.constant(q.x_q, dtype=self.DTYPE), (1,3))
+                        X_exp_values.append((xq,phi_ens))
 
-                        X_exp.append((X_in,X_out,xq,phi_ens))
-
-                        if self.plot:
-                            all_explode_points.append(explode_points[np.linalg.norm(explode_points, axis=1) <= self.R_exterior])
-
+                X_exp.append(X_exp_values)
                 self.domain_mesh_names.add(type_b)
                 self.domain_mesh_data[type_b] = X_exp
 
                 if self.plot:
                     X_plot = dict()
-                    X_plot['Experimental'] = np.concatenate(all_explode_points)
+                    X_plot['Experimental'] = explode_points[np.linalg.norm(explode_points, axis=1) <= self.R_exterior]
                     self.save_data_plot(X_plot)
 
 
