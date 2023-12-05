@@ -193,7 +193,6 @@ class Molecule_Mesh():
 
                 X_exp = list()
                 X_exp_values = list()
-                all_explode_points = list()
 
                 mesh_length = self.R_exterior*2
                 mesh_dx = self.dx_experimental
@@ -236,9 +235,6 @@ class Molecule_Mesh():
                         phi_ens = tf.constant(L_phi[str(q.res_num)] , dtype=self.DTYPE)
                         xq = tf.reshape(tf.constant(q.x_q, dtype=self.DTYPE), (1,3))
                         X_exp_values.append((xq,phi_ens))
-
-                        if self.plot:
-                            all_explode_points.append()
 
                 X_exp.append(X_exp_values)
                 self.domain_mesh_names.add(type_b)
