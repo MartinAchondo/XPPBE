@@ -118,7 +118,7 @@ def main():
         hyperparameters_in = {
                         'input_shape': (None,3),
                         'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 130,
+                        'num_neurons_per_layer': 200,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN'
@@ -127,7 +127,7 @@ def main():
         hyperparameters_out = {
                         'input_shape': (None,3),
                         'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 130,
+                        'num_neurons_per_layer': 200,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN'
