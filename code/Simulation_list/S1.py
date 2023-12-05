@@ -97,6 +97,7 @@ class PDE():
 def main():
 
         sim = PDE()
+        sim.create_simulation()
 
         XPINN_solver = sim.XPINN_solver
 
