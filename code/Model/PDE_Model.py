@@ -108,8 +108,10 @@ class PBE(PDE_utils):
         n = len(X_exp)
 
         s1,s2 = solvers
+        X,X_values = X_exp
+        X_in,X_out = X
 
-        for X_in,X_out,x_q,phi_ens_exp in X_exp:
+        for x_q,phi_ens_exp in X_values:
 
             if X_in != None:
                 C_phi1 = s1.model(X_in) * to_V * C 
@@ -124,13 +126,10 @@ class PBE(PDE_utils):
 
             r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
 
-            # G2_p = G2_p_1 + tf.math.reduce_sum(self.aprox_exp(-C_phi2)/r2**6)
-            # G2_m = G2_m_1 + tf.math.reduce_sum(self.aprox_exp(C_phi2)/r2**6)
-
             G2_p = G2_p_1 + tf.math.reduce_sum(self.aprox_exp(-C_phi2-6*tf.math.log(r2)))
             G2_m = G2_m_1 + tf.math.reduce_sum(self.aprox_exp(C_phi2-6*tf.math.log(r2)))
 
-            phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000 
+            phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000  # to_mV
 
             loss += tf.square(phi_ens_pred - phi_ens_exp)
 
