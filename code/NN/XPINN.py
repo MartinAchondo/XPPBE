@@ -145,7 +145,7 @@ class XPINN(XPINN_utils):
 
     def calculate_G_solv(self):
         G_solv = self.PDE.get_solvation_energy(*self.solvers)
-        self.G_solv_hist[str(self.iter)] = G_solv   
+        self.G_solv_hist[str(self.iter+1)] = G_solv   
 
     def create_optimizers(self, precond=False):
         if self.optimizer_name == 'Adam':

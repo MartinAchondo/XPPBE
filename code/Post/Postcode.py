@@ -37,10 +37,10 @@ class Postprocessing():
         ax.semilogy(range(len(self.XPINN.loss_hist)), self.XPINN.loss_hist,'k-',label='Loss')
         if flag: 
             iter = 1
-            c = [['r','b','g','c','m','lime'],['salmon','royalblue','springgreen','aqua', 'pink','yellowgreen']]
+            c = [['r','b','g','c','m','lime','darkslategrey'],['salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']]
             for NN in self.NN:
                 if not plot_w:
-                    w = {'R': 1.0, 'D': 1.0, 'N': 1.0, 'K': 1.0, 'I': 1.0, 'E': 1.0, 'Q': 1.0}
+                    w = {'R': 1.0, 'D': 1.0, 'N': 1.0, 'K': 1.0, 'I': 1.0, 'E': 1.0, 'Q': 1.0, 'G': 1.0}
                 elif plot_w:
                     w = NN.w_hist
                 meshes_names = NN.Mesh_names
@@ -58,6 +58,8 @@ class Postprocessing():
                     ax.semilogy(range(len(NN.loss_bI)), w['I']*np.array(NN.loss_bI),c[iter-1][4],label=f'Loss_I_{iter}')
                 if 'E' in meshes_names:
                     ax.semilogy(range(len(self.XPINN.loss_exp)), w['E']*np.array(self.XPINN.loss_exp),c[iter-1][5],label=f'Loss_E_{iter}')
+                if 'G' in meshes_names:
+                    ax.semilogy(range(len(NN.loss_G)), w['G']*np.array(NN.loss_G),c[iter-1][6],label=f'Loss_G_{iter}')
                 iter += 1      
         ax.legend()
         ax.set_xlabel('$n: iterations$')
@@ -79,7 +81,7 @@ class Postprocessing():
             ax = fig.add_subplot(111)
 
         iter = 1
-        c = [['r','b','g','c','m','lime'],['salmon','royalblue','springgreen','aqua', 'pink','yellowgreen']]
+        c = [['r','b','g','c','m','lime','darkslategrey'],['salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']]
         for NN in self.NN:
             if True:
                 w = NN.w_hist
@@ -98,6 +100,8 @@ class Postprocessing():
                     ax.semilogy(range(len(w['I'])), w['I'], c[iter-1][4],label=f'w_I_{iter}')
                 if 'E' in meshes_names:
                     ax.semilogy(range(len(w['E'])), w['E'],c[iter-1][5],label=f'w_E_{iter}')
+                if 'G' in meshes_names:
+                    ax.semilogy(range(len(w['G'])), w['G'],c[iter-1][6],label=f'w_G_{iter}')
             iter += 1
         ax.legend()
         ax.set_xlabel('$n: iterations$')

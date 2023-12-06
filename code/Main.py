@@ -89,6 +89,7 @@ class PDE():
                 self.meshes_domain = dict()
                 self.meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
                 self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+                self.meshes_domain['3'] = {'type':'G', 'value':None, 'fun':None}
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
                 self.XPINN_solver = XPINN(PINN)
@@ -109,12 +110,13 @@ def main():
                    'w_n': 1,
                    'w_i': 1,
                    'w_k': 1,
-                   'w_e': 1
+                   'w_e': 1,
+                   'w_g': 1
                   }
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
-                                   adapt_w_iter = 20,
+                                   adapt_w_iter = 100,
                                    adapt_w_method = 'gradients',
                                    alpha = 0.7)             
 
@@ -154,7 +156,7 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 32
+        N_iters = 10
 
         precondition = False
         N_precond = 5
@@ -181,6 +183,8 @@ def main():
         Post.plot_meshes_3D();
         Post.plot_interface_3D(variable='phi')
         Post.plot_interface_3D(variable='dphi')
+        Post.plot_phi_line()
+        Post.plot_phi_contour()
 
 if __name__=='__main__':
         main()

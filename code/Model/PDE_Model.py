@@ -51,14 +51,15 @@ class PBE(PDE_utils):
         for charge in self.q_list:
             for i in range(3):
                 charge.x_q[i] -= self.mesh.centroid[i]
-
-    def get_integral_operators(self):
         n = len(self.q_list)
         self.qs = np.zeros(n)
-        x_qs = np.zeros((n,3))
+        self.x_qs = np.zeros((n,3))
         for i,q in enumerate(self.q_list):
             self.qs[i] = q.q
-            x_qs[i,:] = q.x_q
+            self.x_qs[i,:] = q.x_q
+        self.total_charge = np.sum(self.qs)
+
+    def get_integral_operators(self):
 
         elements = self.mesh.faces
         vertices = self.mesh.verts
@@ -68,8 +69,8 @@ class PBE(PDE_utils):
         self.dirichl_space = self.space
         self.neumann_space = self.space
 
-        self.slp_q = bempp.api.operators.potential.laplace.single_layer(self.neumann_space, x_qs.transpose())
-        self.dlp_q = bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, x_qs.transpose())
+        self.slp_q = bempp.api.operators.potential.laplace.single_layer(self.neumann_space, self.x_qs.transpose())
+        self.dlp_q = bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, self.x_qs.transpose())
 
     def source(self,x,y,z):
         sum = 0
@@ -156,6 +157,27 @@ class PBE(PDE_utils):
         loss *= (1/n)
 
         return loss
+    
+
+    def get_loss_Gauss(self,solvers,XI_data):
+        loss = 0
+        s1,s2 = solvers
+        XI,N_v = XI_data
+        X = s1.mesh.get_X(XI)
+        n_v = s1.mesh.get_X(N_v)
+        du_1 = self.directional_gradient(s1.mesh,s1.model,X,n_v)
+        du_2 = self.directional_gradient(s2.mesh,s2.model,X,n_v)
+        du_prom = (du_1*s1.PDE.epsilon + du_2*s2.PDE.epsilon)/2
+
+        faces = self.mesh.faces
+        areas = self.mesh.areas
+        du_faces = tf.reduce_mean(tf.gather(du_prom, faces), axis=1)
+
+        integral = tf.reduce_sum(du_faces * areas)
+        loss += tf.reduce_mean(tf.square(integral - self.total_charge))
+
+        return loss
+
 
     def get_phi_interface(self,solver,solver_ex):      
         verts = tf.constant(self.mesh.verts)

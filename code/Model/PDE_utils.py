@@ -76,6 +76,8 @@ class PDE_utils():
         if 'E' in self.mesh.domain_mesh_names:
             L['E'] += self.get_loss_experimental(solvers_t,X_domain['E'])
 
+        if 'G' in self.mesh.domain_mesh_names:
+            L['G'] += self.get_loss_Gauss(solvers_t,X_domain['I'])
         return L
 
     def get_loss_preconditioner_PINN(self, X_batches, model):
@@ -100,6 +102,7 @@ class PDE_utils():
         L['K'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['P'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['E'] = tf.constant(0.0, dtype=cls.DTYPE)
+        L['G'] = tf.constant(0.0, dtype=cls.DTYPE)
         return L
     ####################################################################################################################################################
 

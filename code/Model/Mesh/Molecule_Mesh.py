@@ -43,6 +43,9 @@ class Molecule_Mesh():
         self.centroid = np.mean(verts, axis=0)*0
         self.verts = verts - self.centroid
 
+        vertx = self.verts[self.faces]
+        self.areas = np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1) / 2
+
         self.normal = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, 3:6].astype(np.float32)
 
         r = np.sqrt(self.verts[:,0]**2 + self.verts[:,1]**2 + self.verts[:,2]**2)
@@ -171,6 +174,10 @@ class Molecule_Mesh():
                 self.domain_mesh_names.add(type_b)
                 self.domain_mesh_data[type_b] = X_I
                 self.domain_mesh_N[type_b] = len(X)
+            
+            elif type_b in ('G'):
+                self.domain_mesh_names.add(type_b)
+                self.domain_mesh_data[type_b] = None
 
             elif type_b in ('E'):
                 file = bl['file']
@@ -241,7 +248,6 @@ class Molecule_Mesh():
         if len(X) == 0:
             return None
         dataset_X = tf.data.Dataset.from_tensor_slices(X)
-        dataset_X = dataset_X.shuffle(buffer_size=len(X))
         X_batches = dataset_X.batch(int(len(X)))
         return next(iter(X_batches))
 
@@ -259,44 +265,6 @@ class Molecule_Mesh():
         mesh.visual.vertex_colors = [0.0, 0.0, 0.0, 1.0] 
         mesh.visual.face_colors = [1.0, 0.0, 0.0, 0.9]  
         mesh.show()
-
-
-    def plot_mesh_2d(self):
-
-        fig, ax = plt.subplots()
-
-        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.prior_data['R'])
-        plane = np.abs(zm) < 0.5
-        ax.scatter(xm[plane], ym[plane], c='r', marker='.', alpha=0.1)
-
-        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.prior_data['R'])
-        plane = np.abs(zm) < 2
-        ax.scatter(xm[plane], ym[plane], c='g', marker='.', alpha=0.1)
-
-        xm,ym,zm = self.interior_obj.get_X(self.interior_obj.prior_data['I'])
-        plane = np.abs(zm) < 0.1
-        ax.scatter(xm[plane], ym[plane], c='b', marker='.', alpha=0.3)
-
-        xm,ym,zm = self.exterior_obj.get_X(self.exterior_obj.prior_data['D'])
-        plane = np.abs(zm) < 2
-        ax.scatter(xm[plane], ym[plane], c='m', marker='.', alpha=0.1)
-
-        ax.set_xlabel('$x$')
-        ax.set_ylabel('$y$')
-        ax.set_title('Positions of collocation points and boundary data')
-
-        ax.set_xlim([-self.R_exterior,self.R_exterior])
-        ax.set_ylim([-self.R_exterior,self.R_exterior])
-
-        plt.show()
-
-    # only for sample
-    # def generate_complete_charges_dataset(self,q_list):
-    #     X_temp = tf.zeros((0, 3), dtype=self.DTYPE)
-    #     for q in q_list:
-    #         X_in = self.generate_charge_dataset(q.x_q)
-    #         X_temp = tf.concat([X_temp,X_in], axis=0)
-    #     return X_temp
 
 
 if __name__=='__main__':

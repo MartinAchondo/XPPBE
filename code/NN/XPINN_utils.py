@@ -23,12 +23,14 @@ class XPINN_utils():
         self.loss_bI1 = list()
         self.loss_bK1 = list()
         self.loss_bQ = list()
+        self.loss_G1 = list()
 
         self.loss_r2 = list()
         self.loss_bD2 = list()
         self.loss_bN2 = list()
         self.loss_bI2 = list()
         self.loss_bK2 = list()
+        self.loss_G2 = list()
 
         self.loss_exp = list()
         self.loss_P = list()
@@ -82,11 +84,13 @@ class XPINN_utils():
         self.loss_bI1 = list(df['I1'])
         self.loss_bK1 = list(df['K1'])
         self.loss_bQ = list(df['Q'])
+        self.loss_G1 = list(df['G1'])
         self.loss_r2 = list(df['R2'])
         self.loss_bD2 = list(df['D2'])
         self.loss_bN2 = list(df['N2'])
         self.loss_bI2 = list(df['I2'])
         self.loss_bK2 = list(df['K2'])
+        self.loss_G2 = list(df['G2'])
         self.loss_exp = list(df['E'])
         self.loss_P = list(df['P'])
         self.iter = len(self.loss_hist) 
@@ -107,11 +111,13 @@ class XPINN_utils():
                    'K1': list(map(lambda tensor: tensor.numpy(),self.loss_bK1)),
                    'I1': list(map(lambda tensor: tensor.numpy(),self.loss_bI1)),
                    'Q': list(map(lambda tensor: tensor.numpy(),self.loss_bQ)),
+                   'G1': list(map(lambda tensor: tensor.numpy(),self.loss_G1)),
                    'R2': list(map(lambda tensor: tensor.numpy(),self.loss_r2)),
                    'D2': list(map(lambda tensor: tensor.numpy(),self.loss_bD2)),
                    'N2': list(map(lambda tensor: tensor.numpy(),self.loss_bN2)),
                    'K2': list(map(lambda tensor: tensor.numpy(),self.loss_bK2)),
                    'I2': list(map(lambda tensor: tensor.numpy(),self.loss_bI2)),
+                   'G2': list(map(lambda tensor: tensor.numpy(),self.loss_G2)),
                    'E': list(map(lambda tensor: tensor.numpy(),self.loss_exp)),
                    'P': list(map(lambda tensor: tensor.numpy(),self.loss_P))
                 }
@@ -134,42 +140,6 @@ class XPINN_utils():
         X_b2 = self.get_batches_solver(TX_b2)   
         X_d = self.get_batches_domain(TX_d) 
         return X_b1,X_b2,X_d
-
-    #samples
-
-    def get_random_sample(self, dataset, sample_size):
-        shuffled_dataset = dataset.shuffle(buffer_size=int(dataset.cardinality().numpy())) # work with numpy  
-        random_sample = shuffled_dataset.take(sample_size) # numpy
-        sample_batch = random_sample.batch(batch_size=sample_size) #tensor
-        return next(iter(sample_batch))
-    
-    def get_samples_solver(self):
-        L_X_generators = list()
-        for set_batches in self.L_X_solvers:
-            L = dict()
-            for t in set_batches:
-                if t == 'Q':
-                    X = self.mesh.generate_complete_charges_dataset(self.PDE.q_list)
-                    SU = self.PDE.source(*self.mesh.interior_obj.get_X(X))
-                    L[t] = (X,SU)
-                else:
-                    dataset = set_batches[t]
-                    L[t] = self.get_random_sample(dataset, self.sample_size)
-            L_X_generators.append(L)
-        return L_X_generators
-    
-    def get_sample_domain(self):
-        L = dict()
-        for t in self.L_X_domain:
-            if t in ('E'):
-                L[t] = self.L_X_domain[t]
-            elif t in ('I'):
-                dataset = self.L_X_domain[t]
-                L[t] = self.get_random_sample(dataset, self.sample_size)
-        return L
-
-
-    #batches
 
     def create_batches(self, dataset, num_batches=1):
         batch_size = int(dataset.cardinality().numpy()/num_batches)
@@ -199,10 +169,7 @@ class XPINN_utils():
         for set_batches in self.L_X_solvers:
             L = dict()
             for t in set_batches:
-                if shuffle:
-                    new_dataset = set_batches[t].shuffle(buffer_size=int(set_batches[t].cardinality().numpy()))
-                elif not shuffle:
-                    new_dataset = set_batches[t]
+                new_dataset = set_batches[t]
                 L[t] = generator(self.create_batches(new_dataset,self.N_batches))
             L_X_generators.append(L)
         return L_X_generators
@@ -225,10 +192,7 @@ class XPINN_utils():
             if t in ('E'):
                 L[t] = self.L_X_domain[t]
             elif t in ('I'):
-                if shuffle:
-                    new_dataset = self.L_X_domain[t].shuffle(buffer_size=int(self.L_X_domain[t].cardinality().numpy()))
-                elif not shuffle:
-                    new_dataset = self.L_X_domain[t]
+                new_dataset = self.L_X_domain[t]
                 L[t] = generator(self.create_batches(new_dataset,self.N_batches))
         return L
 
@@ -248,7 +212,7 @@ class XPINN_utils():
     def checkers_iterations(self):
 
         # solvation energy
-        if self.iter%self.G_solv_iter==0 and self.iter>1:
+        if (self.iter+1)%self.G_solv_iter==0 and self.iter>1:
             self.calculate_G_solv()
 
         # shuffle batches
@@ -293,12 +257,14 @@ class XPINN_utils():
         self.loss_bI1.append(L1[1]['I'])
         self.loss_bK1.append(L1[1]['K'])
         self.loss_bQ.append(L1[1]['Q'])
+        self.loss_G1.append(L1[1]['G'])
 
         self.loss_r2.append(L2[1]['R'])
         self.loss_bD2.append(L2[1]['D'])
         self.loss_bN2.append(L2[1]['N'])
         self.loss_bI2.append(L2[1]['I'])
         self.loss_bK2.append(L2[1]['K'])
+        self.loss_G2.append(L2[1]['G'])
 
         self.loss_exp.append(L1[1]['E'])
         self.loss_P.append(L1[1]['P']+L2[1]['P'])
@@ -343,10 +309,12 @@ class XPINN_utils():
         self.solver1.loss_bI = self.loss_bI1
         self.solver1.loss_bK = self.loss_bK1
         self.solver1.loss_bQ = self.loss_bQ
+        self.solver1.loss_G = self.loss_G1
 
         self.solver2.loss_r = self.loss_r2
         self.solver2.loss_bD = self.loss_bD2
         self.solver2.loss_bN = self.loss_bN2
         self.solver2.loss_bI = self.loss_bI2
         self.solver2.loss_bK = self.loss_bK2
+        self.solver2.loss_G = self.loss_G2
 

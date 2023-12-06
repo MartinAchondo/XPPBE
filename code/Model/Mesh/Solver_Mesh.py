@@ -120,14 +120,10 @@ class Solver_Mesh():
     
     def create_Dataset(cls,X):
         dataset_X = tf.data.Dataset.from_tensor_slices(X)
-        dataset_X = dataset_X.shuffle(buffer_size=len(X))
-        #X_batches = dataset_X.batch(int(len(X)/cls.N_batches))
         return dataset_X
 
     def create_Datasets(cls, X, Y):
         dataset_XY = tf.data.Dataset.from_tensor_slices((X, Y))
-        dataset_XY = dataset_XY.shuffle(buffer_size=len(X))
-        #XY_batches = dataset_XY.batch(int(len(X)/cls.N_batches))
         return dataset_XY
     
     def value_u_b(self,x, y, z, value):

@@ -6,7 +6,7 @@ import os
 mesh = trimesh.creation.uv_sphere(radius=1.0, count=[70, 70])
 
 vertices = mesh.vertices
-faces = mesh.faces
+faces = mesh.faces + 1
 vertex_normals = vertices / np.linalg.norm(vertices, axis=1)[:, np.newaxis]
 
 # mesh.show()
