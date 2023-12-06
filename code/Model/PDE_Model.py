@@ -185,11 +185,11 @@ class PBE(PDE_utils):
         return G_solv   
 
     def analytic_Born_Ion(self,r):
-        rI = 1
+        rI = self.mesh.R_mol
         epsilon_1 = self.epsilon_1
         epsilon_2 = self.epsilon_2
         kappa = self.kappa
-        q = 1.0
+        q = self.q_list[0].q
 
         f_IN = lambda r: (q/(4*self.pi)) * ( 1/(epsilon_1*r) - 1/(epsilon_1*rI) + 1/(epsilon_2*(1+kappa*rI)*rI) )
         f_OUT = lambda r: (q/(4*self.pi)) * (np.exp(-kappa*(r-rI))/(epsilon_2*(1+kappa*rI)*r))

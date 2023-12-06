@@ -33,6 +33,8 @@ class XPINN_utils():
         self.loss_exp = list()
         self.loss_P = list()
 
+        self.G_solv_hist = dict()
+
         self.iter = 0
         self.lr = None
 
@@ -90,6 +92,10 @@ class XPINN_utils():
         self.iter = len(self.loss_hist) 
         self.add_losses_NN()
 
+        path_load = os.path.join(dir_load,'G_solv.csv')
+        df_2 = pd.read_csv(path_load)
+        for iters,G_solv in zip(list(df_2['iter']),list(df_2['G_solv'])):
+            self.G_solv_hist[str(iters)] = G_solv
 
     def save_models(self,dir_save,names):
         for solver,name in zip(self.solvers,names):
@@ -112,7 +118,11 @@ class XPINN_utils():
         df = pd.DataFrame.from_dict(df_dict)
         path_save = os.path.join(dir_save,'loss.csv')
         df.to_csv(path_save)
-        
+
+        df_2 = pd.DataFrame(self.G_solv_hist.items())
+        df_2.columns = ['iter','G_solv']
+        path_save = os.path.join(dir_save,'G_solv.csv')
+        df_2.to_csv(path_save)        
 
     ######################################################
 
@@ -237,6 +247,10 @@ class XPINN_utils():
 
     def checkers_iterations(self):
         # shuffle batches
+
+        if self.iter%self.G_solv_iter==0 and self.iter>1:
+            self.calculate_G_solv()
+
         if self.shuffle and self.iter%self.shuffle_iter==0 and self.iter>1:
             self.shuffle_now = True
         else:

@@ -141,8 +141,11 @@ class XPINN(XPINN_utils):
         for t in solver.Mesh_names:
             eps = 1e-9
             w = float(loss_wo_w/(L[t]+eps))
-            solver.w[t] = self.alpha_w*solver.w[t] + (1-self.alpha_w)*w     
+            solver.w[t] = self.alpha_w*solver.w[t] + (1-self.alpha_w)*w  
 
+    def calculate_G_solv(self):
+        G_solv = self.PDE.get_solvation_energy(*self.solvers)
+        self.G_solv_hist[str(self.iter)] = G_solv   
 
     def create_optimizers(self, precond=False):
         if self.optimizer_name == 'Adam':
@@ -158,11 +161,12 @@ class XPINN(XPINN_utils):
                 return optimizers_p
 
 
-    def solve(self,N=1000, precond=False, N_precond=10, save_model=0, shuffle=True, shuffle_iter = 500):
+    def solve(self,N=1000, precond=False, N_precond=10, save_model=0, G_solve_iter=100,shuffle=False, shuffle_iter=500):
 
         self.precondition = precond
         self.save_model_iter = save_model if save_model != 0 else N
 
+        self.G_solv_iter = G_solve_iter
         self.shuffle = shuffle
         self.shuffle_iter = shuffle_iter 
 

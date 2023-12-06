@@ -57,12 +57,13 @@ class PDE():
                                 'G_sigma': 0.04
                                 }
 
-        def create_simuation(self):
+        def create_simulation(self):
 
                 self.Mol_mesh = Molecule_Mesh(self.inputs['molecule'], 
                                 N_points=self.N_points, 
                                 plot=True,
-                                path=main_path
+                                path=main_path,
+                                simulation=simulation_name
                                 )
         
                 self.PBE_model = PBE(self.inputs,
@@ -114,7 +115,7 @@ def main():
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
-                                   adapt_w_iter = 10,
+                                   adapt_w_iter = 60,
                                    adapt_w_method = 'gradients',
                                    alpha = 0.7)             
 
@@ -154,7 +155,7 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 100
+        N_iters = 32
 
         precondition = False
         N_precond = 5
@@ -166,6 +167,7 @@ def main():
                         precond = precondition, 
                         N_precond = N_precond,  
                         save_model = iters_save_model, 
+                        G_solve_iter=10,
                         shuffle = False, 
                         shuffle_iter = 7 )
 

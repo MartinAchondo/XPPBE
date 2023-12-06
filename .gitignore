@@ -45,3 +45,5 @@ code/pbj/*/
 !code/pbj/*.ipynb
 
 /.notes
+
+code/Post/Plot3d

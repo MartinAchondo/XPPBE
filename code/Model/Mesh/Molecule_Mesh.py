@@ -14,13 +14,14 @@ class Molecule_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, N_points, plot=False, path=''):
+    def __init__(self, molecule, N_points, plot=False, path='', simulation='Main'):
 
         for key, value in N_points.items():
             setattr(self, key, value)
         self.molecule = molecule
         self.plot = plot
         self.main_path = path
+        self.simulation_name = simulation
 
         self.read_create_meshes(Solver_Mesh)
 
@@ -150,7 +151,7 @@ class Molecule_Mesh():
         
         r = sigma * tf.sqrt(tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=1))
         theta = tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=2 * np.pi)
-        phi = tf.acos(2 * tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=1) - 1)
+        phi = tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=np.pi)
 
         x_random = x_q[0] + r * tf.sin(phi) * tf.cos(theta)
         y_random = x_q[1] + r * tf.sin(phi) * tf.sin(theta)
@@ -160,14 +161,6 @@ class Molecule_Mesh():
 
         return X_in
     
-    def generate_complete_charges_dataset(self,q_list):
-        X_temp = tf.zeros((0, 3), dtype=self.DTYPE)
-        for q in q_list:
-            X_in = self.generate_charge_dataset(q.x_q)
-            X_temp = tf.concat([X_temp,X_in], axis=0)
-        return X_temp
-
-
     def adapt_meshes_domain(self,data,q_list):
         
         for bl in data.values():
@@ -255,7 +248,7 @@ class Molecule_Mesh():
         return next(iter(X_batches))
 
     def save_data_plot(self,X_plot):
-        path_files = os.path.join(self.main_path,'Post','Plot3d','data')
+        path_files = os.path.join(self.main_path,'results',self.simulation_name,'mesh')
         os.makedirs(path_files, exist_ok=True)
 
         for subset_name, subset_data in X_plot.items():
@@ -298,6 +291,14 @@ class Molecule_Mesh():
         ax.set_ylim([-self.R_exterior,self.R_exterior])
 
         plt.show()
+
+    # only for sample
+    # def generate_complete_charges_dataset(self,q_list):
+    #     X_temp = tf.zeros((0, 3), dtype=self.DTYPE)
+    #     for q in q_list:
+    #         X_in = self.generate_charge_dataset(q.x_q)
+    #         X_temp = tf.concat([X_temp,X_in], axis=0)
+    #     return X_temp
 
 
 if __name__=='__main__':
