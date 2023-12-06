@@ -111,13 +111,13 @@ class Molecule_Mesh():
         exterior_points = exterior_points[exterior_distances <= self.R_exterior]
 
         r_bl = np.linspace(self.R_exterior, self.R_exterior, self.N_border, dtype=self.DTYPE)
-        theta_bl = np.linspace(0, self.pi, self.N_border, dtype=self.DTYPE)
-        phi_bl = np.linspace(0, 2*self.pi, self.N_border, dtype=self.DTYPE)
+        theta_bl = np.linspace(0, 2*self.pi, self.N_border, dtype=self.DTYPE)
+        phi_bl = np.linspace(0, self.pi, self.N_border, dtype=self.DTYPE)
         
         R_bl, Theta_bl, Phi_bl = np.meshgrid(r_bl, theta_bl, phi_bl)
-        X_bl = R_bl*np.sin(Theta_bl)*np.cos(Phi_bl)
-        Y_bl = R_bl*np.sin(Theta_bl)*np.sin(Phi_bl)
-        Z_bl = R_bl*np.cos(Theta_bl)
+        X_bl = R_bl*np.sin(Phi_bl)*np.cos(Theta_bl)
+        Y_bl = R_bl*np.sin(Phi_bl)*np.sin(Theta_bl)
+        Z_bl = R_bl*np.cos(Phi_bl)
         
         x_bl = tf.constant(X_bl.flatten())
         x_bl = tf.reshape(x_bl,[x_bl.shape[0],1])
@@ -146,21 +146,19 @@ class Molecule_Mesh():
     def generate_charge_dataset(self,x_q):            
     
         x_q_tensor = tf.constant(x_q, dtype=self.DTYPE)
-
         sigma = 0.5*0.2
-        
         r = sigma * tf.sqrt(tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=1))
-        theta = tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=2 * np.pi)
+        theta = tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=2*np.pi)
         phi = tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=np.pi)
 
         x_random = x_q[0] + r * tf.sin(phi) * tf.cos(theta)
         y_random = x_q[1] + r * tf.sin(phi) * tf.sin(theta)
         z_random = x_q[2] + r * tf.cos(phi)
-
         X_in = tf.concat([tf.reshape(x_q_tensor,[1,3]), tf.stack([x_random, y_random, z_random], axis=-1)], axis=0)
 
         return X_in
     
+
     def adapt_meshes_domain(self,data,q_list):
         
         for bl in data.values():

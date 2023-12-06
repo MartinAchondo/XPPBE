@@ -246,11 +246,12 @@ class XPINN_utils():
 
 
     def checkers_iterations(self):
-        # shuffle batches
 
+        # solvation energy
         if self.iter%self.G_solv_iter==0 and self.iter>1:
             self.calculate_G_solv()
 
+        # shuffle batches
         if self.shuffle and self.iter%self.shuffle_iter==0 and self.iter>1:
             self.shuffle_now = True
         else:

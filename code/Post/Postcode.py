@@ -40,15 +40,7 @@ class Postprocessing():
             c = [['r','b','g','c','m','lime'],['salmon','royalblue','springgreen','aqua', 'pink','yellowgreen']]
             for NN in self.NN:
                 if not plot_w:
-                    w = {
-                    'R': 1.0,
-                    'D': 1.0,
-                    'N': 1.0,
-                    'K': 1.0,
-                    'I': 1.0,
-                    'E': 1.0,
-                    'Q': 1.0
-                    }
+                    w = {'R': 1.0, 'D': 1.0, 'N': 1.0, 'K': 1.0, 'I': 1.0, 'E': 1.0, 'Q': 1.0}
                 elif plot_w:
                     w = NN.w_hist
                 meshes_names = NN.Mesh_names
@@ -140,6 +132,7 @@ class Postprocessing():
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
 
+
     def plot_meshes_3D(self):
 
         color_dict = {
@@ -193,6 +186,126 @@ class Postprocessing():
         fig.write_html(os.path.join(self.directory, f'Interface_{variable}.html'))
 
 
+    def plot_phi_line(self, N=100, x0=np.array([0,0,0]), theta=0, phi=0):
+
+        r = np.linspace(-self.mesh.R_exterior,self.R_exterior,N)
+        x = x0[0] + r * tf.sin(phi) * tf.cos(theta)
+        y = x0[1] + r * tf.sin(phi) * tf.sin(theta)
+        z = x0[2] + r * tf.cos(phi)
+        X = tf.stack([x, y, z], axis=-1)
+
+
+    def plot_phi_line(self, N=100, x0=np.array([0,0,0]), theta=0, phi=np.pi/2):
+        fig, ax = plt.subplots()
+        
+        r = np.linspace(-self.mesh.R_exterior,self.mesh.R_exterior,N)
+        x = x0[0] + r * np.sin(phi) * np.cos(theta)
+        y = x0[1] + r * np.sin(phi) * np.sin(theta)
+        z = x0[2] + r * np.cos(phi)
+        points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
+        X_in,X_out,_ = self.get_interior_exterior(points)
+        
+        u_in = self.XPINN.solver1.model(tf.constant(X_in))
+        u_out = self.XPINN.solver2.model(tf.constant(X_out))
+
+        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
+        r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+        n = np.argmin(r_in)
+        r_in[:n] = -r_in[:n]
+
+        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
+        r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+        n = np.argmin(r_out)
+        r_out_1 = -r_out[:n]
+        r_out_2 = r_out[n:]
+
+        ax.plot(r_in,u_in[:,0], label='Solute', c='r')
+        ax.plot(r_out_1,u_out[:n,0], label='Solvent', c='b')
+        ax.plot(r_out_2,u_out[n:,0], c='b')
+        
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+        text_l = r'$\phi_{\theta}$'
+        text_theta = r'$\theta$'
+        text_phi = r'$\phi$'
+        theta = np.format_float_positional(theta, unique=False, precision=2)
+        phi = np.format_float_positional(phi, unique=False, precision=2)
+        text_x0 = r'$x_0$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters};  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
+        ax.grid()
+        ax.legend()
+
+        if self.save:
+            path = 'solution.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+
+
+    def plot_phi_contour(self, N=100, x0=np.array([0,0,0]), n=np.array([1,0,0])):
+        
+        fig,ax = plt.subplots()
+        n = n/np.linalg.norm(n)
+        if np.all(n == np.array([0,0,1])):
+            u = np.array([1,0,0])
+        else:
+            u = np.array([np.copysign(n[2],n[0]),
+                        np.copysign(n[2],n[1]),
+                        -np.copysign(np.abs(n[0])+np.abs(n[1]),n[2])])
+        u = u/np.linalg.norm(u)
+        v = np.cross(n,u)
+        v = v/np.linalg.norm(v)
+    
+        R_exterior = self.mesh.R_mol+self.mesh.dR_exterior/2
+        t = np.linspace(-R_exterior,R_exterior,N)
+        s = np.linspace(-R_exterior,R_exterior,N)
+        T,S = np.meshgrid(t,s)
+        x = x0[0] + T*u[0] + S*v[0]
+        y = x0[1] + T*u[1] + S*v[1]
+        z = x0[2] + T*u[2] + S*v[2]
+        points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
+        X_in,X_out,bools = self.get_interior_exterior(points,R_exterior)
+
+        u_in = self.XPINN.solver1.model(tf.constant(X_in))
+        u_out = self.XPINN.solver2.model(tf.constant(X_out))
+
+        vmax,vmin = self.get_max_min(u_in,u_out)
+        s = ax.scatter(T.ravel()[bools[0]], S.ravel()[bools[0]], c=u_in[:,0],vmin=vmin,vmax=vmax)
+        s = ax.scatter(T.ravel()[bools[1]], S.ravel()[bools[1]], c=u_out[:,0],vmin=vmin,vmax=vmax)
+
+        fig.colorbar(s, ax=ax)
+        ax.set_xlabel(r'$u$')
+        ax.set_ylabel(r'$v$')
+        text_l = r'$\phi_{\theta}$'
+        text_n = r'$n$'
+        text_x0 = r'$x_0$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters};  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_n}=[{np.format_float_positional(n[0], unique=False, precision=2)},{np.format_float_positional(n[1], unique=False, precision=2)},{np.format_float_positional(n[2], unique=False, precision=2)}])')
+        ax.grid()
+        ax.legend()
+
+        if self.save:
+            path = 'contour.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+
+
+    def get_max_min(self,u1,u2):
+        U = tf.concat([u1,u2], axis=0)
+        vmax = tf.reduce_max(U)
+        vmin = tf.reduce_min(U)
+        return vmax,vmin
+
+    def get_interior_exterior(self,points,R_exterior=None):
+        if R_exterior==None:
+            R_exterior = self.mesh.R_exterior
+        interior_points_bool = self.mesh.mesh.contains(points)
+        interior_points = points[interior_points_bool]
+        exterior_points_bool = ~interior_points_bool  
+        exterior_points = points[exterior_points_bool]
+        exterior_distances = np.linalg.norm(exterior_points, axis=1)
+        exterior_points = exterior_points[exterior_distances <= R_exterior]
+        bool_2 = np.linalg.norm(points, axis=1) <= R_exterior*exterior_points_bool
+        bools = (interior_points_bool,bool_2)
+        return interior_points,exterior_points, bools
 
 
 class Born_Ion_Post(Postprocessing):

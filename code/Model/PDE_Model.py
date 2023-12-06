@@ -35,6 +35,7 @@ class PBE(PDE_utils):
         self.PDE_out.mesh = self.mesh.exterior_obj
 
         self.get_charges()
+        self.get_integral_operators()
 
         super().__init__()
 
@@ -50,6 +51,25 @@ class PBE(PDE_utils):
         for charge in self.q_list:
             for i in range(3):
                 charge.x_q[i] -= self.mesh.centroid[i]
+
+    def get_integral_operators(self):
+        n = len(self.q_list)
+        self.qs = np.zeros(n)
+        x_qs = np.zeros((n,3))
+        for i,q in enumerate(self.q_list):
+            self.qs[i] = q.q
+            x_qs[i,:] = q.x_q
+
+        elements = self.mesh.faces
+        vertices = self.mesh.verts
+        self.grid = bempp.api.Grid(vertices.transpose(), elements.transpose())
+
+        self.space = bempp.api.function_space(self.grid, "P", 1)
+        self.dirichl_space = self.space
+        self.neumann_space = self.space
+
+        self.slp_q = bempp.api.operators.potential.laplace.single_layer(self.neumann_space, x_qs.transpose())
+        self.dlp_q = bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, x_qs.transpose())
 
     def source(self,x,y,z):
         sum = 0
@@ -155,32 +175,14 @@ class PBE(PDE_utils):
     
     def get_solvation_energy(self,solver,solver_ex):
 
-        n = len(self.q_list)
-        qs = np.zeros(n)
-        x_qs = np.zeros((n,3))
-        for i,q in enumerate(self.q_list):
-            qs[i] = q.q
-            x_qs[i,:] = q.x_q
-
-        elements = self.mesh.faces
-        vertices = self.mesh.verts
-        grid = bempp.api.Grid(vertices.transpose(), elements.transpose())
-
-        space = bempp.api.function_space(grid, "P", 1)
-        dirichl_space = space
-        neumann_space = space
-
-        slp_q = bempp.api.operators.potential.laplace.single_layer(neumann_space, x_qs.transpose())
-        dlp_q = bempp.api.operators.potential.laplace.double_layer(dirichl_space, x_qs.transpose())
-
         u_values = self.get_phi_interface(solver,solver_ex).flatten()
         du_values = self.get_dphi_interface(solver,solver_ex).flatten()
         
-        phi = bempp.api.GridFunction(space, coefficients=u_values)
-        dphi = bempp.api.GridFunction(space, coefficients=du_values)
+        phi = bempp.api.GridFunction(self.space, coefficients=u_values)
+        dphi = bempp.api.GridFunction(self.space, coefficients=du_values)
 
-        phi_q = slp_q * dphi - dlp_q * phi
-        G_solv = 2 * np.pi * 332.064 * np.sum(qs * phi_q).real  # kcal/kmol
+        phi_q = self.slp_q * dphi - self.dlp_q * phi
+        G_solv = 2 * np.pi * 332.064 * np.sum(self.qs * phi_q).real  # kcal/kmol
 
         return G_solv   
 

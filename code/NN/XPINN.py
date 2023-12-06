@@ -161,7 +161,7 @@ class XPINN(XPINN_utils):
                 return optimizers_p
 
 
-    def solve(self,N=1000, precond=False, N_precond=10, save_model=0, G_solve_iter=100,shuffle=False, shuffle_iter=500):
+    def solve(self,N=1000, precond=False, N_precond=10, save_model=0, G_solve_iter=100, shuffle=False, shuffle_iter=500):
 
         self.precondition = precond
         self.save_model_iter = save_model if save_model != 0 else N
