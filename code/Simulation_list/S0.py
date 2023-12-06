@@ -12,8 +12,7 @@ from Model.PDE_Model import PBE
 from NN.NeuralNet_Fourier import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
-from Post.Postprocessing import View_results
-from Post.Postprocessing import View_results_X
+from Post.Postcode import Postprocessing
 
 
 simulation_name = os.path.basename(os.path.abspath(__file__)).replace('.py','')
@@ -168,17 +167,16 @@ def main():
                         shuffle_iter = 7 )
 
 
-        Post = View_results_X(XPINN_solver, View_results, save=True, directory=folder_path)
+        Post = Postprocessing(XPINN_solver, save=True, directory=folder_path)
 
         Post.plot_loss_history();
         Post.plot_loss_history(plot_w=True);
         Post.plot_weights_history();
 
-        Post.plot_u_plane();
-        Post.plot_aprox_analytic();
-        Post.plot_interface();
-
-        # Post.plot_u_domain_contour();
+        Post.plot_G_solv_history();
+        Post.plot_meshes_3D();
+        Post.plot_interface_3D(variable='phi')
+        Post.plot_interface_3D(variable='dphi')
 
 
 if __name__=='__main__':

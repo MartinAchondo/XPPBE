@@ -12,8 +12,7 @@ from Model.PDE_Model import PBE
 from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
-from Post.Postprocessing import View_results
-from Post.Postprocessing import View_results_X
+from Post.Postcode import Postprocessing
 
 
 simulation_name = os.path.basename(os.path.abspath(__file__)).replace('.py','')
@@ -100,7 +99,7 @@ class PDE():
 def main():
 
         sim = PDE()
-        sim.create_simuation()
+        sim.create_simulation()
 
         XPINN_solver = sim.XPINN_solver
 
@@ -115,7 +114,7 @@ def main():
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
-                                   adapt_w_iter = 60,
+                                   adapt_w_iter = 20,
                                    adapt_w_method = 'gradients',
                                    alpha = 0.7)             
 
@@ -172,18 +171,16 @@ def main():
                         shuffle_iter = 7 )
 
 
-        Post = View_results_X(XPINN_solver, View_results, save=True, directory=folder_path)
+        Post = Postprocessing(XPINN_solver, save=True, directory=folder_path)
 
         Post.plot_loss_history();
         Post.plot_loss_history(plot_w=True);
         Post.plot_weights_history();
 
-        Post.plot_u_plane();
-        Post.plot_aprox_analytic();
-        Post.plot_interface();
-
-        # Post.plot_u_domain_contour();
-
+        Post.plot_G_solv_history();
+        Post.plot_meshes_3D();
+        Post.plot_interface_3D(variable='phi')
+        Post.plot_interface_3D(variable='dphi')
 
 if __name__=='__main__':
         main()
