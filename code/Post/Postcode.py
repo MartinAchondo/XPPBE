@@ -310,6 +310,26 @@ class Postprocessing():
         bool_2 = np.linalg.norm(points, axis=1) <= R_exterior*exterior_points_bool
         bools = (interior_points_bool,bool_2)
         return interior_points,exterior_points, bools
+    
+
+    def plot_architecture(self,domain=1):
+        
+        input_layer = tf.keras.layers.Input(shape=self.XPINN.solvers[domain].model.input_shape_N[1:], name='input')
+        visual_model = tf.keras.models.Model(inputs=input_layer, outputs=self.XPINN.solvers[domain].model.call(input_layer))
+
+        if self.save:
+            path = f'model_architecture_{domain}.png'
+            path_save = os.path.join(self.directory,path)
+
+            tf.keras.utils.plot_model(visual_model, to_file=path_save,
+                                        show_shapes=True,
+                                        show_dtype=False,
+                                        show_layer_names=True,
+                                        expand_nested=True,
+                                        show_layer_activations=True,
+                                        dpi = 150)
+        
+        self.XPINN.solvers[domain].model.build_Net()
 
 
 class Born_Ion_Post(Postprocessing):

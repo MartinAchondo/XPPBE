@@ -126,7 +126,8 @@ def main():
                         'num_neurons_per_layer': 20,
                         'output_dim': 1,
                         'activation': 'tanh',
-                        'architecture_Net': 'FCNN'
+                        'architecture_Net': 'FCNN',
+                        'fourier_features': True
                 }
 
         hyperparameters_out = {
@@ -135,7 +136,8 @@ def main():
                         'num_neurons_per_layer': 20,
                         'output_dim': 1,
                         'activation': 'tanh',
-                        'architecture_Net': 'FCNN'
+                        'architecture_Net': 'FCNN',
+                        'fourier_features': False
                 }
 
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
@@ -185,6 +187,9 @@ def main():
         Post.plot_interface_3D(variable='dphi')
         Post.plot_phi_line()
         Post.plot_phi_contour()
+        
+        Post.plot_architecture(0)
+        Post.plot_architecture(1)
 
 if __name__=='__main__':
         main()
