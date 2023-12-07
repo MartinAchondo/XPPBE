@@ -57,9 +57,6 @@ class Solver_Mesh():
                 else:
                     file = bl['file']
                     X,U = self.read_file_data(file)
-                    #if type_b=='K' or type_b=='P':    # Sacar despues (solo pruebas)
-                    #    U = U*self.add_noise(U)
-                    #    print(type_b)
                 self.solver_mesh_data[type_b] = self.create_Datasets(X,U)
 
             self.solver_mesh_names.add(type_b)
@@ -69,13 +66,6 @@ class Solver_Mesh():
                 self.solver_mesh_N[type_b] = len(X)
             
         del self.prior_data
-
-    def add_noise(self,x):      # Sacar despues (solo pruebas)
-        n = x.shape[0]
-        mu, sigma = 1, 0.08 
-        s = np.array(np.random.default_rng().normal(mu, sigma, n), dtype='float32')
-        s = tf.reshape(s,[n,1])
-        return s
 
     def read_file_data(self,file):
         x_b, y_b, z_b, phi_b = list(), list(), list(), list()

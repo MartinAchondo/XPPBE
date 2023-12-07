@@ -116,7 +116,7 @@ def main():
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
-                                   adapt_w_iter = 100,
+                                   adapt_w_iter = 3,
                                    adapt_w_method = 'gradients',
                                    alpha = 0.7)             
 
@@ -127,7 +127,8 @@ def main():
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN',
-                        'fourier_features': True
+                        'fourier_features': True,
+                        'num_fourier_features': 128
                 }
 
         hyperparameters_out = {
@@ -177,20 +178,23 @@ def main():
 
         Post = Postprocessing(XPINN_solver, save=True, directory=folder_path)
 
-        Post.plot_loss_history();
-        Post.plot_loss_history(plot_w=True);
-        Post.plot_weights_history();
+        Post.plot_loss_history(domain=1);
+        Post.plot_loss_history(domain=2);
+        Post.plot_loss_history(domain=1, plot_w=True);
+        Post.plot_loss_history(domain=2, plot_w=True);
+        Post.plot_weights_history(domain=1);
+        Post.plot_weights_history(domain=2);
 
         Post.plot_G_solv_history();
         Post.plot_meshes_3D();
-        Post.plot_interface_3D(variable='phi')
-        Post.plot_interface_3D(variable='dphi')
-        Post.plot_phi_line()
-        Post.plot_phi_contour()
-        Post.save_values_file()
+        Post.plot_interface_3D(variable='phi');
+        Post.plot_interface_3D(variable='dphi');
+        Post.plot_phi_line();
+        Post.plot_phi_contour();
+        Post.save_values_file();
         
-        Post.plot_architecture(0)
-        Post.plot_architecture(1)
+        Post.plot_architecture(domain=1);
+        Post.plot_architecture(domain=2);
 
 if __name__=='__main__':
         main()

@@ -96,24 +96,26 @@ class PBE(PDE_utils):
         return (1/(4*self.pi*self.epsilon_2))*sum
 
 
-    def get_loss_I(self,solver,solver_ex,XI_data):
-        loss = 0
+    def get_loss_I(self,solver,solver_ex,XI_data,parts=[True,True]):
         
+        loss = 0
         XI,N_v = XI_data
         X = solver.mesh.get_X(XI)
 
-        u_1 = solver.model(XI)
-        u_2 = solver_ex.model(XI)
+        if parts[0]:
+            u_1 = solver.model(XI)
+            u_2 = solver_ex.model(XI)
+            u_prom = (u_1+u_2)/2
 
-        n_v = solver.mesh.get_X(N_v)
-        du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
-        du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
+            loss += tf.reduce_mean(tf.square(u_1 - u_prom)) 
 
-        u_prom = (u_1+u_2)/2
-        du_prom = (du_1*solver.PDE.epsilon + du_2*solver_ex.PDE.epsilon)/2
-        
-        loss += tf.reduce_mean(tf.square(u_1 - u_prom)) 
-        loss += tf.reduce_mean(tf.square(du_1*solver.PDE.epsilon - du_prom))
+        if parts[1]:
+            n_v = solver.mesh.get_X(N_v)
+            du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
+            du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
+            du_prom = (du_1*solver.PDE.epsilon + du_2*solver_ex.PDE.epsilon)/2
+            
+            loss += tf.reduce_mean(tf.square(du_1*solver.PDE.epsilon - du_prom))
             
         return loss
     

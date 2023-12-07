@@ -70,8 +70,9 @@ class PDE_utils():
     def get_loss_XPINN(self,solvers_t,solvers_i,X_domain):
         L = self.create_L()
 
-        if 'I' in self.mesh.domain_mesh_names:
-            L['I'] += self.get_loss_I(solvers_i[0],solvers_i[1],X_domain['I'])
+        if 'Iu' and 'Id' in self.mesh.domain_mesh_names:
+            L['Iu'] += self.get_loss_I(solvers_i[0],solvers_i[1],X_domain['I'], [True,False])
+            L['Id'] += self.get_loss_I(solvers_i[0],solvers_i[1],X_domain['I'], [False,True])
 
         if 'E' in self.mesh.domain_mesh_names:
             L['E'] += self.get_loss_experimental(solvers_t,X_domain['E'])
@@ -98,6 +99,8 @@ class PDE_utils():
         L['D'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['N'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['I'] = tf.constant(0.0, dtype=cls.DTYPE)
+        L['Iu'] = tf.constant(0.0, dtype=cls.DTYPE)
+        L['Id'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['Q'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['K'] = tf.constant(0.0, dtype=cls.DTYPE)
         L['P'] = tf.constant(0.0, dtype=cls.DTYPE)

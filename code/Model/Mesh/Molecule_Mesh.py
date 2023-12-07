@@ -171,7 +171,8 @@ class Molecule_Mesh():
                 N = self.normal
                 X = tf.constant(self.verts, dtype=self.DTYPE)
                 X_I = self.interior_obj.create_Datasets(X, N)
-                self.domain_mesh_names.add(type_b)
+                self.domain_mesh_names.add('Iu')
+                self.domain_mesh_names.add('Id')
                 self.domain_mesh_data[type_b] = X_I
                 self.domain_mesh_N[type_b] = len(X)
             

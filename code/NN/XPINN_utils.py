@@ -20,18 +20,17 @@ class XPINN_utils():
         self.loss_r1 = list()
         self.loss_bD1 = list()
         self.loss_bN1 = list()
-        self.loss_bI1 = list()
         self.loss_bK1 = list()
         self.loss_bQ = list()
-        self.loss_G1 = list()
 
         self.loss_r2 = list()
         self.loss_bD2 = list()
         self.loss_bN2 = list()
-        self.loss_bI2 = list()
         self.loss_bK2 = list()
-        self.loss_G2 = list()
-
+        
+        self.loss_G = list()
+        self.loss_Iu = list()
+        self.loss_Id = list()
         self.loss_exp = list()
         self.loss_P = list()
 
@@ -82,16 +81,15 @@ class XPINN_utils():
         self.loss_r1 = list(df['R1'])
         self.loss_bD1 = list(df['D1'])
         self.loss_bN1 = list(df['N1'])
-        self.loss_bI1 = list(df['I1'])
         self.loss_bK1 = list(df['K1'])
         self.loss_bQ = list(df['Q'])
-        self.loss_G1 = list(df['G1'])
         self.loss_r2 = list(df['R2'])
         self.loss_bD2 = list(df['D2'])
         self.loss_bN2 = list(df['N2'])
-        self.loss_bI2 = list(df['I2'])
         self.loss_bK2 = list(df['K2'])
-        self.loss_G2 = list(df['G2'])
+        self.loss_G = list(df['G'])
+        self.loss_Iu = list(df['Iu'])
+        self.loss_Id = list(df['Id'])
         self.loss_exp = list(df['E'])
         self.loss_P = list(df['P'])
         self.iter = len(self.loss_hist) 
@@ -110,15 +108,14 @@ class XPINN_utils():
                    'D1': list(map(lambda tensor: tensor.numpy(),self.loss_bD1)),
                    'N1': list(map(lambda tensor: tensor.numpy(),self.loss_bN1)),
                    'K1': list(map(lambda tensor: tensor.numpy(),self.loss_bK1)),
-                   'I1': list(map(lambda tensor: tensor.numpy(),self.loss_bI1)),
                    'Q': list(map(lambda tensor: tensor.numpy(),self.loss_bQ)),
-                   'G1': list(map(lambda tensor: tensor.numpy(),self.loss_G1)),
                    'R2': list(map(lambda tensor: tensor.numpy(),self.loss_r2)),
                    'D2': list(map(lambda tensor: tensor.numpy(),self.loss_bD2)),
                    'N2': list(map(lambda tensor: tensor.numpy(),self.loss_bN2)),
                    'K2': list(map(lambda tensor: tensor.numpy(),self.loss_bK2)),
-                   'I2': list(map(lambda tensor: tensor.numpy(),self.loss_bI2)),
-                   'G2': list(map(lambda tensor: tensor.numpy(),self.loss_G2)),
+                   'Iu': list(map(lambda tensor: tensor.numpy(),self.loss_Iu)),
+                   'Id': list(map(lambda tensor: tensor.numpy(),self.loss_Id)),
+                   'G': list(map(lambda tensor: tensor.numpy(),self.loss_G)),
                    'E': list(map(lambda tensor: tensor.numpy(),self.loss_exp)),
                    'P': list(map(lambda tensor: tensor.numpy(),self.loss_P))
                 }
@@ -157,7 +154,10 @@ class XPINN_utils():
 
         self.L_X_domain = dict()
         for t in self.mesh.domain_mesh_names:
-            self.L_X_domain[t] = self.mesh.domain_mesh_data[t]
+            if t in ('Iu','Id'):
+                self.L_X_domain['I'] = self.mesh.domain_mesh_data['I']
+            else:
+                self.L_X_domain[t] = self.mesh.domain_mesh_data[t]
 
 
     def create_generators_shuffle_solver(self, shuffle):
@@ -255,18 +255,17 @@ class XPINN_utils():
         self.loss_r1.append(L1[1]['R'])
         self.loss_bD1.append(L1[1]['D'])
         self.loss_bN1.append(L1[1]['N'])
-        self.loss_bI1.append(L1[1]['I'])
         self.loss_bK1.append(L1[1]['K'])
         self.loss_bQ.append(L1[1]['Q'])
-        self.loss_G1.append(L1[1]['G'])
 
         self.loss_r2.append(L2[1]['R'])
         self.loss_bD2.append(L2[1]['D'])
         self.loss_bN2.append(L2[1]['N'])
-        self.loss_bI2.append(L2[1]['I'])
         self.loss_bK2.append(L2[1]['K'])
-        self.loss_G2.append(L2[1]['G'])
 
+        self.loss_Iu.append(L1[1]['Iu'])
+        self.loss_Id.append(L1[1]['Id'])
+        self.loss_G.append(L1[1]['G'])
         self.loss_exp.append(L1[1]['E'])
         self.loss_P.append(L1[1]['P']+L2[1]['P'])
 
@@ -307,15 +306,12 @@ class XPINN_utils():
         self.solver1.loss_r = self.loss_r1
         self.solver1.loss_bD = self.loss_bD1
         self.solver1.loss_bN = self.loss_bN1
-        self.solver1.loss_bI = self.loss_bI1
         self.solver1.loss_bK = self.loss_bK1
         self.solver1.loss_bQ = self.loss_bQ
-        self.solver1.loss_G = self.loss_G1
 
         self.solver2.loss_r = self.loss_r2
         self.solver2.loss_bD = self.loss_bD2
         self.solver2.loss_bN = self.loss_bN2
-        self.solver2.loss_bI = self.loss_bI2
         self.solver2.loss_bK = self.loss_bK2
-        self.solver2.loss_G = self.loss_G2
+
 
