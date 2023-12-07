@@ -31,88 +31,89 @@ class Postprocessing():
         self.loss_last = np.format_float_scientific(self.XPINN.loss_hist[-1], unique=False, precision=3)
 
 
-    def plot_loss_history(self, flag=True, plot_w=False, ax=None):
+    def plot_loss_history(self, domain=1, plot_w=False, ax=None):
         if not ax:
             fig = plt.figure(figsize=(7,5))
             ax = fig.add_subplot(111)
+        domain -= 1
         ax.semilogy(range(len(self.XPINN.loss_hist)), self.XPINN.loss_hist,'k-',label='Loss')
-        if flag: 
-            iter = 1
-            c = [['r','b','g','c','m','lime','darkslategrey'],['salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']]
-            for NN in self.NN:
+        c = ['r','b','g', 'gold','c','m','lime','darkslategrey','salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']
+        for i,NN in enumerate(self.NN):
+            if i==domain:
                 if not plot_w:
-                    w = {'R': 1.0, 'D': 1.0, 'N': 1.0, 'K': 1.0, 'I': 1.0, 'E': 1.0, 'Q': 1.0, 'G': 1.0}
+                    w = {'R': 1.0, 'D': 1.0, 'N': 1.0, 'K': 1.0, 'I': 1.0, 'E': 1.0, 'Q': 1.0, 'G': 1.0, 'Iu': 1.0, 'Id': 1.0}
                 elif plot_w:
                     w = NN.w_hist
                 meshes_names = NN.Mesh_names
                 if 'R' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_r)), w['R']*np.array(NN.loss_r),c[iter-1][0],label=f'Loss_R_{iter}')
+                    ax.semilogy(range(len(NN.loss_r)), w['R']*np.array(NN.loss_r),c[0],label=f'Loss_R')
                 if 'D' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bD)), w['D']*np.array(NN.loss_bD),c[iter-1][1],label=f'Loss_D_{iter}')
+                    ax.semilogy(range(len(NN.loss_bD)), w['D']*np.array(NN.loss_bD),c[1],label=f'Loss_D')
                 if 'N' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bN)), w['N']*np.array(NN.loss_bN),c[iter-1][2],label=f'Loss_N_{iter}')
+                    ax.semilogy(range(len(NN.loss_bN)), w['N']*np.array(NN.loss_bN),c[2],label=f'Loss_N')
                 if 'K' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bK)), w['K']*np.array(NN.loss_bK),c[iter-1][3],label=f'Loss_K_{iter}')
+                    ax.semilogy(range(len(NN.loss_bK)), w['K']*np.array(NN.loss_bK),c[3],label=f'Loss_K')
                 if 'Q' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bQ)), w['Q']*np.array(NN.loss_bQ),'gold',label=f'Loss_Q_{iter}')
-                if 'I' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bI)), w['I']*np.array(NN.loss_bI),c[iter-1][4],label=f'Loss_I_{iter}')
+                    ax.semilogy(range(len(NN.loss_bQ)), w['Q']*np.array(NN.loss_bQ),c[4],label=f'Loss_Q')
+                if 'Iu' in meshes_names:
+                    ax.semilogy(range(len(self.XPINN.loss_Iu)), w['Iu']*np.array(self.XPINN.loss_Iu),c[5],label=f'Loss_Iu')
+                if 'Id' in meshes_names:
+                    ax.semilogy(range(len(self.XPINN.loss_Id)), w['Id']*np.array(self.XPINN.loss_Id),c[6],label=f'Loss_Id')
                 if 'E' in meshes_names:
-                    ax.semilogy(range(len(self.XPINN.loss_exp)), w['E']*np.array(self.XPINN.loss_exp),c[iter-1][5],label=f'Loss_E_{iter}')
+                    ax.semilogy(range(len(self.XPINN.loss_exp)), w['E']*np.array(self.XPINN.loss_exp),c[7],label=f'Loss_E')
                 if 'G' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_G)), w['G']*np.array(NN.loss_G),c[iter-1][6],label=f'Loss_G_{iter}')
-                iter += 1      
+                    ax.semilogy(range(len(self.XPINN.loss_G)), w['G']*np.array(self.XPINN.loss_G),c[8],label=f'Loss_G')    
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel(r'$\mathcal{L}: Losses$')
         text_l = r'$\phi_{\theta}$'
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
+        ax.set_title(f'Loss History of NN{domain+1}, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
         ax.grid()
 
         if self.save:
-            path = 'loss_history.png' if not plot_w  else 'loss_history_w.png' 
+            path = f'loss_history_{domain+1}.png' if not plot_w  else f'loss_history_{domain+1}_w.png' 
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
 
 
-    def plot_weights_history(self, ax=None):
+    def plot_weights_history(self, domain=1, ax=None):
         if not ax:
             fig = plt.figure(figsize=(7,5))
             ax = fig.add_subplot(111)
-
-        iter = 1
-        c = [['r','b','g','c','m','lime','darkslategrey'],['salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']]
-        for NN in self.NN:
-            if True:
+        domain -= 1
+        c = ['r','b','g', 'gold','c','m','lime','darkslategrey','salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']
+        for i,NN in enumerate(self.NN):
+            if i==domain:
                 w = NN.w_hist
                 meshes_names = NN.Mesh_names
                 if 'R' in meshes_names:
-                    ax.semilogy(range(len(w['R'])), w['R'], c[iter-1][0],label=f'w_R_{iter}')
+                    ax.semilogy(range(len(w['R'])), w['R'], c[0],label=f'w_R')
                 if 'D' in meshes_names:
-                    ax.semilogy(range(len(w['D'])), w['D'], c[iter-1][1],label=f'w_D_{iter}')
+                    ax.semilogy(range(len(w['D'])), w['D'], c[1],label=f'w_D')
                 if 'N' in meshes_names:
-                    ax.semilogy(range(len(w['N'])), w['N'], c[iter-1][2],label=f'w_N_{iter}')
+                    ax.semilogy(range(len(w['N'])), w['N'], c[2],label=f'w_N')
                 if 'K' in meshes_names:
-                    ax.semilogy(range(len(w['K'])), w['K'], c[iter-1][3],label=f'w_K_{iter}')
+                    ax.semilogy(range(len(w['K'])), w['K'], c[3],label=f'w_K')
                 if 'Q' in meshes_names:
-                    ax.semilogy(range(len(w['Q'])), w['Q'], 'gold',label=f'w_Q_{iter}')
-                if 'I' in meshes_names:
-                    ax.semilogy(range(len(w['I'])), w['I'], c[iter-1][4],label=f'w_I_{iter}')
+                    ax.semilogy(range(len(w['Q'])), w['Q'], c[4],label=f'w_Q')
+                if 'Iu' in meshes_names:
+                    ax.semilogy(range(len(w['Iu'])), w['Iu'], c[5],label=f'w_Iu')
+                if 'Id' in meshes_names:
+                    ax.semilogy(range(len(w['Id'])), w['Id'], c[6],label=f'w_Id')
                 if 'E' in meshes_names:
-                    ax.semilogy(range(len(w['E'])), w['E'],c[iter-1][5],label=f'w_E_{iter}')
+                    ax.semilogy(range(len(w['E'])), w['E'],c[7],label=f'w_E')
                 if 'G' in meshes_names:
-                    ax.semilogy(range(len(w['G'])), w['G'],c[iter-1][6],label=f'w_G_{iter}')
-            iter += 1
+                    ax.semilogy(range(len(w['G'])), w['G'],c[8],label=f'w_G')
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel('w: weights')
         text_l = r'$\phi_{\theta}$'
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
+        ax.set_title(f'Weights History of NN{domain+1}, Iterations: {self.XPINN.N_iters}')
         ax.grid()
 
         if self.save:
-            path = 'weights_history.png'
+            path = f'weights_history_{domain+1}.png'
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
@@ -329,11 +330,12 @@ class Postprocessing():
 
     def plot_architecture(self,domain=1):
         
+        domain -= 1
         input_layer = tf.keras.layers.Input(shape=self.XPINN.solvers[domain].model.input_shape_N[1:], name='input')
         visual_model = tf.keras.models.Model(inputs=input_layer, outputs=self.XPINN.solvers[domain].model.call(input_layer))
 
         if self.save:
-            path = f'model_architecture_{domain}.png'
+            path = f'model_architecture_{domain+1}.png'
             path_save = os.path.join(self.directory,path)
 
             tf.keras.utils.plot_model(visual_model, to_file=path_save,
@@ -466,7 +468,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         ax.set_ylabel(r'$\phi_{\theta}$')
 
         text_l = r'$\phi_{\theta}$'
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}')
 
         ax.grid()
         ax.legend()

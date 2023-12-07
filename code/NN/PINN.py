@@ -38,7 +38,9 @@ class PINN():
         w_k=1.0,
         w_e=1.0,
         w_q=1.0,
-        w_g=1.0):
+        w_g=1.0,
+        w_iu=1.0,
+        w_id=1.0):
 
         self.w = {
             'R': float(w_r),
@@ -49,6 +51,8 @@ class PINN():
             'I': float(w_i),
             'E': float(w_e),
             'G': float(w_g),
+            'Iu': float(w_iu),
+            'Id': float(w_id),
             'P': 1.0
         }
 
@@ -61,10 +65,12 @@ class PINN():
             'I': list(),
             'E': list(),
             'G': list(),
-            'P': list()
+            'P': list(),
+            'Iu': list(),
+            'Id': list()
         }
         
-        self.L_names = ['R','D','N','K','I','P','E','Q','G']
+        self.L_names = ['R','D','N','K','I','P','E','Q','G','Iu','Id']
         
 
     def adapt_optimizer(self,optimizer,lr,lr_p=0.001):
