@@ -189,6 +189,7 @@ def main():
         Post.plot_phi_line()
         Post.plot_phi_contour()
         Post.plot_aprox_analytic(zoom=True)
+        Post.plot_line_interface()
         Post.save_values_file()
 
         Post.plot_architecture(0)

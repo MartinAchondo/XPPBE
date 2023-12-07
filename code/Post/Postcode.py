@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class Postprocessing():
 
-    def __init__(self,XPINN, save=False, directory='', last=False):
+    def __init__(self,XPINN, save=False, directory=''):
 
         self.DTYPE='float32'
         self.pi = tf.constant(np.pi, dtype=self.DTYPE)
@@ -349,8 +349,8 @@ class Postprocessing():
 
 class Born_Ion_Postprocessing(Postprocessing):
 
-    def __init_subclass__(self,*kargs,**kwargs):
-        super().__init_(*kargs,**kwargs)
+    def __init__(self,*kargs,**kwargs):
+        super().__init__(*kargs,**kwargs)
 
 
     def plot_aprox_analytic(self, N=100, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, zoom=False, lims=None):
@@ -383,7 +383,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         ax.plot(r_out_2,u_out[n:,0], c='b')
 
         r = np.sqrt(points[:,0]**2 + points[:,1]**2 + points[:,2]**2)
-        r = r[r <= self.XPINN.mesh.R_exterior]
+        r = r[r <= self.XPINN.mesh.R_exterior*0.7]
         r = r[r > 0.04]
         u_an = self.XPINN.PDE.analytic_Born_Ion(r)
         n2 = np.argmin(r)
@@ -395,7 +395,8 @@ class Born_Ion_Postprocessing(Postprocessing):
             axin.plot(r_in,u_in[:,0], c='b')
             axin.plot(r_out_1,u_out[:n,0], c='b')
             axin.plot(r,u_an, c='r', linestyle='--')
-            axin.set_xlim(0.9,1.1)
+            R = self.XPINN.mesh.R_mol
+            axin.set_xlim(0.9*R,1.1*R)
             axin.set_ylim(-0.2, 0.2)
             axin.grid()
             ax.indicate_inset_zoom(axin)
@@ -412,12 +413,69 @@ class Born_Ion_Postprocessing(Postprocessing):
         ax.grid()
         ax.legend()        
         if lims != None:
-            ax.set_ylim(lims)
+            limx,limy = lims
+            if limx != None:
+                ax.set_xlim(limx)
+            if limy != None:
+                ax.set_ylim(lims)
 
         if self.save:
             path = 'analytic.png' if zoom==False else 'analytic_zoom.png'
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
+
+
+    def plot_line_interface(self,N=100):
+
+        labels = ['Inside', 'Outside']
+        colr = ['r','b']
+        i = 0
+
+        rr = self.XPINN.mesh.R_mol
+        
+        r_bl = np.linspace(rr, rr, N + 1, dtype=self.DTYPE)
+        phi_bl = np.linspace(np.pi/2, np.pi/2, N + 1, dtype=self.DTYPE)
+        theta_bl = np.linspace(0, 2*np.pi, N + 1, dtype=self.DTYPE)
+        
+        x_bl = tf.constant(r_bl*np.sin(phi_bl)*np.cos(theta_bl))
+        y_bl = tf.constant(r_bl*np.sin(phi_bl)*np.sin(theta_bl))
+        z_bl = tf.constant(r_bl*np.cos(phi_bl))
+        
+        x_bl = tf.reshape(x_bl,[x_bl.shape[0],1])
+        y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])
+        z_bl = tf.reshape(z_bl,[z_bl.shape[0],1])
+
+        theta_bl = tf.constant(theta_bl)
+        theta_bl = tf.reshape(theta_bl,[theta_bl.shape[0],1])
+
+        XX_bl = tf.concat([x_bl, y_bl, z_bl], axis=1)
+
+        fig, ax = plt.subplots() 
+
+        for model in self.models:
+            U = model(XX_bl)
+            ax.plot(theta_bl[:,0],U[:,0], label=labels[i], c=colr[i])
+            i += 1
+
+        r = np.linspace(rr, rr, N, dtype=self.DTYPE)
+        U2 = self.XPINN.PDE.analytic_Born_Ion(rr)
+        u2 = theta_bl/theta_bl*U2
+        ax.plot(theta_bl, u2, c='g', label='Analytic', linestyle='--')
+        
+        ax.set_xlabel(r'$\beta$')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+
+        text_l = r'$\phi_{\theta}$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
+
+        ax.grid()
+        ax.legend()
+
+        if self.save:
+            path = 'interface_line.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+
 
     def L2_error_interface_analytic(self):
         verts = self.XPINN.mesh.verts
