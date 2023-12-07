@@ -12,7 +12,7 @@ from Model.PDE_Model import PBE
 from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
-from Post.Postcode import Postprocessing
+from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
 
 
 simulation_name = os.path.basename(os.path.abspath(__file__)).replace('.py','')
@@ -40,7 +40,7 @@ class PDE():
 
         def __init__(self):
                 
-                self.inputs = {'molecule': 'methanol',
+                self.inputs = {'molecule': 'born_ion',
                                 'epsilon_1':  1,
                                 'epsilon_2': 80,
                                 'kappa': 0.125,
@@ -170,7 +170,7 @@ def main():
                         precond = precondition, 
                         N_precond = N_precond,  
                         save_model = iters_save_model, 
-                        G_solve_iter=10,
+                        G_solve_iter=5,
                         shuffle = False, 
                         shuffle_iter = 7 )
 
@@ -181,14 +181,16 @@ def main():
         Post.plot_loss_history(plot_w=True);
         Post.plot_weights_history();
 
+        Post.plot_aprox_analytic()
         Post.plot_G_solv_history();
         Post.plot_meshes_3D();
         Post.plot_interface_3D(variable='phi')
         Post.plot_interface_3D(variable='dphi')
         Post.plot_phi_line()
         Post.plot_phi_contour()
+        Post.plot_aprox_analytic(zoom=True)
         Post.save_values_file()
-        
+
         Post.plot_architecture(0)
         Post.plot_architecture(1)
 

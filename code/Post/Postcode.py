@@ -7,6 +7,7 @@ from plotly.subplots import make_subplots
 import logging
 import os
 import pandas as pd
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -190,15 +191,6 @@ class Postprocessing():
         fig.write_html(os.path.join(self.directory, f'Interface_{variable}.html'))
 
 
-    def plot_phi_line(self, N=100, x0=np.array([0,0,0]), theta=0, phi=0):
-
-        r = np.linspace(-self.mesh.R_exterior,self.R_exterior,N)
-        x = x0[0] + r * tf.sin(phi) * tf.cos(theta)
-        y = x0[1] + r * tf.sin(phi) * tf.sin(theta)
-        z = x0[2] + r * tf.cos(phi)
-        X = tf.stack([x, y, z], axis=-1)
-
-
     def plot_phi_line(self, N=100, x0=np.array([0,0,0]), theta=0, phi=np.pi/2):
         fig, ax = plt.subplots()
         
@@ -311,6 +303,29 @@ class Postprocessing():
         bools = (interior_points_bool,bool_2)
         return interior_points,exterior_points, bools
     
+    def L2_error_interface_continuity(self):
+        verts = tf.constant(self.XPINN.mesh.verts)
+        s1,s2 = self.XPINN.solvers
+        u1 = s1.model(verts).numpy()
+        u2 = s2.model(verts).numpy()
+        u_dif = (u1-u2)
+        error = np.sqrt(np.sum(u_dif**2)/np.sum(u1**2))
+        return error
+    
+    def save_values_file(self):
+        L2_continuity = self.L2_error_interface_continuity()        
+        max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
+        Gsolv_value = self.XPINN.G_solv_hist[str(max_iter)]
+
+        df_dict = {
+            'Gsolv_value': float(Gsolv_value),
+            'L2_continuity': float(L2_continuity),
+        } 
+
+        path_save = os.path.join(self.directory,'results_values.json')
+        with open(path_save, 'w') as json_file:
+            json.dump(df_dict, json_file, indent=4)
+
 
     def plot_architecture(self,domain=1):
         
@@ -332,14 +347,107 @@ class Postprocessing():
         self.XPINN.solvers[domain].model.build_Net()
 
 
-class Born_Ion_Post(Postprocessing):
+class Born_Ion_Postprocessing(Postprocessing):
 
     def __init_subclass__(self,*kargs,**kwargs):
         super().__init_(*kargs,**kwargs)
 
 
-    
+    def plot_aprox_analytic(self, N=100, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, zoom=False, lims=None):
+        
+        fig, ax = plt.subplots()
+        
+        r = np.linspace(-self.mesh.R_exterior,self.mesh.R_exterior,N)
+        x = x0[0] + r * np.sin(phi) * np.cos(theta)
+        y = x0[1] + r * np.sin(phi) * np.sin(theta)
+        z = x0[2] + r * np.cos(phi)
+        points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
+        X_in,X_out,_ = self.get_interior_exterior(points)
+        
+        u_in = self.XPINN.solver1.model(tf.constant(X_in))
+        u_out = self.XPINN.solver2.model(tf.constant(X_out))
 
+        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
+        r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+        n = np.argmin(r_in)
+        r_in[:n] = -r_in[:n]
+
+        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
+        r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+        n = np.argmin(r_out)
+        r_out_1 = -r_out[:n]
+        r_out_2 = r_out[n:]
+
+        ax.plot(r_in,u_in[:,0], label='Aprox', c='b')
+        ax.plot(r_out_1,u_out[:n,0], c='b')
+        ax.plot(r_out_2,u_out[n:,0], c='b')
+
+        r = np.sqrt(points[:,0]**2 + points[:,1]**2 + points[:,2]**2)
+        r = r[r <= self.XPINN.mesh.R_exterior]
+        r = r[r > 0.04]
+        u_an = self.XPINN.PDE.analytic_Born_Ion(r)
+        n2 = np.argmin(r)
+        r[:n2] = -r[:n2]
+        ax.plot(r,u_an, c='r', label='Analytic', linestyle='--')
+
+        if zoom:
+            axin = ax.inset_axes([0.6, 0.02, 0.38, 0.38])
+            axin.plot(r_in,u_in[:,0], c='b')
+            axin.plot(r_out_1,u_out[:n,0], c='b')
+            axin.plot(r,u_an, c='r', linestyle='--')
+            axin.set_xlim(0.9,1.1)
+            axin.set_ylim(-0.2, 0.2)
+            axin.grid()
+            ax.indicate_inset_zoom(axin)
+        
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+        text_l = r'$\phi_{\theta}$'
+        text_theta = r'$\theta$'
+        text_phi = r'$\phi$'
+        theta = np.format_float_positional(theta, unique=False, precision=2)
+        phi = np.format_float_positional(phi, unique=False, precision=2)
+        text_x0 = r'$x_0$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters};  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
+        ax.grid()
+        ax.legend()        
+        if lims != None:
+            ax.set_ylim(lims)
+
+        if self.save:
+            path = 'analytic.png' if zoom==False else 'analytic_zoom.png'
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+
+    def L2_error_interface_analytic(self):
+        verts = self.XPINN.mesh.verts
+        s1,s2 = self.XPINN.solvers
+        u1 = s1.model(tf.constant(verts)).numpy()
+        u2 = s2.model(tf.constant(verts)).numpy()
+        u_mean = (u1+u2)/2
+
+        r = np.sqrt(verts[:,0]**2 + verts[:,1]**2 + verts[:,2]**2)
+        u_an = self.XPINN.PDE.analytic_Born_Ion(r)
+        u_dif = u_mean-u_an
+        error = np.sqrt(np.sum(u_dif**2)/np.sum(u_an**2))
+        return error
+    
+    def save_values_file(self):
+        L2_continuity = self.L2_error_interface_continuity()
+        L2_analytic = self.L2_error_interface_analytic()
+        
+        max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
+        Gsolv_value = self.XPINN.G_solv_hist[str(max_iter)]
+
+        df_dict = {
+            'Gsolv_value': float(Gsolv_value),
+            'L2_continuity': float(L2_continuity),
+            'L2_analytic': float(L2_analytic)
+        } 
+
+        path_save = os.path.join(self.directory,'results_values.json')
+        with open(path_save, 'w') as json_file:
+            json.dump(df_dict, json_file, indent=4)
 
 if __name__=='__main__':
     pass

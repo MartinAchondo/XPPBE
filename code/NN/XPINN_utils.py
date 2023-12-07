@@ -36,6 +36,7 @@ class XPINN_utils():
         self.loss_P = list()
 
         self.G_solv_hist = dict()
+        self.G_solv_hist['0'] = 0.0
 
         self.iter = 0
         self.lr = None
