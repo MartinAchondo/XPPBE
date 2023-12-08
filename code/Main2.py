@@ -67,7 +67,7 @@ class PDE():
         
                 self.PBE_model = PBE(self.inputs,
                         mesh=self.Mol_mesh, 
-                        model='linear',
+                        model='nonlinear',
                         path=main_path
                         ) 
                 

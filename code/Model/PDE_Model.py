@@ -254,7 +254,6 @@ class Helmholtz(PDE_utils):
 
         super().__init__()
 
-
     def residual_loss(self,mesh,model,X,SU):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
@@ -276,12 +275,11 @@ class Non_Linear(PDE_utils):
 
         super().__init__()
 
-
     def residual_loss(self,mesh,model,X,SU):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         u = model(R)
-        r = self.laplacian(mesh,model,X) - self.kappa**2*tf.math.sinh(u)    # revisar unidades  
+        r = self.laplacian(mesh,model,X) - self.kappa**2*tf.math.sinh(u)     
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
     
