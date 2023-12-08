@@ -28,15 +28,16 @@ class Postprocessing():
         self.mesh = XPINN.mesh
         self.PDE = XPINN.PDE
 
-        self.loss_last = np.format_float_scientific(self.XPINN.loss_hist[-1], unique=False, precision=3)
+        self.loss_last = [np.format_float_scientific(self.XPINN.loss_hist[-1], unique=False, precision=3),
+                          np.format_float_scientific(self.NN[0].loss_hist[-1], unique=False, precision=3),
+                          np.format_float_scientific(self.NN[1].loss_hist[-1], unique=False, precision=3)]
 
 
-    def plot_loss_history(self, domain=1, plot_w=False, ax=None):
-        if not ax:
-            fig = plt.figure(figsize=(7,5))
-            ax = fig.add_subplot(111)
+    def plot_loss_history(self, domain=1, plot_w=False):
+        fig,ax = plt.subplots()
         domain -= 1
-        ax.semilogy(range(len(self.XPINN.loss_hist)), self.XPINN.loss_hist,'k-',label='Loss')
+        ax.semilogy(range(len(self.XPINN.loss_hist)), self.XPINN.loss_hist,'k--',label='Loss_XN')
+        ax.semilogy(range(len(self.NN[domain].loss_hist)), self.NN[domain].loss_hist,'k-',label='Loss_NN')
         c = ['r','b','g', 'gold','c','m','lime','darkslategrey','salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']
         for i,NN in enumerate(self.NN):
             if i==domain:
@@ -66,10 +67,8 @@ class Postprocessing():
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel(r'$\mathcal{L}: Losses$')
-        text_l = r'$\phi_{\theta}$'
-        ax.set_title(f'Loss History of NN{domain+1}, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last}')
+        ax.set_title(f'Loss History of NN{domain+1}, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last[domain+1]}')
         ax.grid()
-
         if self.save:
             path = f'loss_history_{domain+1}.png' if not plot_w  else f'loss_history_{domain+1}_w.png' 
             path_save = os.path.join(self.directory,path)
@@ -77,10 +76,8 @@ class Postprocessing():
             logger.info(f'Loss history Plot saved: {path}')
 
 
-    def plot_weights_history(self, domain=1, ax=None):
-        if not ax:
-            fig = plt.figure(figsize=(7,5))
-            ax = fig.add_subplot(111)
+    def plot_weights_history(self, domain=1):
+        fig,ax = plt.subplots()
         domain -= 1
         c = ['r','b','g', 'gold','c','m','lime','darkslategrey','salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']
         for i,NN in enumerate(self.NN):
@@ -119,10 +116,8 @@ class Postprocessing():
             logger.info(f'Loss history Plot saved: {path}')
 
 
-    def plot_G_solv_history(self, ax=None):
-        if not ax:
-            fig = plt.figure(figsize=(7,5))
-            ax = fig.add_subplot(111)
+    def plot_G_solv_history(self):
+        fig,ax = plt.subplots()
         ax.plot(self.XPINN.G_solv_hist.keys(), self.XPINN.G_solv_hist.values(),'k-',label='G_solv')
         ax.legend()
         ax.set_xlabel('$n: iterations$')
@@ -139,7 +134,7 @@ class Postprocessing():
             fig.savefig(path_save)
 
 
-    def plot_meshes_3D(self):
+    def plot_collocation_points_3D(self):
 
         color_dict = {
             'Charges': 'red',
@@ -169,7 +164,46 @@ class Postprocessing():
             fig.add_trace(trace)
 
         fig.update_layout(title='Dominio 3D', scene=dict(xaxis_title='X', yaxis_title='Y', zaxis_title='Z'))
-        fig.write_html(os.path.join(self.directory, 'mesh_plot_3d.html'))
+        fig.write_html(os.path.join(self.directory, 'collocation_points_plot_3d.html'))
+
+
+    def plot_mesh_3D(self):
+
+        vertices = self.mesh.verts
+        elements = self.mesh.faces
+
+        element_trace = go.Mesh3d(
+            x=vertices[:, 0],
+            y=vertices[:, 1],
+            z=vertices[:, 2],
+            i=elements[:, 0],
+            j=elements[:, 1],
+            k=elements[:, 2],
+            facecolor=['grey'] * len(elements), 
+            opacity=0.97
+        )
+        edge_x = []
+        edge_y = []
+        edge_z = []
+
+        for element in elements:
+            for i in range(3):
+                edge_x.extend([vertices[element[i % 3], 0], vertices[element[(i + 1) % 3], 0], None])
+                edge_y.extend([vertices[element[i % 3], 1], vertices[element[(i + 1) % 3], 1], None])
+                edge_z.extend([vertices[element[i % 3], 2], vertices[element[(i + 1) % 3], 2], None])
+
+        edge_trace = go.Scatter3d(
+            x=edge_x,
+            y=edge_y,
+            z=edge_z,
+            mode='lines',
+            line=dict(color='blue', width=2),
+        )
+
+        fig = go.Figure(data=[element_trace,edge_trace])
+        fig.update_layout(scene=dict(aspectmode='data'))
+
+        fig.write_html(os.path.join(self.directory,f'mesh_plot_3D.html'))
 
 
     def plot_interface_3D(self,variable='phi', values=None):
@@ -318,10 +352,20 @@ class Postprocessing():
         max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
         Gsolv_value = self.XPINN.G_solv_hist[str(max_iter)]
 
-        df_dict = {
-            'Gsolv_value': float(Gsolv_value),
-            'L2_continuity': float(L2_continuity),
+        dict_pre = {
+            'Gsolv_value': Gsolv_value,
+            'L2_continuity': L2_continuity,
+            'Loss_XPINN': self.loss_last[0],
+            'Loss_NN1': self.loss_last[1],
+            'Loss_NN2': self.loss_last[2]
         } 
+
+        df_dict = {}
+        for key, value in dict_pre.items():
+            if key=='Gsolv_value':
+                df_dict[key] = np.format_float_positional(float(value), unique=False, precision=3)
+                continue
+            df_dict[key] = '{:.6e}'.format(float(value))
 
         path_save = os.path.join(self.directory,'results_values.json')
         with open(path_save, 'w') as json_file:
@@ -499,15 +543,26 @@ class Born_Ion_Postprocessing(Postprocessing):
         max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
         Gsolv_value = self.XPINN.G_solv_hist[str(max_iter)]
 
-        df_dict = {
-            'Gsolv_value': float(Gsolv_value),
-            'L2_continuity': float(L2_continuity),
-            'L2_analytic': float(L2_analytic)
+        dict_pre = {
+            'Gsolv_value': Gsolv_value,
+            'L2_continuity': L2_continuity,
+            'L2_analytic': L2_analytic,
+            'Loss_XPINN': self.loss_last[0],
+            'Loss_NN1': self.loss_last[1],
+            'Loss_NN2': self.loss_last[2]
         } 
+
+        df_dict = {}
+        for key, value in dict_pre.items():
+            if key=='Gsolv_value':
+                df_dict[key] = np.format_float_positional(float(value), unique=False, precision=3)
+                continue
+            df_dict[key] = '{:.6e}'.format(float(value))
 
         path_save = os.path.join(self.directory,'results_values.json')
         with open(path_save, 'w') as json_file:
             json.dump(df_dict, json_file, indent=4)
+
 
 if __name__=='__main__':
     pass

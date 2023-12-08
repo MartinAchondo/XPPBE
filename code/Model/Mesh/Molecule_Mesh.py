@@ -84,11 +84,11 @@ class Molecule_Mesh():
         #########################################################################
 
         path_files = os.path.join(self.main_path,'Model','Molecules')
-        _,Lx_q,_,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
+        _,Lx_q,R_q,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
 
-        for i,x_q in enumerate(Lx_q):
+        for x_q,r_q in zip(Lx_q,R_q):
             x_q = x_q - self.centroid
-            X_in = self.generate_charge_dataset(x_q)
+            X_in = self.generate_charge_dataset(x_q,r_q)
 
             if not 'Q' in mesh_interior.prior_data:
                 mesh_interior.prior_data['Q'] = X_in
@@ -146,10 +146,10 @@ class Molecule_Mesh():
         return mesh_interior, mesh_exterior
     
 
-    def generate_charge_dataset(self,x_q):            
+    def generate_charge_dataset(self,x_q,r_q):            
     
         x_q_tensor = tf.constant(x_q, dtype=self.DTYPE)
-        sigma = 0.5*0.2
+        sigma = self.G_sigma*3 if self.G_sigma<0.8*r_q else 0.8*r_q
         r = sigma * tf.sqrt(tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=1))
         theta = tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=2*np.pi)
         phi = tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=np.pi)

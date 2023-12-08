@@ -229,8 +229,6 @@ class Poisson(PDE_utils):
 
     def __init__(self, inputs):
 
-        self.sigma = 0.04
-
         for key, value in inputs.items():
             setattr(self, key, value)
 
@@ -245,13 +243,9 @@ class Poisson(PDE_utils):
         return Loss_r
 
 
-
-
 class Helmholtz(PDE_utils):
 
     def __init__(self, inputs):
-
-        self.sigma = 0.04
 
         for key, value in inputs.items():
             setattr(self, key, value)
@@ -274,8 +268,6 @@ class Helmholtz(PDE_utils):
 class Non_Linear(PDE_utils):
 
     def __init__(self, inputs):
-
-        self.sigma = 0.04
 
         for key, value in inputs.items():
             setattr(self, key, value)

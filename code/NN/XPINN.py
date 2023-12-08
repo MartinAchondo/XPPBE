@@ -85,27 +85,27 @@ class XPINN(XPINN_utils):
             L2 = [loss2,L_loss2]
             return L1,L2
 
-        X_b1,X_b2,X_d = self.get_all_batches()
-
         self.N_iters = N
         self.N_precond = N_precond
         self.N_steps = 0
         self.current_loss = 100
 
+        X_b1,X_b2,X_d = self.get_all_batches()
+
         self.pbar = log_progress(range(N))
 
         for i in self.pbar:
 
-            L1,L2 = self.checkers_iterations()
+            self.checkers_iterations()
             self.check_adapt_new_weights(self.adapt_w_now)
             
             if not self.precondition:
-                L1_b,L2_b = train_step((X_b1,X_b2), X_d, ws=[self.solver1.w,self.solver2.w])   
+                L1,L2 = train_step((X_b1,X_b2), X_d, ws=[self.solver1.w,self.solver2.w])   
 
             elif self.precondition:        
-                L1_b,L2_b = train_step_precond((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
+                L1,L2 = train_step_precond((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
 
-            L1,L2 = self.batch_iter_callback((L1,L2),(L1_b,L2_b)) 
+            self.calculate_G_solv(self.calc_Gsolv_now)
             self.callback(L1,L2)
     
 
@@ -143,9 +143,10 @@ class XPINN(XPINN_utils):
             w = float(loss_wo_w/(L[t]+eps))
             solver.w[t] = self.alpha_w*solver.w[t] + (1-self.alpha_w)*w  
 
-    def calculate_G_solv(self):
-        G_solv = self.PDE.get_solvation_energy(*self.solvers)
-        self.G_solv_hist[str(self.iter+1)] = G_solv   
+    def calculate_G_solv(self,calc_now):
+        if calc_now:
+            G_solv = self.PDE.get_solvation_energy(*self.solvers)
+            self.G_solv_hist[str(self.iter+1)] = G_solv   
 
     def create_optimizers(self, precond=False):
         if self.optimizer_name == 'Adam':

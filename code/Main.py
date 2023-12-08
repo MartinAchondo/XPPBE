@@ -116,7 +116,7 @@ def main():
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
-                                   adapt_w_iter = 3,
+                                   adapt_w_iter = 20,
                                    adapt_w_method = 'gradients',
                                    alpha = 0.7)             
 
@@ -159,7 +159,7 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 10
+        N_iters = 100
 
         precondition = False
         N_precond = 5
@@ -186,7 +186,8 @@ def main():
         Post.plot_weights_history(domain=2);
 
         Post.plot_G_solv_history();
-        Post.plot_meshes_3D();
+        Post.plot_collocation_points_3D();
+        Post.plot_mesh_3D();
         Post.plot_interface_3D(variable='phi');
         Post.plot_interface_3D(variable='dphi');
         Post.plot_phi_line();

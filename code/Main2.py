@@ -187,7 +187,8 @@ def main():
 
         Post.plot_aprox_analytic();
         Post.plot_G_solv_history();
-        Post.plot_meshes_3D();
+        Post.plot_collocation_points_3D();
+        Post.plot_mesh_3D();
         Post.plot_interface_3D(variable='phi');
         Post.plot_interface_3D(variable='dphi');
         Post.plot_phi_line();

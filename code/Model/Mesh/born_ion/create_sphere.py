@@ -3,13 +3,11 @@ import numpy as np
 import os
 
 
-mesh = trimesh.creation.uv_sphere(radius=1.0, count=[30, 30])
+mesh = trimesh.creation.icosphere(radius=1.0, subdivisions=3)
 
 vertices = mesh.vertices
 faces = mesh.faces + 1
 vertex_normals = vertices / np.linalg.norm(vertices, axis=1)[:, np.newaxis]
-
-# mesh.show()
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 
