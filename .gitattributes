@@ -1,3 +1,4 @@
+*.ipynb linguist-detectable=false
 *.pqr linguist-detectable=false
 *.face linguist-detectable=false
 *.vert linguist-detectable=false
