@@ -171,9 +171,7 @@ def main():
                         precond = precondition, 
                         N_precond = N_precond,  
                         save_model = iters_save_model, 
-                        G_solve_iter=10,
-                        shuffle = False, 
-                        shuffle_iter = 7 )
+                        G_solve_iter=10)
 
 
         Post = Postprocessing(XPINN_solver, save=True, directory=folder_path)

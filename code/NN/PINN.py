@@ -56,21 +56,11 @@ class PINN():
             'P': 1.0
         }
 
-        self.w_hist = {
-            'R': list(),
-            'D': list(),
-            'N': list(),
-            'K': list(),
-            'Q': list(),
-            'I': list(),
-            'E': list(),
-            'G': list(),
-            'P': list(),
-            'Iu': list(),
-            'Id': list()
-        }
-        
         self.L_names = ['R','D','N','K','I','P','E','Q','G','Iu','Id']
+
+        self.w_hist = dict()
+        for t in self.L_names:
+            self.w_hist[t] = list()
         
 
     def adapt_optimizer(self,optimizer,lr,lr_p=0.001):

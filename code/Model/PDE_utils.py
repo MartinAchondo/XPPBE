@@ -94,19 +94,12 @@ class PDE_utils():
     
     @classmethod
     def create_L(cls):
+        names = ['R','D','N','K','I','P','E','Q','G','Iu','Id']
         L = dict()
-        L['R'] = tf.constant(0.0, dtype=cls.DTYPE)
-        L['D'] = tf.constant(0.0, dtype=cls.DTYPE)
-        L['N'] = tf.constant(0.0, dtype=cls.DTYPE)
-        L['I'] = tf.constant(0.0, dtype=cls.DTYPE)
-        L['Iu'] = tf.constant(0.0, dtype=cls.DTYPE)
-        L['Id'] = tf.constant(0.0, dtype=cls.DTYPE)
-        L['Q'] = tf.constant(0.0, dtype=cls.DTYPE)
-        L['K'] = tf.constant(0.0, dtype=cls.DTYPE)
-        L['P'] = tf.constant(0.0, dtype=cls.DTYPE)
-        L['E'] = tf.constant(0.0, dtype=cls.DTYPE)
-        L['G'] = tf.constant(0.0, dtype=cls.DTYPE)
+        for t in names:
+            L[t] = tf.constant(0.0, dtype=cls.DTYPE)
         return L
+    
     ####################################################################################################################################################
 
     # Define boundary condition

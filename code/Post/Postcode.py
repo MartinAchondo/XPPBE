@@ -36,8 +36,8 @@ class Postprocessing():
     def plot_loss_history(self, domain=1, plot_w=False):
         fig,ax = plt.subplots()
         domain -= 1
-        ax.semilogy(range(len(self.XPINN.loss_hist)), self.XPINN.loss_hist,'k--',label='Loss_XN')
-        ax.semilogy(range(len(self.NN[domain].loss_hist)), self.NN[domain].loss_hist,'k-',label='Loss_NN')
+        ax.semilogy(range(1,len(self.XPINN.loss_hist)+1), self.XPINN.loss_hist,'k--',label='Loss_XN')
+        ax.semilogy(range(1,len(self.NN[domain].loss_hist)+1), self.NN[domain].loss_hist,'k-',label='Loss_NN')
         c = ['r','b','g', 'gold','c','m','lime','darkslategrey','salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']
         for i,NN in enumerate(self.NN):
             if i==domain:
@@ -47,23 +47,23 @@ class Postprocessing():
                     w = NN.w_hist
                 meshes_names = NN.Mesh_names
                 if 'R' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_r)), w['R']*np.array(NN.loss_r),c[0],label=f'Loss_R')
+                    ax.semilogy(range(1,len(NN.loss_r)+1), w['R']*np.array(NN.loss_r),c[0],label=f'Loss_R')
                 if 'D' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bD)), w['D']*np.array(NN.loss_bD),c[1],label=f'Loss_D')
+                    ax.semilogy(range(1,len(NN.loss_bD)+1), w['D']*np.array(NN.loss_bD),c[1],label=f'Loss_D')
                 if 'N' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bN)), w['N']*np.array(NN.loss_bN),c[2],label=f'Loss_N')
+                    ax.semilogy(range(1,len(NN.loss_bN)+1), w['N']*np.array(NN.loss_bN),c[2],label=f'Loss_N')
                 if 'K' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bK)), w['K']*np.array(NN.loss_bK),c[3],label=f'Loss_K')
+                    ax.semilogy(range(1,len(NN.loss_bK)+1), w['K']*np.array(NN.loss_bK),c[3],label=f'Loss_K')
                 if 'Q' in meshes_names:
-                    ax.semilogy(range(len(NN.loss_bQ)), w['Q']*np.array(NN.loss_bQ),c[4],label=f'Loss_Q')
+                    ax.semilogy(range(1,len(NN.loss_bQ)+1), w['Q']*np.array(NN.loss_bQ),c[4],label=f'Loss_Q')
                 if 'Iu' in meshes_names:
-                    ax.semilogy(range(len(self.XPINN.loss_Iu)), w['Iu']*np.array(self.XPINN.loss_Iu),c[5],label=f'Loss_Iu')
+                    ax.semilogy(range(1,len(self.XPINN.loss_Iu)+1), w['Iu']*np.array(self.XPINN.loss_Iu),c[5],label=f'Loss_Iu')
                 if 'Id' in meshes_names:
-                    ax.semilogy(range(len(self.XPINN.loss_Id)), w['Id']*np.array(self.XPINN.loss_Id),c[6],label=f'Loss_Id')
+                    ax.semilogy(range(1,len(self.XPINN.loss_Id)+1), w['Id']*np.array(self.XPINN.loss_Id),c[6],label=f'Loss_Id')
                 if 'E' in meshes_names:
-                    ax.semilogy(range(len(self.XPINN.loss_exp)), w['E']*np.array(self.XPINN.loss_exp),c[7],label=f'Loss_E')
+                    ax.semilogy(range(1,len(self.XPINN.loss_exp)+1), w['E']*np.array(self.XPINN.loss_exp),c[7],label=f'Loss_E')
                 if 'G' in meshes_names:
-                    ax.semilogy(range(len(self.XPINN.loss_G)), w['G']*np.array(self.XPINN.loss_G),c[8],label=f'Loss_G')    
+                    ax.semilogy(range(1,len(self.XPINN.loss_G)+1), w['G']*np.array(self.XPINN.loss_G),c[8],label=f'Loss_G')    
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel(r'$\mathcal{L}: Losses$')
@@ -85,27 +85,26 @@ class Postprocessing():
                 w = NN.w_hist
                 meshes_names = NN.Mesh_names
                 if 'R' in meshes_names:
-                    ax.semilogy(range(len(w['R'])), w['R'], c[0],label=f'w_R')
+                    ax.semilogy(range(1,len(w['R'])+1), w['R'], c[0],label=f'w_R')
                 if 'D' in meshes_names:
-                    ax.semilogy(range(len(w['D'])), w['D'], c[1],label=f'w_D')
+                    ax.semilogy(range(1,len(w['D'])+1), w['D'], c[1],label=f'w_D')
                 if 'N' in meshes_names:
-                    ax.semilogy(range(len(w['N'])), w['N'], c[2],label=f'w_N')
+                    ax.semilogy(range(1,len(w['N'])+1), w['N'], c[2],label=f'w_N')
                 if 'K' in meshes_names:
-                    ax.semilogy(range(len(w['K'])), w['K'], c[3],label=f'w_K')
+                    ax.semilogy(range(1,len(w['K'])+1), w['K'], c[3],label=f'w_K')
                 if 'Q' in meshes_names:
-                    ax.semilogy(range(len(w['Q'])), w['Q'], c[4],label=f'w_Q')
+                    ax.semilogy(range(1,len(w['Q'])+1), w['Q'], c[4],label=f'w_Q')
                 if 'Iu' in meshes_names:
-                    ax.semilogy(range(len(w['Iu'])), w['Iu'], c[5],label=f'w_Iu')
+                    ax.semilogy(range(1,len(w['Iu'])+1), w['Iu'], c[5],label=f'w_Iu')
                 if 'Id' in meshes_names:
-                    ax.semilogy(range(len(w['Id'])), w['Id'], c[6],label=f'w_Id')
+                    ax.semilogy(range(1,len(w['Id'])+1), w['Id'], c[6],label=f'w_Id')
                 if 'E' in meshes_names:
-                    ax.semilogy(range(len(w['E'])), w['E'],c[7],label=f'w_E')
+                    ax.semilogy(range(1,len(w['E'])+1), w['E'],c[7],label=f'w_E')
                 if 'G' in meshes_names:
-                    ax.semilogy(range(len(w['G'])), w['G'],c[8],label=f'w_G')
+                    ax.semilogy(range(1,len(w['G'])+1), w['G'],c[8],label=f'w_G')
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel('w: weights')
-        text_l = r'$\phi_{\theta}$'
         ax.set_title(f'Weights History of NN{domain+1}, Iterations: {self.XPINN.N_iters}')
         ax.grid()
 

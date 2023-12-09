@@ -97,7 +97,6 @@ class XPINN(XPINN_utils):
         for i in self.pbar:
 
             self.checkers_iterations()
-            self.check_adapt_new_weights(self.adapt_w_now)
             
             if not self.precondition:
                 L1,L2 = train_step((X_b1,X_b2), X_d, ws=[self.solver1.w,self.solver2.w])   
@@ -105,9 +104,11 @@ class XPINN(XPINN_utils):
             elif self.precondition:        
                 L1,L2 = train_step_precond((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
 
+            self.iter+=1
             self.calculate_G_solv(self.calc_Gsolv_now)
             self.callback(L1,L2)
-    
+            self.check_adapt_new_weights(self.adapt_w_now)
+
 
     def check_adapt_new_weights(self,adapt_now):
         
@@ -146,7 +147,7 @@ class XPINN(XPINN_utils):
     def calculate_G_solv(self,calc_now):
         if calc_now:
             G_solv = self.PDE.get_solvation_energy(*self.solvers)
-            self.G_solv_hist[str(self.iter+1)] = G_solv   
+            self.G_solv_hist[str(self.iter)] = G_solv   
 
     def create_optimizers(self, precond=False):
         if self.optimizer_name == 'Adam':
@@ -162,14 +163,12 @@ class XPINN(XPINN_utils):
                 return optimizers_p
 
 
-    def solve(self,N=1000, precond=False, N_precond=10, save_model=0, G_solve_iter=100, shuffle=False, shuffle_iter=500):
+    def solve(self,N=1000, precond=False, N_precond=10, save_model=0, G_solve_iter=100):
 
         self.precondition = precond
         self.save_model_iter = save_model if save_model != 0 else N
 
         self.G_solv_iter = G_solve_iter
-        self.shuffle = shuffle
-        self.shuffle_iter = shuffle_iter 
 
         t0 = time()
 

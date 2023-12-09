@@ -116,7 +116,7 @@ def main():
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
-                                   adapt_w_iter = 100,
+                                   adapt_w_iter = 5,
                                    adapt_w_method = 'gradients',
                                    alpha = 0.7)             
 
@@ -164,16 +164,14 @@ def main():
         precondition = False
         N_precond = 5
 
-        iters_save_model = 0
+        iters_save_model = 5
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 
                         precond = precondition, 
                         N_precond = N_precond,  
                         save_model = iters_save_model, 
-                        G_solve_iter=5,
-                        shuffle = False, 
-                        shuffle_iter = 7 )
+                        G_solve_iter=5)
 
 
         Post = Postprocessing(XPINN_solver, save=True, directory=folder_path)

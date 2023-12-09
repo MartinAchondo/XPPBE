@@ -206,14 +206,8 @@ class XPINN_utils():
         else:
             self.calc_Gsolv_now = False
 
-        # shuffle batches
-        if self.shuffle and self.iter%self.shuffle_iter==0 and self.iter>1:
-            self.shuffle_now = True
-        else:
-            self.shuffle_now = False
-
         # adapt losses weights
-        if self.adapt_weights and self.iter%self.adapt_w_iter==0 and self.iter>1 and not self.precondition:
+        if self.adapt_weights and (self.iter+1)%self.adapt_w_iter==0 and (self.iter+1)<self.N_iters and not self.precondition:
             self.adapt_w_now = True
         else:
             self.adapt_w_now = False  
@@ -260,8 +254,6 @@ class XPINN_utils():
         for solver in self.solvers:
             for t in solver.L_names:
                 solver.w_hist[t].append(solver.w[t])
-
-        self.iter+=1
 
         if self.save_model_iter > 0:
             if self.iter % self.save_model_iter == 0 and self.iter>1:
