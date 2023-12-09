@@ -364,7 +364,7 @@ class Postprocessing():
             if key=='Gsolv_value':
                 df_dict[key] = np.format_float_positional(float(value), unique=False, precision=3)
                 continue
-            df_dict[key] = '{:.6e}'.format(float(value))
+            df_dict[key] = '{:.3e}'.format(float(value))
 
         path_save = os.path.join(self.directory,'results_values.json')
         with open(path_save, 'w') as json_file:
@@ -556,7 +556,7 @@ class Born_Ion_Postprocessing(Postprocessing):
             if key=='Gsolv_value':
                 df_dict[key] = np.format_float_positional(float(value), unique=False, precision=3)
                 continue
-            df_dict[key] = '{:.6e}'.format(float(value))
+            df_dict[key] = '{:.3e}'.format(float(value))
 
         path_save = os.path.join(self.directory,'results_values.json')
         with open(path_save, 'w') as json_file:
