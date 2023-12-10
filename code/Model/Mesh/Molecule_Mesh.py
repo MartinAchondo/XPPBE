@@ -39,9 +39,8 @@ class Molecule_Mesh():
             vert = vert_f.read()
 
         self.faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
-        verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(float)
-        self.centroid = np.mean(verts, axis=0)*0
-        self.verts = verts - self.centroid
+        self.verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(float)
+        self.centroid = np.mean(self.verts, axis=0)
 
         vertx = self.verts[self.faces]
         self.areas = np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1) / 2
@@ -87,7 +86,6 @@ class Molecule_Mesh():
         _,Lx_q,R_q,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
 
         for x_q,r_q in zip(Lx_q,R_q):
-            x_q = x_q - self.centroid
             X_in = self.generate_charge_dataset(x_q,r_q)
 
             if not 'Q' in mesh_interior.prior_data:
