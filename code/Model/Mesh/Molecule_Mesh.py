@@ -39,41 +39,38 @@ class Molecule_Mesh():
             vert = vert_f.read()
 
         self.faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
-        verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(float)
-        self.centroid = np.mean(verts, axis=0)*0
-        self.verts = verts - self.centroid
+        self.verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(float)
+        self.centroid = np.mean(self.verts, axis=0)
 
         vertx = self.verts[self.faces]
         self.areas = np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1) / 2
 
         self.normal = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, 3:6].astype(np.float32)
 
-        r = np.sqrt(self.verts[:,0]**2 + self.verts[:,1]**2 + self.verts[:,2]**2)
-        R_max_mol = np.max(r)
-        self.R_mol = R_max_mol
-
+        r = np.sqrt((self.verts[:,0]-self.centroid[0])**2 + (self.verts[:,1]-self.centroid[1])**2 + (self.verts[:,2]-self.centroid[2])**2)
+        self.R_mol = np.max(r)
+    
         self.mesh = trimesh.Trimesh(vertices=self.verts, faces=self.faces)
 
         self.interior_obj, self.exterior_obj = self.create_mesh_objs(Mesh_class)
-
-        self.interior_obj.lb = [-self.R_mol,-self.R_mol,-self.R_mol]
-        self.interior_obj.ub = [self.R_mol,self.R_mol,self.R_mol]
-
-        self.exterior_obj.lb = [-self.R_exterior,-self.R_exterior,-self.R_exterior]
-        self.exterior_obj.ub = [self.R_exterior,self.R_exterior,self.R_exterior]    
-
 
     def create_mesh_objs(self, Mesh_class):
         
         mesh_interior = Mesh_class(name=1, molecule=self.molecule, path=self.main_path)
         mesh_exterior = Mesh_class(name=2, molecule=self.molecule, path=self.main_path)
 
-        # N = int(mesh_length/mesh_dx)
         #########################################################################
+
+        xmax, ymax, zmax = np.max(self.verts, axis=0)
+        xmin, ymin, zmin = np.min(self.verts, axis=0)
+        mesh_interior.lb = [xmin,ymin,zmin]
+        mesh_interior.ub = [xmax,ymax,zmax]
+
         self.N_interior = int(2*self.R_mol/self.dx_interior)
-        xspace = np.linspace(-self.R_mol, self.R_mol, self.N_interior, dtype=self.DTYPE)
-        yspace = np.linspace(-self.R_mol, self.R_mol, self.N_interior, dtype=self.DTYPE)
-        zspace = np.linspace(-self.R_mol, self.R_mol, self.N_interior, dtype=self.DTYPE)
+
+        xspace = np.linspace(-self.R_mol, self.R_mol, self.N_interior, dtype=self.DTYPE) + self.centroid[0]
+        yspace = np.linspace(-self.R_mol, self.R_mol, self.N_interior, dtype=self.DTYPE) + self.centroid[1]
+        zspace = np.linspace(-self.R_mol, self.R_mol, self.N_interior, dtype=self.DTYPE) + self.centroid[2]
         X, Y, Z = np.meshgrid(xspace, yspace, zspace)
 
         points = np.stack((X.ravel(), Y.ravel(), Z.ravel()), axis=1)
@@ -87,7 +84,6 @@ class Molecule_Mesh():
         _,Lx_q,R_q,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
 
         for x_q,r_q in zip(Lx_q,R_q):
-            x_q = x_q - self.centroid
             X_in = self.generate_charge_dataset(x_q,r_q)
 
             if not 'Q' in mesh_interior.prior_data:
@@ -98,10 +94,11 @@ class Molecule_Mesh():
         #########################################################################
 
         self.R_exterior =  self.R_mol+self.dR_exterior
+
         self.N_exterior = int(2*self.R_exterior/self.dx_exterior)
-        xspace = np.linspace(-self.R_exterior, self.R_exterior, self.N_exterior, dtype=self.DTYPE)
-        yspace = np.linspace(-self.R_exterior, self.R_exterior, self.N_exterior, dtype=self.DTYPE)
-        zspace = np.linspace(-self.R_exterior, self.R_exterior, self.N_exterior, dtype=self.DTYPE)
+        xspace = np.linspace(-self.R_exterior, self.R_exterior, self.N_exterior, dtype=self.DTYPE) + self.centroid[0]
+        yspace = np.linspace(-self.R_exterior, self.R_exterior, self.N_exterior, dtype=self.DTYPE) + self.centroid[1]
+        zspace = np.linspace(-self.R_exterior, self.R_exterior, self.N_exterior, dtype=self.DTYPE) + self.centroid[2]
         X, Y, Z = np.meshgrid(xspace, yspace, zspace)
 
         points = np.stack((X.ravel(), Y.ravel(), Z.ravel()), axis=1)
@@ -110,7 +107,7 @@ class Molecule_Mesh():
         exterior_points_bool = ~interior_points_bool  
         exterior_points = points[exterior_points_bool]
 
-        exterior_distances = np.linalg.norm(exterior_points, axis=1)
+        exterior_distances = np.linalg.norm(exterior_points-self.centroid, axis=1)
         exterior_points = exterior_points[exterior_distances <= self.R_exterior]
 
         r_bl = np.linspace(self.R_exterior, self.R_exterior, self.N_border, dtype=self.DTYPE)
@@ -118,9 +115,9 @@ class Molecule_Mesh():
         phi_bl = np.linspace(0, self.pi, self.N_border, dtype=self.DTYPE)
         
         R_bl, Theta_bl, Phi_bl = np.meshgrid(r_bl, theta_bl, phi_bl)
-        X_bl = R_bl*np.sin(Phi_bl)*np.cos(Theta_bl)
-        Y_bl = R_bl*np.sin(Phi_bl)*np.sin(Theta_bl)
-        Z_bl = R_bl*np.cos(Phi_bl)
+        X_bl = self.centroid[0] + R_bl*np.sin(Phi_bl)*np.cos(Theta_bl)
+        Y_bl = self.centroid[1] + R_bl*np.sin(Phi_bl)*np.sin(Theta_bl)
+        Z_bl = self.centroid[2] + R_bl*np.cos(Phi_bl)
         
         x_bl = tf.constant(X_bl.flatten())
         x_bl = tf.reshape(x_bl,[x_bl.shape[0],1])
@@ -131,6 +128,11 @@ class Molecule_Mesh():
     
         mesh_exterior.prior_data['R'] = tf.constant(exterior_points)
         mesh_exterior.prior_data['D'] = tf.concat([x_bl, y_bl, z_bl], axis=1)
+
+        xmax, ymax, zmax = self.R_exterior + self.centroid
+        xmin, ymin, zmin = -self.R_exterior + self.centroid
+        mesh_exterior.lb = [xmin,ymin,zmin]
+        mesh_exterior.ub = [xmax,ymax,zmax] 
 
         #############################################################################
 
@@ -196,9 +198,9 @@ class Molecule_Mesh():
                 mesh_length = self.R_exterior*2
                 mesh_dx = self.dx_experimental
                 N = int(mesh_length / mesh_dx)
-                x = np.linspace(-mesh_length / 2, mesh_length / 2, num=N)
-                y = np.linspace(-mesh_length / 2, mesh_length / 2, num=N)
-                z = np.linspace(-mesh_length / 2, mesh_length / 2, num=N)
+                x = np.linspace(-mesh_length / 2, mesh_length / 2, num=N) + self.centroid[0]
+                y = np.linspace(-mesh_length / 2, mesh_length / 2, num=N) + self.centroid[1]
+                z = np.linspace(-mesh_length / 2, mesh_length / 2, num=N) + self.centroid[2]
 
                 X, Y, Z = np.meshgrid(x, y, z)
                 pos_mesh = np.stack((X.flatten(), Y.flatten(), Z.flatten()), axis=0)
@@ -217,7 +219,7 @@ class Molecule_Mesh():
                 exterior_points_bool = ~interior_points_bool  
                 exterior_points = explode_points[exterior_points_bool]
 
-                exterior_distances = np.linalg.norm(exterior_points, axis=1)
+                exterior_distances = np.linalg.norm(exterior_points-self.centroid, axis=1)
                 exterior_points = exterior_points[exterior_distances <= self.R_exterior]
 
                 X1 = tf.constant(interior_points, dtype=self.DTYPE)
@@ -241,7 +243,7 @@ class Molecule_Mesh():
 
                 if self.plot:
                     X_plot = dict()
-                    X_plot['Experimental'] = explode_points[np.linalg.norm(explode_points, axis=1) <= self.R_exterior]
+                    X_plot['Experimental'] = explode_points[np.linalg.norm(explode_points-self.centroid, axis=1) <= self.R_exterior]
                     self.save_data_plot(X_plot)
 
 

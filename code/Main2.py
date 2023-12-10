@@ -183,7 +183,7 @@ def main():
         Post.plot_weights_history(domain=1);
         Post.plot_weights_history(domain=2);
 
-        Post.plot_aprox_analytic();
+        
         Post.plot_G_solv_history();
         Post.plot_collocation_points_3D();
         Post.plot_mesh_3D();
@@ -191,6 +191,7 @@ def main():
         Post.plot_interface_3D(variable='dphi');
         Post.plot_phi_line();
         Post.plot_phi_contour();
+        Post.plot_aprox_analytic();
         Post.plot_aprox_analytic(zoom=True);
         Post.plot_line_interface();
         Post.save_values_file();

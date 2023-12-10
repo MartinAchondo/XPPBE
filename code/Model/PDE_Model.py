@@ -48,9 +48,6 @@ class PBE(PDE_utils):
     def get_charges(self):
         path_files = os.path.join(self.main_path,'Model','Molecules')
         self.q_list = get_charges_list(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
-        for charge in self.q_list:
-            for i in range(3):
-                charge.x_q[i] -= self.mesh.centroid[i]
         n = len(self.q_list)
         self.qs = np.zeros(n)
         self.x_qs = np.zeros((n,3))
