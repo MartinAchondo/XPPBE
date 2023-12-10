@@ -229,20 +229,22 @@ class Postprocessing():
         fig, ax = plt.subplots()
         
         r = np.linspace(-self.mesh.R_exterior,self.mesh.R_exterior,N)
-        x = x0[0] + r * np.sin(phi) * np.cos(theta)
-        y = x0[1] + r * np.sin(phi) * np.sin(theta)
-        z = x0[2] + r * np.cos(phi)
+        x = x0[0] + r * np.sin(phi) * np.cos(theta) + self.mesh.centroid[0]
+        y = x0[1] + r * np.sin(phi) * np.sin(theta) + self.mesh.centroid[1]
+        z = x0[2] + r * np.cos(phi) + self.mesh.centroid[2]
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,_ = self.get_interior_exterior(points)
         
         u_in = self.XPINN.solver1.model(tf.constant(X_in))
         u_out = self.XPINN.solver2.model(tf.constant(X_out))
 
+        X_in -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
         r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
         n = np.argmin(r_in)
         r_in[:n] = -r_in[:n]
 
+        X_out -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
         r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
         n = np.argmin(r_out)
@@ -289,9 +291,9 @@ class Postprocessing():
         t = np.linspace(-R_exterior,R_exterior,N)
         s = np.linspace(-R_exterior,R_exterior,N)
         T,S = np.meshgrid(t,s)
-        x = x0[0] + T*u[0] + S*v[0]
-        y = x0[1] + T*u[1] + S*v[1]
-        z = x0[2] + T*u[2] + S*v[2]
+        x = x0[0] + T*u[0] + S*v[0] + self.mesh.centroid[0]
+        y = x0[1] + T*u[1] + S*v[1] + self.mesh.centroid[1]
+        z = x0[2] + T*u[2] + S*v[2] + self.mesh.centroid[2]
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,bools = self.get_interior_exterior(points,R_exterior)
 
@@ -331,9 +333,9 @@ class Postprocessing():
         interior_points = points[interior_points_bool]
         exterior_points_bool = ~interior_points_bool  
         exterior_points = points[exterior_points_bool]
-        exterior_distances = np.linalg.norm(exterior_points, axis=1)
+        exterior_distances = np.linalg.norm(exterior_points-self.mesh.centroid, axis=1)
         exterior_points = exterior_points[exterior_distances <= R_exterior]
-        bool_2 = np.linalg.norm(points, axis=1) <= R_exterior*exterior_points_bool
+        bool_2 = np.linalg.norm(points-self.mesh.centroid, axis=1) <= R_exterior*exterior_points_bool
         bools = (interior_points_bool,bool_2)
         return interior_points,exterior_points, bools
     
@@ -403,20 +405,22 @@ class Born_Ion_Postprocessing(Postprocessing):
         fig, ax = plt.subplots()
         
         r = np.linspace(-self.mesh.R_exterior,self.mesh.R_exterior,N)
-        x = x0[0] + r * np.sin(phi) * np.cos(theta)
-        y = x0[1] + r * np.sin(phi) * np.sin(theta)
-        z = x0[2] + r * np.cos(phi)
+        x = x0[0] + r * np.sin(phi) * np.cos(theta) + self.mesh.centroid[0]
+        y = x0[1] + r * np.sin(phi) * np.sin(theta) + self.mesh.centroid[1]
+        z = x0[2] + r * np.cos(phi) + self.mesh.centroid[2]
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,_ = self.get_interior_exterior(points)
         
         u_in = self.XPINN.solver1.model(tf.constant(X_in))
         u_out = self.XPINN.solver2.model(tf.constant(X_out))
 
+        X_in -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
         r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
         n = np.argmin(r_in)
         r_in[:n] = -r_in[:n]
 
+        X_out -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
         r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
         n = np.argmin(r_out)
@@ -427,6 +431,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         ax.plot(r_out_1,u_out[:n,0], c='b')
         ax.plot(r_out_2,u_out[n:,0], c='b')
 
+        points -= self.mesh.centroid
         r = np.sqrt(points[:,0]**2 + points[:,1]**2 + points[:,2]**2)
         r = r[r <= self.XPINN.mesh.R_exterior*0.7]
         r = r[r > 0.04]
@@ -482,9 +487,9 @@ class Born_Ion_Postprocessing(Postprocessing):
         phi_bl = np.linspace(np.pi/2, np.pi/2, N + 1, dtype=self.DTYPE)
         theta_bl = np.linspace(0, 2*np.pi, N + 1, dtype=self.DTYPE)
         
-        x_bl = tf.constant(r_bl*np.sin(phi_bl)*np.cos(theta_bl))
-        y_bl = tf.constant(r_bl*np.sin(phi_bl)*np.sin(theta_bl))
-        z_bl = tf.constant(r_bl*np.cos(phi_bl))
+        x_bl = tf.constant(r_bl*np.sin(phi_bl)*np.cos(theta_bl)) + self.mesh.centroid[0]
+        y_bl = tf.constant(r_bl*np.sin(phi_bl)*np.sin(theta_bl)) + self.mesh.centroid[1]
+        z_bl = tf.constant(r_bl*np.cos(phi_bl)) + self.mesh.centroid[2]
         
         x_bl = tf.reshape(x_bl,[x_bl.shape[0],1])
         y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])
