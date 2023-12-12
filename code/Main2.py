@@ -53,7 +53,8 @@ class PDE():
                                 'dR_exterior': 10,
                                 'dx_experimental': 1,
                                 'N_pq': 10,
-                                'G_sigma': 0.04
+                                'G_sigma': 0.04,
+                                'mesh_density': 4
                                 }
 
         def create_simulation(self):

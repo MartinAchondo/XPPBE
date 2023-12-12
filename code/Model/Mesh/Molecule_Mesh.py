@@ -15,7 +15,8 @@ class Molecule_Mesh():
     pi = np.pi
 
     def __init__(self, molecule, N_points, plot=False, path='', simulation='Main'):
-
+        
+        self.mesh_density = 3
         for key, value in N_points.items():
             setattr(self, key, value)
         self.molecule = molecule
@@ -33,19 +34,19 @@ class Molecule_Mesh():
 
         path_files = os.path.join(self.main_path,'Model','Mesh')
 
-        with open(os.path.join(path_files,self.molecule,self.molecule+'.face'),'r') as face_f:
+        with open(os.path.join(path_files,self.molecule,self.molecule+f'_d{self.mesh_density}'+'.face'),'r') as face_f:
             face = face_f.read()
-        with open(os.path.join(path_files,self.molecule,self.molecule+'.vert'),'r') as vert_f:
+        with open(os.path.join(path_files,self.molecule,self.molecule+f'_d{self.mesh_density}'+'.vert'),'r') as vert_f:
             vert = vert_f.read()
 
         self.faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
         self.verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(float)
+        self.normal = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, 3:6].astype(np.float32)
+    
         self.centroid = np.mean(self.verts, axis=0)
 
         vertx = self.verts[self.faces]
         self.areas = np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1) / 2
-
-        self.normal = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, 3:6].astype(np.float32)
 
         r = np.sqrt((self.verts[:,0]-self.centroid[0])**2 + (self.verts[:,1]-self.centroid[1])**2 + (self.verts[:,2]-self.centroid[2])**2)
         self.R_mol = np.max(r)
