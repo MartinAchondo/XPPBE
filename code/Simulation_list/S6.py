@@ -9,10 +9,10 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 from Model.Mesh.Molecule_Mesh import Molecule_Mesh
 from Model.PDE_Model import PBE
-from NN.NeuralNet_Fourier import NeuralNet
+from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
-from Post.Postcode import Postprocessing
+from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
 
 
 simulation_name = os.path.basename(os.path.abspath(__file__)).replace('.py','')
@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 logger.info('================================================')
 
 
+
 # Inputs
 ###############################################
 
@@ -39,7 +40,7 @@ class PDE():
 
         def __init__(self):
                 
-                self.inputs = {'molecule': 'methanol',
+                self.inputs = {'molecule': 'born_ion',
                                 'epsilon_1':  1,
                                 'epsilon_2': 80,
                                 'kappa': 0.125,
@@ -47,25 +48,27 @@ class PDE():
                                 }
                 
                 self.N_points = {'dx_interior': 0.08,
-                                'dx_exterior': 0.47,
-                                'N_border': 40,
-                                'dR_exterior': 10,
-                                'dx_experimental': 0.5,
-                                'N_pq': 50,
-                                'G_sigma': 0.04
+                                'dx_exterior': 0.48,
+                                'N_border': 30,
+                                'dR_exterior': 9,
+                                'dx_experimental': 0.48,
+                                'N_pq': 120,
+                                'G_sigma': 0.04,
+                                'mesh_density': 4
                                 }
 
         def create_simulation(self):
-                
+
                 self.Mol_mesh = Molecule_Mesh(self.inputs['molecule'], 
                                 N_points=self.N_points, 
-                                plot=False,
-                                path=main_path
+                                plot=True,
+                                path=main_path,
+                                simulation=simulation_name
                                 )
         
                 self.PBE_model = PBE(self.inputs,
                         mesh=self.Mol_mesh, 
-                        model='linear',
+                        model='nonlinear',
                         path=main_path
                         ) 
                 
@@ -87,11 +90,13 @@ class PDE():
                 self.meshes_domain = dict()
                 self.meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
                 #self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+                #self.meshes_domain['3'] = {'type':'G', 'value':None, 'fun':None}
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
                 self.XPINN_solver = XPINN(PINN)
 
                 self.XPINN_solver.adapt_PDEs(self.PBE_model)
+
 
 def main():
 
@@ -106,7 +111,8 @@ def main():
                    'w_n': 1,
                    'w_i': 1,
                    'w_k': 1,
-                   'w_e': 1e-4
+                   'w_e': 1e-4,
+                   'w_g': 1e-4
                   }
 
         XPINN_solver.adapt_weights([weights,weights],
@@ -117,20 +123,23 @@ def main():
 
         hyperparameters_in = {
                         'input_shape': (None,3),
-                        'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 130,
+                        'num_hidden_layers': 3,
+                        'num_neurons_per_layer': 120,
                         'output_dim': 1,
                         'activation': 'tanh',
-                        'architecture_Net': 'FCNN'
+                        'architecture_Net': 'FCNN',
+                        'fourier_features': True,
+                        'num_fourier_features': 256
                 }
 
         hyperparameters_out = {
                         'input_shape': (None,3),
-                        'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 130,
+                        'num_hidden_layers': 3,
+                        'num_neurons_per_layer': 120,
                         'output_dim': 1,
                         'activation': 'tanh',
-                        'architecture_Net': 'FCNN'
+                        'architecture_Net': 'FCNN',
+                        'fourier_features': False
                 }
 
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
@@ -141,8 +150,8 @@ def main():
                 sample_size=50)
 
         optimizer = 'Adam'
-        lr_s = ([1000,1600],[1e-2,5e-3,5e-4])
-        lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr_s)
+        #lr_s = ([1000,1600],[1e-2,5e-3,5e-4])
+        #lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr_s)
         lr = tf.keras.optimizers.schedules.ExponentialDecay(
                 initial_learning_rate=0.001,
                 decay_steps=2000,
@@ -163,24 +172,35 @@ def main():
                         precond = precondition, 
                         N_precond = N_precond,  
                         save_model = iters_save_model, 
-                        shuffle = False, 
-                        shuffle_iter = 7 )
+                        G_solve_iter=200)
 
 
         Post = Postprocessing(XPINN_solver, save=True, directory=folder_path)
 
-        Post.plot_loss_history();
-        Post.plot_loss_history(plot_w=True);
-        Post.plot_weights_history();
+        Post.plot_loss_history(domain=1);
+        Post.plot_loss_history(domain=2);
+        Post.plot_loss_history(domain=1, plot_w=True);
+        Post.plot_loss_history(domain=2, plot_w=True);
+        Post.plot_weights_history(domain=1);
+        Post.plot_weights_history(domain=2);
 
+        
         Post.plot_G_solv_history();
-        Post.plot_meshes_3D();
-        Post.plot_interface_3D(variable='phi')
-        Post.plot_interface_3D(variable='dphi')
+        Post.plot_collocation_points_3D();
+        Post.plot_mesh_3D();
+        Post.plot_interface_3D(variable='phi');
+        Post.plot_interface_3D(variable='dphi');
+        Post.plot_phi_line();
+        Post.plot_phi_contour();
+        Post.plot_aprox_analytic();
+        Post.plot_aprox_analytic(zoom=True);
+        Post.plot_line_interface();
+        Post.save_values_file();
 
+        Post.plot_architecture(domain=1);
+        Post.plot_architecture(domain=2);
 
 if __name__=='__main__':
-
         main()
 
 
