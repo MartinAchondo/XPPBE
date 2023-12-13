@@ -117,7 +117,7 @@ class Postprocessing():
 
     def plot_G_solv_history(self):
         fig,ax = plt.subplots()
-        ax.plot(self.XPINN.G_solv_hist.keys(), self.XPINN.G_solv_hist.values(),'k-',label='G_solv')
+        ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), self.XPINN.G_solv_hist.values(),'k-',label='G_solv')
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         text_l = r'$G_{solv}$'
