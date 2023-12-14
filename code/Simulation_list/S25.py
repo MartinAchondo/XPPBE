@@ -12,7 +12,7 @@ from Model.PDE_Model import PBE
 from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
-from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
+from Post.Postcode import Postprocessing
 
 
 simulation_name = os.path.basename(os.path.abspath(__file__)).replace('.py','')
@@ -90,7 +90,7 @@ class PDE():
                 self.meshes_domain = dict()
                 self.meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
                 self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
-                self.meshes_domain['3'] = {'type':'G', 'value':None, 'fun':None}
+                #self.meshes_domain['3'] = {'type':'G', 'value':None, 'fun':None}
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
                 self.XPINN_solver = XPINN(PINN)
@@ -192,9 +192,6 @@ def main():
         Post.plot_interface_3D(variable='dphi');
         Post.plot_phi_line();
         Post.plot_phi_contour();
-        Post.plot_aprox_analytic();
-        Post.plot_aprox_analytic(zoom=True);
-        Post.plot_line_interface();
         Post.save_values_file();
 
         Post.plot_architecture(domain=1);

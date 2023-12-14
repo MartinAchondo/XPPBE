@@ -40,7 +40,7 @@ class PDE():
 
         def __init__(self):
                 
-                self.inputs = {'molecule': 'methanol',
+                self.inputs = {'molecule': 'arg',
                                 'epsilon_1':  1,
                                 'epsilon_2': 80,
                                 'kappa': 0.125,
@@ -54,7 +54,7 @@ class PDE():
                                 'dx_experimental': 0.8,
                                 'N_pq': 70,
                                 'G_sigma': 0.04,
-                                'mesh_density': 30
+                                'mesh_density': 6
                                 }
 
         def create_simulation(self):

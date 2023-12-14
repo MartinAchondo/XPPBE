@@ -12,7 +12,7 @@ from Model.PDE_Model import PBE
 from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
-from Post.Postcode import Postprocessing
+from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
 
 
 simulation_name = os.path.basename(os.path.abspath(__file__)).replace('.py','')
@@ -40,21 +40,21 @@ class PDE():
 
         def __init__(self):
                 
-                self.inputs = {'molecule': 'methanol',
+                self.inputs = {'molecule': 'born_ion',
                                 'epsilon_1':  1,
                                 'epsilon_2': 80,
                                 'kappa': 0.125,
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'dx_interior': 0.12,
-                                'dx_exterior': 0.8,
-                                'N_border': 15,
+                self.N_points = {'dx_interior': 0.2,
+                                'dx_exterior': 1.0,
+                                'N_border': 6,
                                 'dR_exterior': 9,
-                                'dx_experimental': 0.8,
-                                'N_pq': 70,
+                                'dx_experimental': 1.0,
+                                'N_pq': 20,
                                 'G_sigma': 0.04,
-                                'mesh_density': 30
+                                'mesh_density': 2
                                 }
 
         def create_simulation(self):
@@ -89,7 +89,7 @@ class PDE():
 
                 self.meshes_domain = dict()
                 self.meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
-                self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+                #self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
                 #self.meshes_domain['3'] = {'type':'G', 'value':None, 'fun':None}
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
@@ -123,8 +123,8 @@ def main():
 
         hyperparameters_in = {
                         'input_shape': (None,3),
-                        'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 200,
+                        'num_hidden_layers': 3,
+                        'num_neurons_per_layer': 120,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN',
@@ -134,8 +134,8 @@ def main():
 
         hyperparameters_out = {
                         'input_shape': (None,3),
-                        'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 200,
+                        'num_hidden_layers': 3,
+                        'num_neurons_per_layer': 120,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN',
@@ -192,6 +192,9 @@ def main():
         Post.plot_interface_3D(variable='dphi');
         Post.plot_phi_line();
         Post.plot_phi_contour();
+        Post.plot_aprox_analytic();
+        Post.plot_aprox_analytic(zoom=True);
+        Post.plot_line_interface();
         Post.save_values_file();
 
         Post.plot_architecture(domain=1);

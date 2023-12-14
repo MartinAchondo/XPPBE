@@ -47,14 +47,14 @@ class PDE():
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'dx_interior': 0.2,
-                                'dx_exterior': 1.0,
-                                'N_border': 6,
+                self.N_points = {'dx_interior': 0.08,
+                                'dx_exterior': 0.48,
+                                'N_border': 30,
                                 'dR_exterior': 9,
-                                'dx_experimental': 1.0,
-                                'N_pq': 20,
+                                'dx_experimental': 0.48,
+                                'N_pq': 120,
                                 'G_sigma': 0.04,
-                                'mesh_density': 2
+                                'mesh_density': 4
                                 }
 
         def create_simulation(self):
@@ -123,8 +123,8 @@ def main():
 
         hyperparameters_in = {
                         'input_shape': (None,3),
-                        'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 200,
+                        'num_hidden_layers': 3,
+                        'num_neurons_per_layer': 120,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN',
@@ -134,8 +134,8 @@ def main():
 
         hyperparameters_out = {
                         'input_shape': (None,3),
-                        'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 200,
+                        'num_hidden_layers': 3,
+                        'num_neurons_per_layer': 120,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN',
