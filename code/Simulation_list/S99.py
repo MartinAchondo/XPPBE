@@ -41,7 +41,7 @@ class PDE():
         def __init__(self):
                 
                 self.inputs = {'molecule': 'arg',
-                                'epsilon_1':  1,
+                                'epsilon_1':  2,
                                 'epsilon_2': 80,
                                 'kappa': 0.125,
                                 'T' : 300 

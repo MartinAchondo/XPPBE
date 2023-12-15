@@ -38,12 +38,9 @@ class Solver_Mesh():
 
         for bl in self.meshes.values():
             type_b = bl['type']
-            value = bl['value']
-            fun = bl['fun']
-            if 'dr' in bl:
-                deriv = bl['dr']
-            if not 'noise' in bl:
-                bl['noise'] = False
+            value = bl['value'] if 'value' in bl else None
+            fun = bl['fun'] if 'fun' in bl else None
+            file = bl['file'] if 'file' in bl else None
 
             if type_b in self.prior_data:
                 X = self.prior_data[type_b]
@@ -54,9 +51,11 @@ class Solver_Mesh():
                     U = self.value_u_b(x, y, z, value=value)
                 elif fun != None:
                     U = fun(x, y, z)
-                else:
-                    file = bl['file']
+                elif file != None:
                     X,U = self.read_file_data(file)
+                    noise = bl['noise'] if 'noise' in bl else False
+                    if noise:
+                        U = U*self.add_noise(U)
                 self.solver_mesh_data[type_b] = self.create_Datasets(X,U)
 
             self.solver_mesh_names.add(type_b)
@@ -66,6 +65,13 @@ class Solver_Mesh():
                 self.solver_mesh_N[type_b] = len(X)
             
         del self.prior_data
+
+    def add_noise(self,x):    
+        n = x.shape[0]
+        mu, sigma = 1, 0.1
+        s = np.array(np.random.default_rng().normal(mu, sigma, n), dtype='float32')
+        s = tf.reshape(s,[n,1])
+        return s
 
     def read_file_data(self,file):
         x_b, y_b, z_b, phi_b = list(), list(), list(), list()
