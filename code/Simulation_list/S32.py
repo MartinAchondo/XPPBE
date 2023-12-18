@@ -47,14 +47,14 @@ class PDE():
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'dx_interior': 0.2,
-                                'dx_exterior': 1.0,
-                                'N_border': 6,
+                self.N_points = {'dx_interior': 0.12,
+                                'dx_exterior': 0.8,
+                                'N_border': 15,
                                 'dR_exterior': 9,
-                                'dx_experimental': 1.0,
-                                'N_pq': 20,
+                                'dx_experimental': 0.8,
+                                'N_pq': 70,
                                 'G_sigma': 0.04,
-                                'mesh_density': 2
+                                'mesh_density': 3
                                 }
 
         def create_simulation(self):
@@ -75,21 +75,21 @@ class PDE():
                 self.meshes_in = dict()
                 self.meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
                 self.meshes_in['2'] = {'type':'Q', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
-                self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-                #self.meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
+                self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
+                self.meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat', 'noise': True}
 
                 self.PBE_model.PDE_in.mesh.adapt_meshes(self.meshes_in)
 
                 self.meshes_out = dict()
                 self.meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
                 self.meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
-                self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-                #self.meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
+                self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
+                self.meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat', 'noise': True}
                 self.PBE_model.PDE_out.mesh.adapt_meshes(self.meshes_out)
 
                 self.meshes_domain = dict()
                 self.meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
-                #self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+                self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
                 #self.meshes_domain['3'] = {'type':'G', 'value':None, 'fun':None}
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
@@ -128,7 +128,7 @@ def main():
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN',
-                        'fourier_features': False,
+                        'fourier_features': True,
                         'num_fourier_features': 256
                 }
 
@@ -162,8 +162,8 @@ def main():
 
         N_iters = 10000
 
-        precondition = False
-        N_precond = 5
+        precondition = True
+        N_precond = 1100
 
         iters_save_model = 1000
         XPINN_solver.folder_path = folder_path

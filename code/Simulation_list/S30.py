@@ -75,7 +75,7 @@ class PDE():
                 self.meshes_in = dict()
                 self.meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
                 self.meshes_in['2'] = {'type':'Q', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
-                self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+                #self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
                 #self.meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
 
                 self.PBE_model.PDE_in.mesh.adapt_meshes(self.meshes_in)
@@ -83,13 +83,13 @@ class PDE():
                 self.meshes_out = dict()
                 self.meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
                 self.meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
-                self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+                #self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
                 #self.meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
                 self.PBE_model.PDE_out.mesh.adapt_meshes(self.meshes_out)
 
                 self.meshes_domain = dict()
                 self.meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
-                #self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+                self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
                 #self.meshes_domain['3'] = {'type':'G', 'value':None, 'fun':None}
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
@@ -128,7 +128,7 @@ def main():
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN',
-                        'fourier_features': False,
+                        'fourier_features': True,
                         'num_fourier_features': 256
                 }
 

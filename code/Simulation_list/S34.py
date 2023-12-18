@@ -12,7 +12,7 @@ from Model.PDE_Model import PBE
 from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
-from Post.Postcode import Postprocessing
+from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
 
 
 simulation_name = os.path.basename(os.path.abspath(__file__)).replace('.py','')
@@ -40,7 +40,7 @@ class PDE():
 
         def __init__(self):
                 
-                self.inputs = {'molecule': 'methanol',
+                self.inputs = {'molecule': 'born_ion',
                                 'epsilon_1':  1,
                                 'epsilon_2': 80,
                                 'kappa': 0.125,
@@ -54,7 +54,7 @@ class PDE():
                                 'dx_experimental': 0.8,
                                 'N_pq': 70,
                                 'G_sigma': 0.04,
-                                'mesh_density': 30
+                                'mesh_density': 3
                                 }
 
         def create_simulation(self):
@@ -75,7 +75,7 @@ class PDE():
                 self.meshes_in = dict()
                 self.meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
                 self.meshes_in['2'] = {'type':'Q', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
-                self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+                self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
                 #self.meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
 
                 self.PBE_model.PDE_in.mesh.adapt_meshes(self.meshes_in)
@@ -83,7 +83,7 @@ class PDE():
                 self.meshes_out = dict()
                 self.meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
                 self.meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
-                self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+                self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
                 #self.meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
                 self.PBE_model.PDE_out.mesh.adapt_meshes(self.meshes_out)
 
@@ -116,7 +116,7 @@ def main():
                   }
 
         XPINN_solver.adapt_weights([weights,weights],
-                                   adapt_weights = True,
+                                   adapt_weights = False,
                                    adapt_w_iter = 1000,
                                    adapt_w_method = 'gradients',
                                    alpha = 0.7)             
@@ -192,6 +192,9 @@ def main():
         Post.plot_interface_3D(variable='dphi');
         Post.plot_phi_line();
         Post.plot_phi_contour();
+        Post.plot_aprox_analytic();
+        Post.plot_aprox_analytic(zoom=True);
+        Post.plot_line_interface();
         Post.save_values_file();
 
         Post.plot_architecture(domain=1);
