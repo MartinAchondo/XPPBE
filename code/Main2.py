@@ -76,7 +76,7 @@ class PDE():
                 self.meshes_in['1'] = {'type':'R', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
                 self.meshes_in['2'] = {'type':'Q', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
                 self.meshes_in['3'] = {'type':'K', 'file':'data_known.dat', 'noise': True}
-                #self.meshes_in['4'] = {'type':'P', 'file':'data_precond.dat'}
+                self.meshes_in['4'] = {'type':'P', 'file':'data_precond.dat'}
 
                 self.PBE_model.PDE_in.mesh.adapt_meshes(self.meshes_in)
 
@@ -84,7 +84,7 @@ class PDE():
                 self.meshes_out['1'] = {'type':'R', 'value':0.0}
                 self.meshes_out['2'] = {'type':'D', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
                 self.meshes_out['3'] = {'type':'K', 'file':'data_known.dat'}
-                #self.meshes_out['4'] = {'type':'P', 'file':'data_precond.dat'}
+                self.meshes_out['4'] = {'type':'P', 'file':'data_precond.dat'}
                 self.PBE_model.PDE_out.mesh.adapt_meshes(self.meshes_out)
 
                 self.meshes_domain = dict()
@@ -160,12 +160,12 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 10
+        N_iters = 100
 
-        precondition = False
-        N_precond = 5
+        precondition = True
+        N_precond = 100
 
-        iters_save_model = 5
+        iters_save_model = -1
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 

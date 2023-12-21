@@ -1,7 +1,7 @@
 #!/bin/bash
 
 current_directory="$(pwd)"
-sims_folder="Simulation_list"
+sims_folder="simulations_list"
 num_simulations=$(ls "$current_directory/$sims_folder"/*.py | wc -l) 
 
 if [ "$num_simulations" -eq 0 ]; then
