@@ -355,8 +355,8 @@ class Postprocessing():
 
         dict_pre = {
             'Gsolv_value': Gsolv_value,
-            'L2_continuity_u': self.XPINN.loss_Iu[-1],
-            'L2_continuity_du': self.XPINN.loss_Id[-1],
+            'L2_continuity_u': np.sqrt(self.XPINN.loss_Iu[-1]),
+            'L2_continuity_du': np.sqrt(self.XPINN.loss_Id[-1]),
             'Loss_XPINN': self.loss_last[0],
             'Loss_NN1': self.loss_last[1],
             'Loss_NN2': self.loss_last[2]
@@ -401,7 +401,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         super().__init__(*kargs,**kwargs)
 
 
-    def plot_aprox_analytic(self, N=1000, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, zoom=False, lims=None):
+    def plot_aprox_analytic(self, N=1000, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, zoom=False, lims=None, lims_zoom=None):
         
         fig, ax = plt.subplots()
         
@@ -449,7 +449,13 @@ class Born_Ion_Postprocessing(Postprocessing):
             axin.plot(r,u_an, c='r', linestyle='--')
             R = self.XPINN.mesh.R_mol
             axin.set_xlim(0.9*R,1.1*R)
-            axin.set_ylim(-0.1, 0.1)
+            axin.set_ylim(-0.05, 0.05)
+            if lims_zoom != None:
+                limx,limy = lims_zoom
+                if limx != None:
+                    axin.set_xlim(limx)
+                if limy != None:
+                    axin.set_ylim(lims)
             axin.grid()
             ax.indicate_inset_zoom(axin)
         
@@ -551,8 +557,8 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         dict_pre = {
             'Gsolv_value': Gsolv_value,
-            'L2_continuity_u': self.XPINN.loss_Iu[-1],
-            'L2_continuity_du': self.XPINN.loss_Id[-1],
+            'L2_continuity_u': np.sqrt(self.XPINN.loss_Iu[-1]),
+            'L2_continuity_du': np.sqrt(self.XPINN.loss_Id[-1]),
             'L2_analytic': L2_analytic,
             'Loss_XPINN': self.loss_last[0],
             'Loss_NN1': self.loss_last[1],
