@@ -515,9 +515,8 @@ class Born_Ion_Postprocessing(Postprocessing):
             ax.plot(theta_bl[:,0],U[:,0], label=labels[i], c=colr[i])
             i += 1
 
-        r = np.linspace(rr, rr, N, dtype=self.DTYPE)
         U2 = self.XPINN.PDE.analytic_Born_Ion(rr)
-        u2 = theta_bl/theta_bl*U2
+        u2 = np.ones((N+1,1))*U2
         ax.plot(theta_bl, u2, c='g', label='Analytic', linestyle='--')
         
         ax.set_xlabel(r'$\beta$')
