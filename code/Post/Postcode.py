@@ -401,7 +401,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         super().__init__(*kargs,**kwargs)
 
 
-    def plot_aprox_analytic(self, N=1000, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, zoom=False, lims=None, lims_zoom=None):
+    def plot_aprox_analytic(self, N=8000, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, zoom=False, lims=None, lims_zoom=None):
         
         fig, ax = plt.subplots()
         

@@ -75,16 +75,16 @@ class PDE():
                 self.meshes_in = dict()
                 self.meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
                 self.meshes_in['2'] = {'type':'Q', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
-                #self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
-                self.meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat', 'noise': True}
+                self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
+                #self.meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
 
                 self.PBE_model.PDE_in.mesh.adapt_meshes(self.meshes_in)
 
                 self.meshes_out = dict()
                 self.meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
                 self.meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
-                #self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
-                self.meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat', 'noise': True}
+                self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
+                #self.meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
                 self.PBE_model.PDE_out.mesh.adapt_meshes(self.meshes_out)
 
                 self.meshes_domain = dict()
@@ -161,12 +161,12 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 100000
+        N_iters = 10000
 
-        precondition = True
-        N_precond = 1100
+        precondition = False
+        N_precond = 5
 
-        iters_save_model = 10000
+        iters_save_model = 1000
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 
