@@ -161,12 +161,12 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 10000
+        N_iters = 100000
 
         precondition = False
         N_precond = 5
 
-        iters_save_model = 1000
+        iters_save_model = 5000
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 

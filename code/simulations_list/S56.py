@@ -139,7 +139,8 @@ def main():
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN',
-                        'fourier_features': False
+                        'fourier_features': True,
+                        'num_fourier_features': 256
                 }
 
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
