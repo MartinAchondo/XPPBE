@@ -154,3 +154,16 @@ An explanation of the `Main.py` code is as follows:
     Post = Postprocessing(XPINN_solver, save=True, directory=folder_path)
     ```
     Or the [Postprocessing Jupyter Notebook](./code/Post/post.ipynb).
+
+## Citing
+
+If you find this project useful for your research or work, please consider citing it. Here is an example BibTeX entry:
+
+```bibtex
+@article{your_project_citation,
+  author    = {Martín Achondo},
+  title     = {XPINN Solver for 3D Poisson-Boltzmann Equation},
+  journal   = {GitHub},
+  year      = {2024},
+  url       = {https://github.com/MartinAchondo/XPINN-for-PBE-Simulation},
+}
