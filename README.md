@@ -160,7 +160,7 @@ An explanation of the `Main.py` code is as follows:
 If you find this project useful for your research or work, please consider citing it. Here is an example BibTeX entry:
 
 ```bibtex
-@article{your_project_citation,
+@article{XPINN-for-PBE,
   author    = {Martín Achondo},
   title     = {XPINN Solver for 3D Poisson-Boltzmann Equation},
   journal   = {GitHub},
