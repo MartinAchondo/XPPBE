@@ -84,14 +84,14 @@ An explanation of the `Main.py` code is as follows:
     meshes_in['4'] = {'type':'P', 'file':'data_precond.dat'}
 
     meshes_out = dict()
-    meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
+    meshes_out['1'] = {'type':'R', 'value':0.0}
     meshes_out['2'] = {'type':'D', 'fun':lambda x,y,z: PBE_model.border_value(x,y,z)}
     meshes_out['3'] = {'type':'K', 'file':'data_known.dat'}
     meshes_out['4'] = {'type':'P', 'file':'data_precond.dat'}
 
     meshes_domain = dict()
     meshes_domain['1'] = {'type':'I'}
-    meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+    meshes_domain['2'] = {'type':'E', 'file':'data_experimental.dat'}
     meshes_domain['3'] = {'type':'G'}
     ```
 4. Define the architectures:
