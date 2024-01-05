@@ -156,13 +156,13 @@ class XPINN_utils():
 
     # Full batch
     def get_all_batches(self):
-        ((TX_b1, TX_b2),TX_d) = self.create_generators()
+        ((TX_b1, TX_b2),TX_d) = self.create_generators(num_batches=1)
         X_b1 = self.get_batches(TX_b1)
         X_b2 = self.get_batches(TX_b2)   
         X_d = self.get_batches(TX_d) 
         return X_b1,X_b2,X_d
 
-    def create_generators(self):
+    def create_generators(self, num_batches):
         def generator(dataset):
             for batch in dataset:
                 yield batch
@@ -171,7 +171,7 @@ class XPINN_utils():
             L = dict()
             for t in set_batches:
                 new_dataset = set_batches[t]
-                L[t] = generator(self.create_batches(new_dataset,self.N_batches))
+                L[t] = generator(self.create_batches(new_dataset,num_batches))
             L_SV.append(L)
         L_D = dict()
         for t in self.L_X_domain:
@@ -179,7 +179,7 @@ class XPINN_utils():
                 L_D[t] = self.L_X_domain[t]
             elif t in ('I'):
                 new_dataset = self.L_X_domain[t]
-                L_D[t] = generator(self.create_batches(new_dataset,self.N_batches))
+                L_D[t] = generator(self.create_batches(new_dataset,num_batches))
         return L_SV,L_D
     
     def create_batches(self, dataset, num_batches=1):

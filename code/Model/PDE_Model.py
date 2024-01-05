@@ -13,6 +13,8 @@ class PBE(PDE_utils):
     eps0 = 8.8541878128e-12     
     kb = 1.380649e-23              
     Na = 6.02214076e23
+    ang_to_m = 1e-10
+    to_V = qe/(eps0 * ang_to_m)   
 
     def __init__(self, inputs, mesh, model,path):      
 
@@ -93,48 +95,40 @@ class PBE(PDE_utils):
         return (1/(4*self.pi*self.epsilon_2))*sum
 
 
-    def get_loss_I(self,solver,solver_ex,XI_data,parts=[True,True]):
+    def get_loss_I(self,solver,solver_ex,XI_data,components=[True,True]):
         
         loss = 0
         XI,N_v = XI_data
         X = solver.mesh.get_X(XI)
 
-        if parts[0]:
+        if components[0]:
             u_1 = solver.model(XI)
             u_2 = solver_ex.model(XI)
-            u_prom = (u_1+u_2)/2
-
+            u_prom = tf.stop_gradient((u_1+u_2)/2)
             loss += tf.reduce_mean(tf.square(u_1 - u_prom)) 
 
-        if parts[1]:
+        if components[1]:
             n_v = solver.mesh.get_X(N_v)
             du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
             du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
-            du_prom = (du_1*solver.PDE.epsilon + du_2*solver_ex.PDE.epsilon)/2
-            
+            du_prom = tf.stop_gradient((du_1*solver.PDE.epsilon + du_2*solver_ex.PDE.epsilon)/2)
             loss += tf.reduce_mean(tf.square(du_1*solver.PDE.epsilon - du_prom))
             
         return loss
     
-
-    def get_loss_experimental(self,solvers,X_exp):
-
-        ang_to_m = 1e-10
-        to_V = self.qe/(self.eps0 * ang_to_m)   
+    def get_phi_ens(self,solvers,X_mesh,X_q):
+        
         kT = self.kb*self.T
         C = self.qe/kT                
 
-        loss = tf.constant(0.0, dtype=self.DTYPE)
-        n = len(X_exp)
-
         s1,s2 = solvers
-        X,X_values = X_exp
-        X_in,X_out = X
+        X_in,X_out = X_mesh
+        phi_ens_L = list()
 
-        for x_q,phi_ens_exp in X_values:
+        for x_q in X_q:
 
             if X_in != None:
-                C_phi1 = s1.model(X_in) * to_V * C 
+                C_phi1 = s1.model(X_in) * self.to_V * C 
                 r1 = tf.sqrt(tf.reduce_sum(tf.square(x_q - X_in), axis=1, keepdims=True))
                 G2_p_1 =  tf.math.reduce_sum(self.aprox_exp(-C_phi1)/r1**6)
                 G2_m_1 = tf.math.reduce_sum(self.aprox_exp(C_phi1)/r1**6)
@@ -142,7 +136,7 @@ class PBE(PDE_utils):
                 G2_p_1 = 0.0
                 G2_m_1 = 0.0
 
-            C_phi2 = s2.model(X_out) * to_V * C
+            C_phi2 = s2.model(X_out) * self.to_V * C
 
             r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
 
@@ -151,7 +145,20 @@ class PBE(PDE_utils):
 
             phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000  # to_mV
 
-            loss += tf.square(phi_ens_pred - phi_ens_exp)
+            phi_ens_L.append(phi_ens_pred)
+
+        return phi_ens_L    
+
+    def get_loss_experimental(self,solvers,X_exp):             
+
+        loss = tf.constant(0.0, dtype=self.DTYPE)
+        n = len(X_exp)
+        X,X_values = X_exp
+        x_q_L,phi_ens_exp_L = zip(*X_values)
+        phi_ens_pred_L = self.get_phi_ens(solvers,X,x_q_L)
+
+        for phi_pred,phi_exp in zip(phi_ens_pred_L,phi_ens_exp_L):
+            loss += tf.square(phi_pred - phi_exp)
 
         loss *= (1/n)
 
@@ -192,19 +199,24 @@ class PBE(PDE_utils):
         du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
         du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
         du_prom = (du_1*solver.PDE.epsilon + du_2*solver_ex.PDE.epsilon)/2
-        return du_prom.numpy()
+        return du_prom.numpy(),du_1.numpy(),du_2.numpy()
     
     def get_solvation_energy(self,solver,solver_ex):
 
-        u_values = self.get_phi_interface(solver,solver_ex).flatten()
-        du_values = self.get_dphi_interface(solver,solver_ex).flatten()
-        
-        phi = bempp.api.GridFunction(self.space, coefficients=u_values)
-        dphi = bempp.api.GridFunction(self.space, coefficients=du_values)
+        u_interface = self.get_phi_interface(solver,solver_ex).flatten()
+        _,du_1,du_2 = self.get_dphi_interface(solver,solver_ex)
+        du_1 = du_1.flatten()
+        du_2 = du_2.flatten()
+        du_1_interface = (du_1+du_2*solver_ex.PDE.epsilon/solver.PDE.epsilon)/2
+
+        phi = bempp.api.GridFunction(self.space, coefficients=u_interface)
+        dphi = bempp.api.GridFunction(self.space, coefficients=du_1_interface)
 
         phi_q = self.slp_q * dphi - self.dlp_q * phi
-        G_solv = 2 * np.pi * 332.064 * np.sum(self.qs * phi_q).real  # kcal/kmol
-
+        
+        G_solv = 0.5*np.sum(self.qs * phi_q).real
+        G_solv *= self.to_V*self.qe*self.Na*(10**-3/4.184)   # kcal/mol
+        
         return G_solv   
 
     def analytic_Born_Ion(self,r):

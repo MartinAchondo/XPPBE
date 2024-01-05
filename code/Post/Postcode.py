@@ -211,9 +211,10 @@ class Postprocessing():
         elements = self.mesh.faces
          
         if variable == 'phi':
-            values = self.PDE.get_phi_interface(*self.NN).flatten()
+            values = self.PDE.get_phi_interface(*self.NN)
         elif variable == 'dphi':
-            values = self.PDE.get_dphi_interface(*self.NN).flatten()
+            values,_,_ = self.PDE.get_dphi_interface(*self.NN)
+        values = values.flatten()
 
         fig = go.Figure()
         fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
