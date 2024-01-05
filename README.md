@@ -3,9 +3,9 @@
 
 Simple Python Poisson-Boltzmann equation solver for real macromolecules in a polarizable media, using Extended Physics Informed Neural Networks. 
 
-$$\nabla^2 \phi_1 = -\frac{1}{\epsilon_1}\sum_k q_k\delta(x_k) \:\: ; \:\: x \in \Omega_1 $$
+$$\nabla^2 \phi_1 = -\frac{1}{\epsilon_1}\sum_k q_k\delta(x_k) \quad x \in \Omega_1 $$
 
-$$\nabla^2 \phi_2 = \kappa^2\phi_2 \:\: ; \:\: x \in \Omega_2 $$
+$$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
 
 <p align="center">
   <img height="300" src="img/Implicit-solvent.png">
