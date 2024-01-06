@@ -13,18 +13,6 @@ $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
   <img height="200" src="img/Implicit-solvent-tr.png">
 </p>
 
-
-<div style="display: flex; align-items: center; justify-content: space-between;">
-    <div style="flex: 1;">
-        $$\nabla^2 \phi_1 = -\frac{1}{\epsilon_1}\sum_k q_k\delta(x_k) \quad x \in \Omega_1 $$
-        $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
-    </div>
-    <div style="flex: 1; text-align: center;">
-        <img height="200" src="img/Implicit-solvent-tr.png" alt="Your image description">
-    </div>
-</div>
-
-
 ## Features
 
 - Solves the electrostatic potential for the solute and solvent domain.
