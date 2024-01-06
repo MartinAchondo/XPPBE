@@ -7,16 +7,22 @@ $$\nabla^2 \phi_1 = -\frac{1}{\epsilon_1}\sum_k q_k\delta(x_k) \quad x \in \Omeg
 
 $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
 
-<!--$$
-\begin{dcases}
-    \phi_1 = \phi_2 &  x \in \Gamma \\
-    \epsilon_1 \frac{\partial \phi_1}{\partial n} = \epsilon_2 \frac{\partial \phi_2}{\partial n} & x \in \Gamma \\
-\end{dcases}
-$$-->
+
 
 <p align="center">
   <img height="200" src="img/Implicit-solvent-tr.png">
 </p>
+
+
+<div style="display: flex; align-items: center; justify-content: space-between;">
+    <div style="flex: 1;">
+        $$\nabla^2 \phi_1 = -\frac{1}{\epsilon_1}\sum_k q_k\delta(x_k) \quad x \in \Omega_1 $$
+        $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
+    </div>
+    <div style="flex: 1; text-align: center;">
+        <img height="200" src="img/Implicit-solvent-tr.png" alt="Your image description">
+    </div>
+</div>
 
 
 ## Features
