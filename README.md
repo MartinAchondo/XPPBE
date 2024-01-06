@@ -15,7 +15,7 @@ $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
 $$-->
 
 <p align="center">
-  <img height="300" src="img/Implicit-solvent-tr.png">
+  <img height="200" src="img/Implicit-solvent-tr.png">
 </p>
 
 
