@@ -7,10 +7,12 @@ $$\nabla^2 \phi_1 = -\frac{1}{\epsilon_1}\sum_k q_k\delta(x_k) \quad x \in \Omeg
 
 $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
 
-$$ \left\{
-        \phi_1 = \phi_2 & \vb{x} \in \Gamma \\
-        \epsilon_1 \pdv{\phi_1}{n} = \epsilon_2 \pdv{\phi_2}{n} &  \vb{x} \in \Gamma \\
-    \right. $$
+<!--$$
+\begin{dcases}
+    \phi_1 = \phi_2 &  x \in \Gamma \\
+    \epsilon_1 \frac{\partial \phi_1}{\partial n} = \epsilon_2 \frac{\partial \phi_2}{\partial n} & x \in \Gamma \\
+\end{dcases}
+$$-->
 
 <p align="center">
   <img height="300" src="img/Implicit-solvent-tr.png">
