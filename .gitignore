@@ -7,9 +7,10 @@
 # Compiled Python files
 __pycache__/
 
-# Log files
+# Temporary and Log files
+~$*
+results_temp*
 *.log
-*.html
 
 # Shell script files
 pscp.bash
@@ -17,36 +18,20 @@ putty.bash
 pscp_pbj.bash
 
 # Test-related directories
-/tests
-/test
 /.test
 .ipynb_checkpoints/
-
-# Past code and saved code directories
-/past_codes
-/saved_codes
-
-# Data directories
-code/Post/Plot3d/data/
-code/Post/Plot3d/1ubq_data/
-code/Post/Plot3d/Plots/
 
 # Results and test directories
 code/results
 /.results
-
 code/temp
 code/S_test.py
-# Saved models directories
-saved_models/
 
-code/pbj/*
-code/pbj/*/
-!code/pbj/*.ipynb
-
-/.notes
-
-code/Post/Plot3d
+# Simulation-related directories
 code/simulations_list/past_sims
-~$*
-results_temp*
+code/pbj/
+code/pbj/*/
+!code/pbj/*.ipynb  
+
+# Files related to notes
+/.notes
