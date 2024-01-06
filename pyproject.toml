@@ -4,6 +4,8 @@ version = "1.0.0"
 description = "Phyisics Informed Neural Network code for Poisson-Boltzmann equation"
 authors = ["martinachondo <martin.achondom@gmail.com>"]
 readme = "README.md"
+license = "MIT"
+repository = "https://github.com/MartinAchondo/XPINN-for-PBE-Simulation"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
