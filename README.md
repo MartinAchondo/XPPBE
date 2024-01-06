@@ -44,14 +44,14 @@ To install and run this project locally, follow these steps:
     ```
 
 ## Usage
-To use this project, start by modifying the [Main.py](./code/Main.py) template code. If you intend to run multiple simulations, add your customized `Main.py` files to the `code/simulations_list` folder. Finally, execute the following command:
+To use this project, start by modifying the [Main_Molecule.py](./code/Main_Molecule.py) or the [Main_BornIon.py](./code/Main_BornIon.py) template code. If you intend to run multiple simulations, add your customized `Main.py` files to the `code/simulations_list` folder. Finally, execute the following command:
 
 
 ```bash
 bash run_simulations.bash
 ```
 
-An explanation of the `Main.py` code is as follows:
+An explanation of a `Main.py` code is as follows:
 
 1. Define the molecule and the properties:
     ```py
@@ -160,10 +160,11 @@ An explanation of the `Main.py` code is as follows:
 If you find this project useful for your research or work, please consider citing it. Here is an example BibTeX entry:
 
 ```bibtex
-@article{XPINN-for-PBE,
+@misc{XPINN-for-PBE,
   author    = {Martín Achondo},
   title     = {XPINN Solver for 3D Poisson-Boltzmann Equation},
-  journal   = {GitHub},
+  howpublished = {GitHub repository},
   year      = {2024},
   url       = {https://github.com/MartinAchondo/XPINN-for-PBE-Simulation},
 }
+```

@@ -349,8 +349,8 @@ class Postprocessing():
         error = np.sqrt(np.sum(u_dif**2)/np.sum(u1**2))
         return error
     
-    def save_values_file(self):
-        L2_continuity = self.L2_error_interface_continuity()        
+    def save_values_file(self,save=True):
+     
         max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
         Gsolv_value = self.XPINN.G_solv_hist[str(max_iter)]
 
@@ -370,6 +370,9 @@ class Postprocessing():
                 continue
             df_dict[key] = '{:.3e}'.format(float(value))
 
+        if not save:
+            return df_dict
+        
         path_save = os.path.join(self.directory,'results_values.json')
         with open(path_save, 'w') as json_file:
             json.dump(df_dict, json_file, indent=4)
@@ -548,30 +551,16 @@ class Born_Ion_Postprocessing(Postprocessing):
         error = np.sqrt(np.sum(u_dif**2)/np.sum(u_an**2))
         return error
     
-    def save_values_file(self):
-        L2_continuity = self.L2_error_interface_continuity()
+    def save_values_file(self,save=True):
+
         L2_analytic = self.L2_error_interface_analytic()
         
-        max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
-        Gsolv_value = self.XPINN.G_solv_hist[str(max_iter)]
+        df_dict = super().save_values_file(save=False)
+        df_dict['L2_analytic'] = '{:.3e}'.format(float(L2_analytic))
 
-        dict_pre = {
-            'Gsolv_value': Gsolv_value,
-            'L2_continuity_u': np.sqrt(self.XPINN.loss_Iu[-1]),
-            'L2_continuity_du': np.sqrt(self.XPINN.loss_Id[-1]),
-            'L2_analytic': L2_analytic,
-            'Loss_XPINN': self.loss_last[0],
-            'Loss_NN1': self.loss_last[1],
-            'Loss_NN2': self.loss_last[2]
-        } 
-
-        df_dict = {}
-        for key, value in dict_pre.items():
-            if key=='Gsolv_value':
-                df_dict[key] = np.format_float_positional(float(value), unique=False, precision=3)
-                continue
-            df_dict[key] = '{:.3e}'.format(float(value))
-
+        if not save:
+            return df_dict
+        
         path_save = os.path.join(self.directory,'results_values.json')
         with open(path_save, 'w') as json_file:
             json.dump(df_dict, json_file, indent=4)

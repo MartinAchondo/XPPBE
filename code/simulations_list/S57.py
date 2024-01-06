@@ -155,18 +155,18 @@ def main():
         #lr = tf.keras.optimizers.schedules.PiecewiseConstantDecay(*lr_s)
         lr = tf.keras.optimizers.schedules.ExponentialDecay(
                 initial_learning_rate=0.001,
-                decay_steps=3000,
-                decay_rate=0.95,
+                decay_steps=2000,
+                decay_rate=0.9,
                 staircase=True)
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 100000
+        N_iters = 10000
 
         precondition = False
         N_precond = 5
 
-        iters_save_model = 5000
+        iters_save_model = 1000
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 
