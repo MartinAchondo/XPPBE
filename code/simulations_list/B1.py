@@ -68,7 +68,7 @@ class PDE():
         
                 self.PBE_model = PBE(self.inputs,
                         mesh=self.Mol_mesh, 
-                        model='nonlinear',
+                        model='linear',
                         path=main_path
                         ) 
                 
@@ -140,7 +140,6 @@ def main():
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN',
                         'fourier_features': True,
-                        'num_fourier_features': 256
                 }
 
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])

@@ -140,8 +140,8 @@ class PBE(PDE_utils):
 
             r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
 
-            G2_p = G2_p_1 + tf.math.reduce_sum(self.aprox_exp(-C_phi2-6*tf.math.log(r2)))
-            G2_m = G2_m_1 + tf.math.reduce_sum(self.aprox_exp(C_phi2-6*tf.math.log(r2)))
+            G2_p = G2_p_1 + tf.math.reduce_sum(self.aprox_exp(-C_phi2)/r2**6)
+            G2_m = G2_m_1 + tf.math.reduce_sum(self.aprox_exp(C_phi2)/r2**6)
 
             phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000  # to_mV
 
@@ -217,7 +217,7 @@ class PBE(PDE_utils):
         G_solv = 0.5*np.sum(self.qs * phi_q).real
         G_solv *= self.to_V*self.qe*self.Na*(10**-3/4.184)   # kcal/mol
         
-        return G_solv   
+        return G_solv
 
     def analytic_Born_Ion(self,r):
         rI = self.mesh.R_mol

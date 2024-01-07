@@ -26,6 +26,7 @@ code/results
 /.results
 code/temp
 code/S_test.py
+code/S_temp.py
 
 # Simulation-related directories
 code/simulations_list/past_sims

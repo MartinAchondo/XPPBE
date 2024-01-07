@@ -62,8 +62,8 @@ def experimental(X):
 
     C_phi = phi * to_V * C
 
-    G2_p = np.sum(np.exp(-C_phi-6*np.log(R_x)))
-    G2_m = np.sum(np.exp(C_phi-6*np.log(R_x)))
+    G2_p = np.sum(np.exp(-C_phi)/R_x**6)
+    G2_m = np.sum(np.exp(C_phi)/R_x**6)
 
     phi_ens_pred = -kT/(2*qe) * np.log(G2_p/G2_m) * 1000 
 
