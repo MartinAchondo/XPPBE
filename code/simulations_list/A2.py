@@ -48,7 +48,7 @@ class PDE():
                                 }
                 
                 self.N_points = {'dx_interior': 0.25,
-                                'dx_exterior': 0.1,
+                                'dx_exterior': 0.2,
                                 'N_border': 15,
                                 'dR_exterior': 10,
                                 'dx_experimental': 0.9,
