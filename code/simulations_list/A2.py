@@ -47,11 +47,11 @@ class PDE():
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'dx_interior': 0.25,
-                                'dx_exterior': 0.2,
+                self.N_points = {'dx_interior': 0.4,
+                                'dx_exterior': 2,
                                 'N_border': 15,
                                 'dR_exterior': 10,
-                                'dx_experimental': 0.9,
+                                'dx_experimental': 2,
                                 'N_pq': 70,
                                 'G_sigma': 0.04,
                                 'mesh_density': 6
