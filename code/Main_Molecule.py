@@ -40,21 +40,21 @@ class PDE():
 
         def __init__(self):
                 
-                self.inputs = {'molecule': 'methanol',
+                self.inputs = {'molecule': 'arg',
                                 'epsilon_1':  1,
                                 'epsilon_2': 80,
                                 'kappa': 0.125,
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'dx_interior': 0.2,
-                                'dx_exterior': 0.5,
-                                'N_border': 6,
-                                'dR_exterior': 10,
-                                'dx_experimental': 1,
+                self.N_points = {'dx_interior': 1.2,
+                                'dx_exterior': 2.5,
+                                'N_border': 15,
+                                'dR_exterior': 4,
+                                'dx_experimental': 4,
                                 'N_pq': 10,
                                 'G_sigma': 0.04,
-                                'mesh_density': 3
+                                'mesh_density': 6
                                 }
 
         def create_simulation(self):
@@ -90,12 +90,13 @@ class PDE():
                 self.meshes_domain = dict()
                 self.meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
                 self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
-                self.meshes_domain['3'] = {'type':'G', 'value':None, 'fun':None}
+                #self.meshes_domain['3'] = {'type':'G', 'value':None, 'fun':None}
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
                 self.XPINN_solver = XPINN(PINN)
 
                 self.XPINN_solver.adapt_PDEs(self.PBE_model)
+
 
 
 def main():
@@ -160,7 +161,7 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 100
+        N_iters = 1
 
         precondition = False
         N_precond = 5

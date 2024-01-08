@@ -16,7 +16,7 @@ class PBE(PDE_utils):
     ang_to_m = 1e-10
     to_V = qe/(eps0 * ang_to_m)   
 
-    def __init__(self, inputs, mesh, model,path):      
+    def __init__(self, inputs, mesh, model, path):      
 
         self.mesh = mesh
         self.main_path = path

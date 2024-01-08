@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from Model.Mesh.Solver_Mesh import Solver_Mesh
 from Model.Molecules.Charges import import_charges_from_pqr
 
-    
+
 class Molecule_Mesh():
 
     DTYPE = 'float32'
@@ -54,6 +54,8 @@ class Molecule_Mesh():
         self.mesh = trimesh.Trimesh(vertices=self.verts, faces=self.faces)
 
         self.interior_obj, self.exterior_obj = self.create_mesh_objs(Mesh_class)
+
+        print("Mesh initialization ready")
 
     def create_mesh_objs(self, Mesh_class):
         

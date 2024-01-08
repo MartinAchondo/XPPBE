@@ -48,6 +48,7 @@ class XPINN_utils():
             solver.adapt_PDE(pde)
         self.adapt_datasets()
         self.set_mesh_names()
+        print("PDEs and datasets ready")
 
     def adapt_weights(self,weights,adapt_weights=False,adapt_w_iter=2000,adapt_w_method='gradients',alpha=0.3):
         self.adapt_weights = adapt_weights
