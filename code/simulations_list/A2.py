@@ -40,21 +40,21 @@ class PDE():
 
         def __init__(self):
                 
-                self.inputs = {'molecule': 'methanol',
-                                'epsilon_1':  1,
+                self.inputs = {'molecule': 'arg',
+                                'epsilon_1':  2,
                                 'epsilon_2': 80,
                                 'kappa': 0.125,
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'dx_interior': 0.12,
-                                'dx_exterior': 0.8,
+                self.N_points = {'dx_interior': 0.17,
+                                'dx_exterior': 0.9,
                                 'N_border': 15,
-                                'dR_exterior': 9,
-                                'dx_experimental': 0.8,
+                                'dR_exterior': 10,
+                                'dx_experimental': 0.9,
                                 'N_pq': 70,
                                 'G_sigma': 0.04,
-                                'mesh_density': 30
+                                'mesh_density': 6
                                 }
 
         def create_simulation(self):
@@ -68,14 +68,14 @@ class PDE():
         
                 self.PBE_model = PBE(self.inputs,
                         mesh=self.Mol_mesh, 
-                        model='linear',
+                        model='nonlinear',
                         path=main_path
                         ) 
                 
                 self.meshes_in = dict()
                 self.meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
                 self.meshes_in['2'] = {'type':'Q', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
-                self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+                self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
                 #self.meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
 
                 self.PBE_model.PDE_in.mesh.adapt_meshes(self.meshes_in)
@@ -83,7 +83,7 @@ class PDE():
                 self.meshes_out = dict()
                 self.meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
                 self.meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
-                self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
+                self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat', 'noise': True}
                 #self.meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
                 self.PBE_model.PDE_out.mesh.adapt_meshes(self.meshes_out)
 
@@ -139,7 +139,8 @@ def main():
                         'output_dim': 1,
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN',
-                        'fourier_features': True
+                        'fourier_features': True,
+                        'num_fourier_features': 256
                 }
 
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
@@ -165,7 +166,7 @@ def main():
         precondition = False
         N_precond = 5
 
-        iters_save_model = 1000
+        iters_save_model = 2000
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 
@@ -192,9 +193,6 @@ def main():
         Post.plot_interface_3D(variable='dphi');
         Post.plot_phi_line();
         Post.plot_phi_contour();
-        Post.plot_aprox_analytic();
-        Post.plot_aprox_analytic(zoom=True);
-        Post.plot_line_interface();
         Post.save_values_file();
 
         Post.plot_architecture(domain=1);

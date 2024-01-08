@@ -12,7 +12,7 @@ from Model.PDE_Model import PBE
 from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 
 from NN.XPINN import XPINN
-from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
+from Post.Postcode import Postprocessing
 
 
 simulation_name = os.path.basename(os.path.abspath(__file__)).replace('.py','')
@@ -40,21 +40,21 @@ class PDE():
 
         def __init__(self):
                 
-                self.inputs = {'molecule': 'born_ion',
+                self.inputs = {'molecule': 'methanol',
                                 'epsilon_1':  1,
                                 'epsilon_2': 80,
                                 'kappa': 0.125,
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'dx_interior': 0.12,
+                self.N_points = {'dx_interior': 0.15,
                                 'dx_exterior': 0.8,
                                 'N_border': 15,
                                 'dR_exterior': 9,
                                 'dx_experimental': 0.8,
                                 'N_pq': 70,
                                 'G_sigma': 0.04,
-                                'mesh_density': 3
+                                'mesh_density': 8
                                 }
 
         def create_simulation(self):
@@ -68,7 +68,7 @@ class PDE():
         
                 self.PBE_model = PBE(self.inputs,
                         mesh=self.Mol_mesh, 
-                        model='linear',
+                        model='nonlinear',
                         path=main_path
                         ) 
                 
@@ -140,6 +140,7 @@ def main():
                         'activation': 'tanh',
                         'architecture_Net': 'FCNN',
                         'fourier_features': True,
+                        'num_fourier_features': 256
                 }
 
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
@@ -160,12 +161,12 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 10000
+        N_iters = 20000
 
         precondition = False
         N_precond = 5
 
-        iters_save_model = 1000
+        iters_save_model = 2000
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 
@@ -192,9 +193,6 @@ def main():
         Post.plot_interface_3D(variable='dphi');
         Post.plot_phi_line();
         Post.plot_phi_contour();
-        Post.plot_aprox_analytic();
-        Post.plot_aprox_analytic(zoom=True);
-        Post.plot_line_interface();
         Post.save_values_file();
 
         Post.plot_architecture(domain=1);
