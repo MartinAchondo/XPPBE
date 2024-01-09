@@ -16,6 +16,8 @@ results_temp*
 pscp.bash
 putty.bash
 pscp_pbj.bash
+pscp_sims.bash
+pscp_post.bash
 
 # Test-related directories
 /.test
