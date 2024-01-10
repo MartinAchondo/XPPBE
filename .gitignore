@@ -32,7 +32,7 @@ code/S_temp.py
 
 # Simulation-related directories
 code/simulations_list/past_sims
-code/simulations_lists/
+code/simulations_list/
 code/pbj/
 code/pbj/*/
 .pbj/
