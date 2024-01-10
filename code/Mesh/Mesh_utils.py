@@ -4,10 +4,10 @@ import shutil
 
 
 
-def generate_msms_mesh(mesh_xyzr_path, output_dir, output_name, density, probe_radius):
+def generate_msms_mesh(mesh_xyzr_path, output_dir, output_name, density, probe_radius=1.4):
 
-    path = os.path.join(output_dir, output_name)
-    msms_dir = os.path.join('code','Model','Mesh','Mesh_softwares', "MSMS", "")
+    path = os.path.join(output_dir, f'{output_name}_d{density}')
+    msms_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),'Mesh_softwares', "MSMS", "")
     if platform.system() == "Linux":
         external_file = "msms"
         os.system("chmod +x " + msms_dir + external_file)

@@ -29,6 +29,7 @@ $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
 ## Resources
 
 - [Documents](./documents/): Check this folder for relevant papers and additional project documentation.
+- [Tutorials](./tutorials/): Check this folder for notebooks tutorials.
 
 ## Installation
 

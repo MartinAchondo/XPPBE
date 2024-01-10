@@ -14,7 +14,7 @@ class Molecule_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, N_points, plot=False, path='', simulation='Main'):
+    def __init__(self, molecule, N_points, simulation='Main', path='', plot=False, result_path=''):
         
         self.mesh_density = 3
         for key, value in N_points.items():
@@ -23,6 +23,7 @@ class Molecule_Mesh():
         self.plot = plot
         self.main_path = path
         self.simulation_name = simulation
+        self.result_path = self.main_path if result_path=='' else result_path
 
         self.read_create_meshes(Solver_Mesh)
 
@@ -258,7 +259,7 @@ class Molecule_Mesh():
         return next(iter(X_batches))
 
     def save_data_plot(self,X_plot):
-        path_files = os.path.join(self.main_path,'results',self.simulation_name,'mesh')
+        path_files = os.path.join(self.result_path,'results',self.simulation_name,'mesh')
         os.makedirs(path_files, exist_ok=True)
 
         for subset_name, subset_data in X_plot.items():

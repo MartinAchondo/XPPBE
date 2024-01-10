@@ -36,6 +36,7 @@ code/simulations_list/
 code/pbj/
 code/pbj/*/
 .pbj/
+tutorials/results/
 
 
 # Files related to notes
