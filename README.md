@@ -49,7 +49,7 @@ To install and run this project locally, follow these steps:
     ```
 
 ## Usage
-To use this project, start by modifying the [Main_Molecule.py](./code/Main_Molecule.py) or the [Main_BornIon.py](./code/Main_BornIon.py) template code. If you intend to run multiple simulations, add your customized `Main.py` files to the `code/simulations_list` folder. Finally, execute the following command:
+To use this project, start by following the [Tutorial.ipynb](./tutorials/tutorial.ipynb) notebook, or modifying the [Main_Molecule.py](./code/Main_Molecule.py) or the [Main_BornIon.py](./code/Main_BornIon.py) template codes. If you intend to run multiple simulations, add your customized `Main.py` files to the `code/simulations_list` folder. Finally, execute the following command:
 
 
 ```bash

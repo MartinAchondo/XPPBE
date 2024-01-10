@@ -7,7 +7,7 @@ import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
-from Model.Mesh.Molecule_Mesh import Molecule_Mesh
+from Mesh.Molecule_Mesh import Molecule_Mesh
 from Model.PDE_Model import PBE
 from NN.NeuralNet import NeuralNet
 from NN.PINN import PINN 

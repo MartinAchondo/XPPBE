@@ -32,9 +32,11 @@ code/S_temp.py
 
 # Simulation-related directories
 code/simulations_list/past_sims
+code/simulations_lists/
 code/pbj/
 code/pbj/*/
-!code/pbj/*.ipynb  
+.pbj/
+
 
 # Files related to notes
 /.notes
