@@ -99,11 +99,11 @@ class PBE(PDE_utils):
             n_v = solver.mesh.get_X(N_v)
             du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
             du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
-            loss += tf.reduce_mean(tf.square(du_1*solver.PDE.epsilon - du_2*solver_ex.PDE.epsilon -(solver_ex.epsilon-solver.epsilon)*self.dG_n(*X)))
+            loss += tf.reduce_mean(tf.square(du_1*solver.PDE.epsilon - du_2*solver_ex.PDE.epsilon -(solver_ex.PDE.epsilon-solver.PDE.epsilon)*self.dG_n(*X,N_v)))
             
         return loss
     
-    #Falta
+
     def get_phi_ens(self,solvers,X_mesh,X_q):
         
         kT = self.kb*self.T
@@ -112,11 +112,13 @@ class PBE(PDE_utils):
         s1,s2 = solvers
         X_in,X_out = X_mesh
         phi_ens_L = list()
+        
 
         for x_q in X_q:
 
             if X_in != None:
-                C_phi1 = s1.model(X_in) * self.to_V * C 
+                x,y,z = s1.mesh.get_X(X_in)
+                C_phi1 = (s1.model(X_in)+self.G(x,y,z)) * self.to_V * C 
                 r1 = tf.sqrt(tf.reduce_sum(tf.square(x_q - X_in), axis=1, keepdims=True))
                 G2_p_1 =  tf.math.reduce_sum(self.aprox_exp(-C_phi1)/r1**6)
                 G2_m_1 = tf.math.reduce_sum(self.aprox_exp(C_phi1)/r1**6)
@@ -124,7 +126,8 @@ class PBE(PDE_utils):
                 G2_p_1 = 0.0
                 G2_m_1 = 0.0
 
-            C_phi2 = s2.model(X_out) * self.to_V * C
+            x,y,z = s2.mesh.get_X(X_out)
+            C_phi2 = (s2.model(X_out)+self.G(x,y,z)) * self.to_V * C
 
             r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
 
@@ -215,8 +218,8 @@ class PBE(PDE_utils):
         kappa = self.kappa
         q = self.q_list[0].q
 
-        f_IN = lambda r: (q/(4*self.pi)) * ( 1/(epsilon_1*r) - 1/(epsilon_1*rI) + 1/(epsilon_2*(1+kappa*rI)*rI) )
-        f_OUT = lambda r: (q/(4*self.pi)) * (np.exp(-kappa*(r-rI))/(epsilon_2*(1+kappa*rI)*r))
+        f_IN = lambda r: (q/(4*self.pi)) * ( 1/(epsilon_1*r) - 1/(epsilon_1*rI) + 1/(epsilon_2*(1+kappa*rI)*rI) ) - (q/(4*self.pi)) * 1/(epsilon_1*r)
+        f_OUT = lambda r: (q/(4*self.pi)) * (np.exp(-kappa*(r-rI))/(epsilon_2*(1+kappa*rI)*r)) - (q/(4*self.pi)) * 1/(epsilon_1*r)
 
         y = np.piecewise(r, [r<=rI, r>rI], [f_IN, f_OUT])
 
