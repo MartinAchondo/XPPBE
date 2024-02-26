@@ -27,16 +27,16 @@ class Postprocessing():
         self.mesh = XPINN.mesh
         self.PDE = XPINN.PDE
 
-        self.loss_last = [np.format_float_scientific(self.XPINN.loss_hist[-1], unique=False, precision=3),
-                          np.format_float_scientific(self.NN[0].loss_hist[-1], unique=False, precision=3),
-                          np.format_float_scientific(self.NN[1].loss_hist[-1], unique=False, precision=3)]
+        self.loss_last = [np.format_float_scientific(self.XPINN.losses['TL'][-1], unique=False, precision=3),
+                          np.format_float_scientific(self.NN[0].losses['TL'][-1], unique=False, precision=3),
+                          np.format_float_scientific(self.NN[1].losses['TL'][-1], unique=False, precision=3)]
 
 
     def plot_loss_history(self, domain=1, plot_w=False):
         fig,ax = plt.subplots()
         domain -= 1
-        ax.semilogy(range(1,len(self.XPINN.loss_hist)+1), self.XPINN.loss_hist,'k--',label='Loss_XN')
-        ax.semilogy(range(1,len(self.NN[domain].loss_hist)+1), self.NN[domain].loss_hist,'k-',label='Loss_NN')
+        ax.semilogy(range(1,len(self.XPINN.losses['TL'])+1), self.XPINN.losses['TL'],'k--',label='Loss_XN')
+        ax.semilogy(range(1,len(self.NN[domain].losses['TL'])+1), self.NN[domain].losses['TL'],'k-',label='Loss_NN')
         c = ['r','b','g', 'gold','c','m','lime','darkslategrey','salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']
         for i,NN in enumerate(self.NN):
             if i==domain:
@@ -46,23 +46,23 @@ class Postprocessing():
                     w = NN.w_hist
                 meshes_names = NN.Mesh_names
                 if 'R' in meshes_names:
-                    ax.semilogy(range(1,len(NN.loss_r)+1), w['R']*np.array(NN.loss_r),c[0],label=f'Loss_R')
+                    ax.semilogy(range(1,len(NN.losses['R'])+1), w['R']*np.array(NN.losses['R']),c[0],label=f'Loss_R')
                 if 'D' in meshes_names:
-                    ax.semilogy(range(1,len(NN.loss_bD)+1), w['D']*np.array(NN.loss_bD),c[1],label=f'Loss_D')
+                    ax.semilogy(range(1,len(NN.losses['D'])+1), w['D']*np.array(NN.losses['D']),c[1],label=f'Loss_D')
                 if 'N' in meshes_names:
-                    ax.semilogy(range(1,len(NN.loss_bN)+1), w['N']*np.array(NN.loss_bN),c[2],label=f'Loss_N')
+                    ax.semilogy(range(1,len(NN.losses['N'])+1), w['N']*np.array(NN.losses['N']),c[2],label=f'Loss_N')
                 if 'K' in meshes_names:
-                    ax.semilogy(range(1,len(NN.loss_bK)+1), w['K']*np.array(NN.loss_bK),c[3],label=f'Loss_K')
+                    ax.semilogy(range(1,len(NN.losses['K'])+1), w['K']*np.array(NN.losses['K']),c[3],label=f'Loss_K')
                 if 'Q' in meshes_names:
-                    ax.semilogy(range(1,len(NN.loss_bQ)+1), w['Q']*np.array(NN.loss_bQ),c[4],label=f'Loss_Q')
+                    ax.semilogy(range(1,len(NN.losses['Q'])+1), w['Q']*np.array(NN.losses['Q']),c[4],label=f'Loss_Q')
                 if 'Iu' in meshes_names:
-                    ax.semilogy(range(1,len(self.XPINN.loss_Iu)+1), w['Iu']*np.array(self.XPINN.loss_Iu),c[5],label=f'Loss_Iu')
+                    ax.semilogy(range(1,len(self.XPINN.losses['Iu'])+1), w['Iu']*np.array(self.XPINN.losses['Iu']),c[5],label=f'Loss_Iu')
                 if 'Id' in meshes_names:
-                    ax.semilogy(range(1,len(self.XPINN.loss_Id)+1), w['Id']*np.array(self.XPINN.loss_Id),c[6],label=f'Loss_Id')
+                    ax.semilogy(range(1,len(self.XPINN.losses['Id'])+1), w['Id']*np.array(self.XPINN.losses['Id']),c[6],label=f'Loss_Id')
                 if 'E' in meshes_names:
-                    ax.semilogy(range(1,len(self.XPINN.loss_exp)+1), w['E']*np.array(self.XPINN.loss_exp),c[7],label=f'Loss_E')
+                    ax.semilogy(range(1,len(self.XPINN.losses['E'])+1), w['E']*np.array(self.XPINN.losses['E']),c[7],label=f'Loss_E')
                 if 'G' in meshes_names:
-                    ax.semilogy(range(1,len(self.XPINN.loss_G)+1), w['G']*np.array(self.XPINN.loss_G),c[8],label=f'Loss_G')    
+                    ax.semilogy(range(1,len(self.XPINN.losses['G'])+1), w['G']*np.array(self.XPINN.losses['G']),c[8],label=f'Loss_G')    
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel(r'$\mathcal{L}: Losses$')
@@ -355,8 +355,8 @@ class Postprocessing():
 
         dict_pre = {
             'Gsolv_value': Gsolv_value,
-            'L2_continuity_u': np.sqrt(self.XPINN.loss_Iu[-1]),
-            'L2_continuity_du': np.sqrt(self.XPINN.loss_Id[-1]),
+            'L2_continuity_u': np.sqrt(self.XPINN.losses['Iu'][-1]),
+            'L2_continuity_du': np.sqrt(self.XPINN.losses['Id'][-1]),
             'Loss_XPINN': self.loss_last[0],
             'Loss_NN1': self.loss_last[1],
             'Loss_NN2': self.loss_last[2]

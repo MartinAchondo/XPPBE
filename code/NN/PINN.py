@@ -17,7 +17,7 @@ class PINN():
     def __init__(self):
        
         self.loss_hist = list()
-
+        self.losses = dict()
         self.iter = 0
         self.lr = None
  
@@ -42,21 +42,8 @@ class PINN():
         w_iu=1.0,
         w_id=1.0):
 
-        self.w = {
-            'R': float(w_r),
-            'D': float(w_d),
-            'N': float(w_n),
-            'K': float(w_k),
-            'Q': float(w_q),
-            'I': float(w_i),
-            'E': float(w_e),
-            'G': float(w_g),
-            'Iu': float(w_iu),
-            'Id': float(w_id),
-            'P': 1.0
-        }
-
         self.L_names = ['R','D','N','K','I','P','E','Q','G','Iu','Id']
+        self.w = {key: float(val) for key, val in zip(self.L_names+['P'], [w_r, w_d, w_n, w_k, w_q, w_i, w_e, w_g, w_iu, w_id, 1.0])}
 
         self.w_hist = dict()
         for t in self.L_names:
