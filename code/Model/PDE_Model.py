@@ -60,8 +60,8 @@ class PBE(PDE_utils):
 
     def get_integral_operators(self):
 
-        elements = self.mesh.faces
-        vertices = self.mesh.verts
+        elements = self.mesh.mol_faces
+        vertices = self.mesh.mol_verts
         self.grid = bempp.api.Grid(vertices.transpose(), elements.transpose())
 
         self.space = bempp.api.function_space(self.grid, "P", 1)
@@ -175,7 +175,7 @@ class PBE(PDE_utils):
         du_2 = self.directional_gradient(s2.mesh,s2.model,X,n_v)
         du_prom = (du_1*s1.PDE.epsilon + du_2*s2.PDE.epsilon)/2
 
-        faces = self.mesh.faces
+        faces = self.mesh.mol_faces
         areas = self.mesh.areas
         du_faces = tf.reduce_mean(tf.gather(du_prom, faces), axis=1)
 
@@ -186,16 +186,16 @@ class PBE(PDE_utils):
 
 
     def get_phi_interface(self,solver,solver_ex):      
-        verts = tf.constant(self.mesh.verts)
+        verts = tf.constant(self.mesh.mol_verts)
         u1 = solver.model(verts)
         u2 = solver_ex.model(verts)
         u_mean = (u1+u2)/2
         return u_mean.numpy()
     
     def get_dphi_interface(self,solver,solver_ex): 
-        verts = tf.constant(self.mesh.verts)     
+        verts = tf.constant(self.mesh.mol_verts)     
         X = solver.mesh.get_X(verts)
-        n_v = solver.mesh.get_X(self.mesh.normal)
+        n_v = solver.mesh.get_X(self.mesh.mol_normal)
         du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
         du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
         du_prom = (du_1*solver.PDE.epsilon + du_2*solver_ex.PDE.epsilon)/2

@@ -11,7 +11,6 @@ import json
 
 logger = logging.getLogger(__name__)
 
-
 class Postprocessing():
 
     def __init__(self,XPINN, save=False, directory=''):
@@ -168,8 +167,8 @@ class Postprocessing():
 
     def plot_mesh_3D(self):
 
-        vertices = self.mesh.verts
-        elements = self.mesh.faces
+        vertices = self.mesh.mol_verts
+        elements = self.mesh.mol_faces
 
         element_trace = go.Mesh3d(
             x=vertices[:, 0],
@@ -207,8 +206,8 @@ class Postprocessing():
 
     def plot_interface_3D(self,variable='phi', values=None):
         
-        vertices = self.mesh.verts
-        elements = self.mesh.faces
+        vertices = self.mesh.mol_verts
+        elements = self.mesh.mol_faces
          
         if variable == 'phi':
             values = self.PDE.get_phi_interface(*self.NN)
@@ -330,7 +329,7 @@ class Postprocessing():
     def get_interior_exterior(self,points,R_exterior=None):
         if R_exterior==None:
             R_exterior = self.mesh.R_exterior
-        interior_points_bool = self.mesh.mesh.contains(points)
+        interior_points_bool = self.mesh.mol_mesh.contains(points)
         interior_points = points[interior_points_bool]
         exterior_points_bool = ~interior_points_bool  
         exterior_points = points[exterior_points_bool]
@@ -341,7 +340,7 @@ class Postprocessing():
         return interior_points,exterior_points, bools
     
     def L2_error_interface_continuity(self):
-        verts = tf.constant(self.XPINN.mesh.verts)
+        verts = tf.constant(self.XPINN.mesh.mol_verts)
         s1,s2 = self.XPINN.solvers
         u1 = s1.model(verts).numpy()
         u2 = s2.model(verts).numpy()

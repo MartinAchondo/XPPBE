@@ -47,14 +47,15 @@ class PDE():
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'dx_interior': 1.2,
-                                'dx_exterior': 2.5,
-                                'N_border': 15,
-                                'dR_exterior': 4,
+                self.N_points = {'hmin_interior': 1.2,
+                                'hmin_exterior': 2.5,
+                                'density_mol': 3,
+                                'density_border': 3,
                                 'dx_experimental': 4,
                                 'N_pq': 10,
                                 'G_sigma': 0.04,
-                                'mesh_density': 6
+                                'mesh_generator': 'msms',
+                                'dR_exterior': 6
                                 }
 
         def create_simulation(self):

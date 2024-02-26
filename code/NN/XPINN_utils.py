@@ -15,25 +15,10 @@ class XPINN_utils():
 
     def __init__(self):
 
-        self.loss_hist = list()
-
-        self.loss_r1 = list()
-        self.loss_bD1 = list()
-        self.loss_bN1 = list()
-        self.loss_bK1 = list()
-        self.loss_bQ = list()
-        self.loss_P1 = list()
-
-        self.loss_r2 = list()
-        self.loss_bD2 = list()
-        self.loss_bN2 = list()
-        self.loss_bK2 = list()
-        self.loss_P2 = list()
-        
-        self.loss_G = list()
-        self.loss_Iu = list()
-        self.loss_Id = list()
-        self.loss_exp = list()
+        self.losses = dict()
+        self.losses_names = ['TL','R1','D1','N1','K1','Q','R2','D2','N2','K2','G','Iu','Id','E','P1','P2']
+        for t in self.losses_names:
+            self.losses[t] = list()
 
         self.G_solv_hist = dict()
         self.G_solv_hist['0'] = 0.0
