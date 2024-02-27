@@ -376,6 +376,13 @@ class Postprocessing():
         with open(path_save, 'w') as json_file:
             json.dump(df_dict, json_file, indent=4)
 
+    def save_model_summary(self):
+        path_save = os.path.join(self.directory,'models_summary.txt')
+        with open(path_save, 'w') as f:
+            print_func = lambda x: print(x, file=f)
+            self.NN[0].model.summary(print_fn=print_func)
+            print("\n\n", file=f)
+            self.NN[1].model.summary(print_fn=print_func)
 
     def plot_architecture(self,domain=1):
         

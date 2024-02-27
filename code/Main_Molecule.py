@@ -129,6 +129,7 @@ def main():
                         'num_neurons_per_layer': 20,
                         'output_dim': 1,
                         'activation': 'tanh',
+                        'adaptative_activation': True,
                         'architecture_Net': 'FCNN',
                         'fourier_features': True,
                         'num_fourier_features': 128
@@ -194,7 +195,8 @@ def main():
         Post.plot_phi_line();
         Post.plot_phi_contour();
         Post.save_values_file();
-        
+        Post.save_model_summary();
+
         Post.plot_architecture(domain=1);
         Post.plot_architecture(domain=2);
 

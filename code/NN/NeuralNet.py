@@ -11,9 +11,10 @@ class NeuralNet(tf.keras.Model):
                  num_neurons_per_layer=20,
                  num_hidden_blocks=2,
                  activation='tanh',
+                 adaptative_activation=False,
                  kernel_initializer='glorot_normal',
                  architecture_Net='FCNN',
-                 fourier_features=True, 
+                 fourier_features=False, 
                  num_fourier_features=128, 
                  fourier_sigma=1,
                  **kwargs):
@@ -49,12 +50,31 @@ class NeuralNet(tf.keras.Model):
                     return tf.concat([tf.sin(2.0*np.pi*Z), tf.cos(2.0*np.pi*Z)], axis=-1)
             self.fourier_features.add(SinCosLayer(name='fourier_sincos_layer'))
 
+
+        class CustomActivation(tf.keras.layers.Layer):
+            def __init__(self, units=1, adaptative_activation=False, **kwargs):
+                super(CustomActivation, self).__init__(**kwargs)
+                self.units = units
+                self.adaptative_activation = adaptative_activation
+
+            def build(self, input_shape):
+                self.a = self.add_weight(name='a',
+                                        shape=(self.units,),
+                                        initializer='ones',
+                                        trainable=self.adaptative_activation)
+                super(CustomActivation, self).build(input_shape)
+
+            def call(self, inputs):
+                a_expanded = tf.expand_dims(self.a, axis=0) 
+                activation_func = tf.keras.activations.get(activation)
+                return activation_func(inputs * a_expanded)
+
         # FCNN architecture
         if self.architecture_Net == 'FCNN':
             self.hidden_layers = list()
             for i in range(self.num_hidden_layers):
                 layer = tf.keras.layers.Dense(num_neurons_per_layer,
-                                              activation=tf.keras.activations.get(activation),
+                                              activation=CustomActivation(units=num_neurons_per_layer,adaptative_activation=adaptative_activation),
                                               kernel_initializer=kernel_initializer,
                                               name=f'layer_{i}')
                 self.hidden_layers.append(layer)
@@ -62,7 +82,7 @@ class NeuralNet(tf.keras.Model):
         # ResNet architecture
         elif self.architecture_Net == 'ResNet':
             self.first = tf.keras.layers.Dense(num_neurons_per_layer,
-                                               activation=tf.keras.activations.get(activation),
+                                               activation=CustomActivation(units=num_neurons_per_layer,adaptative_activation=adaptative_activation),
                                                kernel_initializer=kernel_initializer,
                                                name=f'layer_0')
             self.hidden_blocks = list()
@@ -70,17 +90,17 @@ class NeuralNet(tf.keras.Model):
             for i in range(self.num_hidden_blocks):
                 block = tf.keras.Sequential(name=f"block_{i}")
                 block.add(tf.keras.layers.Dense(num_neurons_per_layer,
-                                                activation=tf.keras.activations.get(activation),
+                                                activation=CustomActivation(units=num_neurons_per_layer,adaptative_activation=adaptative_activation),
                                                 kernel_initializer=kernel_initializer))
                 block.add(tf.keras.layers.Dense(num_neurons_per_layer,
                                                 activation=None,
                                                 kernel_initializer=kernel_initializer))
                 self.hidden_blocks.append(block)
-                activation_layer = tf.keras.layers.Activation(tf.keras.activations.get(activation))
+                activation_layer = tf.keras.layers.Activation(activation=CustomActivation(units=num_neurons_per_layer,adaptative_activation=adaptative_activation))
                 self.hidden_blocks_activations.append(activation_layer)
             
             self.last = tf.keras.layers.Dense(num_neurons_per_layer,
-                                              activation=tf.keras.activations.get(activation),
+                                              activation=CustomActivation(units=num_neurons_per_layer,adaptative_activation=adaptative_activation),
                                               kernel_initializer=kernel_initializer,
                                               name=f'layer_1')
 
@@ -117,32 +137,18 @@ class NeuralNet(tf.keras.Model):
         return self.out(Z)
     
 
-    def plot_model(self):
-        input_layer = tf.keras.layers.Input(shape=self.input_shape_N[1:], name='input')
-    
-        visual_model = tf.keras.models.Model(inputs=input_layer, outputs=self.call(input_layer))
-
-        main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)))
-        tf.keras.utils.plot_model(visual_model, to_file=os.path.join(main_path,'model_achitecture.png'),
-                                    show_shapes=True,
-                                    show_dtype=False,
-                                    show_layer_names=True,
-                                    expand_nested=True,
-                                    show_layer_activations=True,
-                                    dpi = 150)
-        
-        self.build_Net()
-        print(self.summary(expand_nested=True))
-
-
 if __name__=='__main__':
     hyperparameters = {
                 'input_shape': (None,3),
-                'num_hidden_layers': 4,
-                'num_neurons_per_layer': 200,
+                'num_hidden_layers': 2,
+                'num_neurons_per_layer': 50,
                 'output_dim': 1,
                 'activation': 'tanh',
-                'architecture_Net': 'FCNN'
+                'adaptative_activation': True,
+                'architecture_Net': 'ResNet',
+                'fourier_features': True
         }
-    model = NeuralNet(lb=-1,ub=1, use_fourier_features=True, **hyperparameters)
-    model.plot_model()
+    model = NeuralNet(lb=-1,ub=1, **hyperparameters)
+    model.build_Net()
+    model.summary()
+
