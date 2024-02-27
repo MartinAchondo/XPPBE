@@ -11,6 +11,7 @@ __pycache__/
 ~$*
 results_temp*
 *.log
+Temp/
 
 # Shell script files
 pscp.bash
@@ -41,3 +42,5 @@ tutorials/results/
 
 # Files related to notes
 /.notes
+/.test
+/.tests

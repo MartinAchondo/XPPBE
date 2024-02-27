@@ -19,7 +19,7 @@ $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
 - Different loss terms can be added to the model.
 - Use of different architectures is available, very customizable.
 - Weigths balancing algortithm implemented.
-- Build in Python/Tensofrlow.
+- Build in Python/Tensorflow.
 
 <p align="center">
   <img height="200" src="img/molecule.png">
