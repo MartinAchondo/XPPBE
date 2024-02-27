@@ -15,25 +15,12 @@ class XPINN_utils():
 
     def __init__(self):
 
-        self.loss_hist = list()
-
-        self.loss_r1 = list()
-        self.loss_bD1 = list()
-        self.loss_bN1 = list()
-        self.loss_bK1 = list()
-        self.loss_bQ = list()
-        self.loss_P1 = list()
-
-        self.loss_r2 = list()
-        self.loss_bD2 = list()
-        self.loss_bN2 = list()
-        self.loss_bK2 = list()
-        self.loss_P2 = list()
-        
-        self.loss_G = list()
-        self.loss_Iu = list()
-        self.loss_Id = list()
-        self.loss_exp = list()
+        self.losses = dict()
+        self.losses_names = ['TL','R1','D1','N1','K1','Q','R2','D2','N2','K2','G','Iu','Id','E','P1','P2']
+        self.losses_names_1 = ['TL','R','D','N','K','Q','Iu','Id','P']
+        self.losses_names_2 = ['TL','R','D','N','K','Iu','Id','E','G','P']
+        for t in self.losses_names:
+            self.losses[t] = list()
 
         self.G_solv_hist = dict()
         self.G_solv_hist['0'] = 0.0
@@ -79,23 +66,10 @@ class XPINN_utils():
             solver.load_NeuralNet(dir_load,name)  
         path_load = os.path.join(dir_load,'loss.csv')
         df = pd.read_csv(path_load)
-        self.loss_hist = list(df['TL'])
-        self.loss_r1 = list(df['R1'])
-        self.loss_bD1 = list(df['D1'])
-        self.loss_bN1 = list(df['N1'])
-        self.loss_bK1 = list(df['K1'])
-        self.loss_bQ = list(df['Q'])
-        self.loss_r2 = list(df['R2'])
-        self.loss_bD2 = list(df['D2'])
-        self.loss_bN2 = list(df['N2'])
-        self.loss_bK2 = list(df['K2'])
-        self.loss_G = list(df['G'])
-        self.loss_Iu = list(df['Iu'])
-        self.loss_Id = list(df['Id'])
-        self.loss_exp = list(df['E'])
-        self.loss_P1 = list(df['P1'])
-        self.loss_P2 = list(df['P2'])
-        self.iter = len(self.loss_hist) 
+
+        for t in self.losses_names:
+            self.losses[t] = list(df[t])
+        self.iter = len(self.losses['TL']) 
         self.add_losses_NN()
 
         path_load = os.path.join(dir_load,'G_solv.csv')
@@ -106,23 +80,11 @@ class XPINN_utils():
     def save_models(self,dir_save,names):
         for solver,name in zip(self.solvers,names):
             solver.save_model(dir_save,name)  
-        df_dict = {'TL': self.loss_hist,
-                   'R1': list(map(lambda tensor: tensor.numpy(),self.loss_r1)),
-                   'D1': list(map(lambda tensor: tensor.numpy(),self.loss_bD1)),
-                   'N1': list(map(lambda tensor: tensor.numpy(),self.loss_bN1)),
-                   'K1': list(map(lambda tensor: tensor.numpy(),self.loss_bK1)),
-                   'Q': list(map(lambda tensor: tensor.numpy(),self.loss_bQ)),
-                   'R2': list(map(lambda tensor: tensor.numpy(),self.loss_r2)),
-                   'D2': list(map(lambda tensor: tensor.numpy(),self.loss_bD2)),
-                   'N2': list(map(lambda tensor: tensor.numpy(),self.loss_bN2)),
-                   'K2': list(map(lambda tensor: tensor.numpy(),self.loss_bK2)),
-                   'Iu': list(map(lambda tensor: tensor.numpy(),self.loss_Iu)),
-                   'Id': list(map(lambda tensor: tensor.numpy(),self.loss_Id)),
-                   'G': list(map(lambda tensor: tensor.numpy(),self.loss_G)),
-                   'E': list(map(lambda tensor: tensor.numpy(),self.loss_exp)),
-                   'P1': list(map(lambda tensor: tensor.numpy(),self.loss_P1)),
-                   'P2': list(map(lambda tensor: tensor.numpy(),self.loss_P2))
-                }
+
+        df_dict = dict()
+        for t in self.losses_names:
+            df_dict[t] = list(map(lambda tensor: tensor.numpy(),self.losses[t]))
+
         df = pd.DataFrame.from_dict(df_dict)
         path_save = os.path.join(dir_save,'loss.csv')
         df.to_csv(path_save)
@@ -155,48 +117,29 @@ class XPINN_utils():
             else:
                 self.L_X_domain[t] = self.mesh.domain_mesh_data[t]
 
-    # Full batch
-    def get_all_batches(self):
-        ((TX_b1, TX_b2),TX_d) = self.create_generators(num_batches=1)
-        X_b1 = self.get_batches(TX_b1)
-        X_b2 = self.get_batches(TX_b2)   
-        X_d = self.get_batches(TX_d) 
-        return X_b1,X_b2,X_d
+        
+    def get_batches(self, sample_method='random_sample'):
 
-    def create_generators(self, num_batches):
-        def generator(dataset):
-            for batch in dataset:
-                yield batch
-        L_SV = list()
-        for set_batches in self.L_X_solvers:
-            L = dict()
-            for t in set_batches:
-                new_dataset = set_batches[t]
-                L[t] = generator(self.create_batches(new_dataset,num_batches))
-            L_SV.append(L)
-        L_D = dict()
-        for t in self.L_X_domain:
-            if t in ('E'):
-                L_D[t] = self.L_X_domain[t]
-            elif t in ('I'):
-                new_dataset = self.L_X_domain[t]
-                L_D[t] = generator(self.create_batches(new_dataset,num_batches))
-        return L_SV,L_D
-    
-    def create_batches(self, dataset, num_batches=1):
-        batch_size = int(dataset.cardinality().numpy()/num_batches)
-        batches = dataset.batch(batch_size=batch_size)
-        return batches
+        if sample_method == 'full_batch':
+            X_b1,X_b2 = self.L_X_solvers
+            X_d = self.L_X_domain
+            return X_b1,X_b2,X_d
+        
+        elif sample_method == 'random_sample':
+            for i in range(2):
+                for bl in self.mesh.mesh_objs[i].meshes.values():
+                    type_b = bl['type']
+                    if type_b in ('R','D','N','Q'): 
+                        t = 'R' + str(i+1) if type_b=='R' else type_b
+                        x = self.mesh.region_meshes[t].get_dataset()
+                        x,y = self.mesh.mesh_objs[i].get_XU(x,bl)
+                        self.L_X_solvers[i][t] = (x,y)
+            X_b1,X_b2 = self.L_X_solvers
 
-    def get_batches(self, TX_b):
-        X_b = dict()
-        for t in TX_b:
-            if t in ('E'):
-                X_b[t] = TX_b[t]
-            else:
-                X_b[t] = next(TX_b[t])
-        return X_b
+            self.L_X_domain['I'] = (self.mesh.region_meshes['I'].get_dataset(),self.mesh.region_meshes['I'].normals)
+            X_d = self.L_X_domain
 
+            return X_b1,X_b2,X_d
 
     #utils
     def checkers_iterations(self):
@@ -227,28 +170,20 @@ class XPINN_utils():
 
     def callback(self, L1,L2):
 
-        self.loss_r1.append(L1[1]['R'])
-        self.loss_bD1.append(L1[1]['D'])
-        self.loss_bN1.append(L1[1]['N'])
-        self.loss_bK1.append(L1[1]['K'])
-        self.loss_bQ.append(L1[1]['Q'])
+        for net,L in zip(['1','2'],[L1,L2]):
+            for t in self.losses_names:
+                t2 = t[0]
+                if t2 in ('R','N','D','K','P'):
+                    if t[1] == net:
+                        self.losses[t2+net].append(L[1][t2])
 
-        self.loss_r2.append(L2[1]['R'])
-        self.loss_bD2.append(L2[1]['D'])
-        self.loss_bN2.append(L2[1]['N'])
-        self.loss_bK2.append(L2[1]['K'])
-
-        self.loss_Iu.append(L1[1]['Iu'])
-        self.loss_Id.append(L1[1]['Id'])
-        self.loss_G.append(L1[1]['G'])
-        self.loss_exp.append(L1[1]['E'])
-
-        self.loss_P1.append(L1[1]['P'])
-        self.loss_P2.append(L2[1]['P'])
+        for t in ('Q','Iu','Id','G','E'):
+            self.losses[t].append(L1[1][t])
 
         loss = L1[0] + L2[0]
+        self.losses['TL'].append(loss)
         self.current_loss = loss.numpy()
-        self.loss_hist.append(self.current_loss)
+ 
         self.solver1.L = L1[1]
         self.solver2.L = L2[1]
 
@@ -263,28 +198,19 @@ class XPINN_utils():
 
 
     def add_losses_NN(self):
-        self.solver1.loss_r = self.loss_r1
-        self.solver1.loss_bD = self.loss_bD1
-        self.solver1.loss_bN = self.loss_bN1
-        self.solver1.loss_bK = self.loss_bK1
-        self.solver1.loss_bQ = self.loss_bQ
 
-        self.solver2.loss_r = self.loss_r2
-        self.solver2.loss_bD = self.loss_bD2
-        self.solver2.loss_bN = self.loss_bN2
-        self.solver2.loss_bK = self.loss_bK2
-
-        losses1 = [self.loss_r1,self.loss_bD1,self.loss_bN1,self.loss_bK1,self.loss_bQ,self.loss_G,self.loss_Iu,self.loss_Id,self.loss_P1]
-
-        losses2 = [self.loss_r2,self.loss_bD2,self.loss_bN2,self.loss_bK2,self.loss_G,self.loss_Iu,self.loss_Id,self.loss_exp,self.loss_P2]
+        for solver,names,cont in zip(self.solvers,[self.losses_names_1,self.losses_names_2],['1','2']):
+            for t in names:
+                if t in ('R','N','D','K','P'):
+                    solver.losses[t] = self.losses[t+cont]
+                elif t != 'TL': 
+                    solver.losses[t] = self.losses[t]
         
-        self.solver1.loss_hist = [0]*len(losses1[0])
-        for subloss in losses1:
-            self.solver1.loss_hist = [a + b for a, b in zip(self.solver1.loss_hist, subloss)]
+        zipped_lists = zip(*self.solver1.losses.values())
+        self.solver1.losses['TL'] = [sum(values) for values in zipped_lists]
 
-        self.solver2.loss_hist = [0]*len(losses2[0])
-        for subloss in losses2:
-            self.solver2.loss_hist = [a + b for a, b in zip(self.solver2.loss_hist, subloss)]
+        zipped_lists = zip(*self.solver2.losses.values())
+        self.solver2.losses['TL'] = [sum(values) for values in zipped_lists]
 
 
 

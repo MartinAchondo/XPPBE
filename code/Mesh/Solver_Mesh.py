@@ -30,7 +30,6 @@ class Solver_Mesh():
 
         self.prior_data = dict()
         self.solver_mesh_names = set()
-        self.solver_mesh_N = dict()
 
     def adapt_meshes(self,meshes):
 
@@ -38,33 +37,35 @@ class Solver_Mesh():
 
         for bl in self.meshes.values():
             type_b = bl['type']
-            value = bl['value'] if 'value' in bl else None
-            fun = bl['fun'] if 'fun' in bl else None
-            file = bl['file'] if 'file' in bl else None
 
-            if type_b in self.prior_data:
-                X = self.prior_data[type_b]
+            X = self.prior_data[type_b] if type_b in self.prior_data else None
 
-            if type_b in ('R','D','K','N','P','Q'):    
-                x,y,z = self.get_X(X)
-                if value != None:
-                    U = self.value_u_b(x, y, z, value=value)
-                elif fun != None:
-                    U = fun(x, y, z)
-                elif file != None:
-                    X,U = self.read_file_data(file)
-                    noise = bl['noise'] if 'noise' in bl else False
-                    if noise:
-                        U = U*self.add_noise(U)
+            if type_b in ('R','D','K','N','P','Q'):  
+                X,U = self.get_XU(X,bl)
                 self.solver_mesh_data[type_b] = self.create_Datasets(X,U)
 
             self.solver_mesh_names.add(type_b)
-            if type_b in self.solver_mesh_N:
-                self.solver_mesh_N[type_b] += len(X)
-            else:
-                self.solver_mesh_N[type_b] = len(X)
-            
+        
         del self.prior_data
+
+    def get_XU(self,X,bl):
+
+        value = bl['value'] if 'value' in bl else None
+        fun = bl['fun'] if 'fun' in bl else None
+        file = bl['file'] if 'file' in bl else None
+
+        if X != None:
+            x,y,z = self.get_X(X)
+        if value != None:
+            U = self.value_u_b(x, y, z, value=value)
+        elif fun != None:
+            U = fun(x, y, z)
+        elif file != None:
+            X,U = self.read_file_data(file)
+            noise = bl['noise'] if 'noise' in bl else False
+            if noise:
+                U = U*self.add_noise(U)
+        return X,U
 
     def add_noise(self,x):    
         n = x.shape[0]
@@ -115,10 +116,12 @@ class Solver_Mesh():
         return R
     
     def create_Dataset(cls,X):
+        return X
         dataset_X = tf.data.Dataset.from_tensor_slices(X)
         return dataset_X
 
     def create_Datasets(cls, X, Y):
+        return (X,Y)
         dataset_XY = tf.data.Dataset.from_tensor_slices((X, Y))
         return dataset_XY
     

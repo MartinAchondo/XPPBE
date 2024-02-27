@@ -26,6 +26,7 @@ numba = "0.57.0"
 meshio = "5.3.4"
 gmsh = "4.11.1"
 bempp-cl = "0.3.0"
+pygamer = "2.0.7"
 xlsxwriter = "^3.1.9"
 
 [build-system]

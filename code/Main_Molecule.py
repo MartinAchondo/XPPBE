@@ -47,21 +47,22 @@ class PDE():
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'dx_interior': 1.2,
-                                'dx_exterior': 2.5,
-                                'N_border': 15,
-                                'dR_exterior': 4,
+                self.N_points = {'hmin_interior': 1.2,
+                                'hmin_exterior': 2.5,
+                                'density_mol': 3,
+                                'density_border': 3,
                                 'dx_experimental': 4,
                                 'N_pq': 10,
                                 'G_sigma': 0.04,
-                                'mesh_density': 6
+                                'mesh_generator': 'msms',
+                                'dR_exterior': 6
                                 }
 
         def create_simulation(self):
 
                 self.Mol_mesh = Molecule_Mesh(self.inputs['molecule'], 
                                 N_points=self.N_points, 
-                                plot=True,
+                                plot='sample',
                                 path=main_path,
                                 simulation=simulation_name
                                 )
@@ -128,6 +129,7 @@ def main():
                         'num_neurons_per_layer': 20,
                         'output_dim': 1,
                         'activation': 'tanh',
+                        'adaptative_activation': True,
                         'architecture_Net': 'FCNN',
                         'fourier_features': True,
                         'num_fourier_features': 128
@@ -145,10 +147,7 @@ def main():
 
         XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
 
-        XPINN_solver.set_points_methods(
-                sample_method='batches', 
-                N_batches=1, 
-                sample_size=50)
+        XPINN_solver.set_points_methods(sample_method='random_sample')
 
         optimizer = 'Adam'
         lr_s = ([1000,1600],[1e-2,5e-3,5e-4])
@@ -161,12 +160,12 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 1
+        N_iters = 3
 
         precondition = False
         N_precond = 5
 
-        iters_save_model = 0
+        iters_save_model = 2
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 
@@ -193,7 +192,8 @@ def main():
         Post.plot_phi_line();
         Post.plot_phi_contour();
         Post.save_values_file();
-        
+        Post.save_model_summary();
+
         Post.plot_architecture(domain=1);
         Post.plot_architecture(domain=2);
 
