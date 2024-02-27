@@ -90,12 +90,15 @@ class XPINN(XPINN_utils):
         self.N_steps = 0
         self.current_loss = 100
 
-        X_b1,X_b2,X_d = self.get_all_batches()
+        X_b1,X_b2,X_d = self.get_batches(self.sample_method)
 
         self.pbar = log_progress(range(N))
 
         for i in self.pbar:
 
+            if self.sample_method == 'random_sample':
+                X_b1,X_b2,X_d = self.get_batches(self.sample_method)
+                
             self.checkers_iterations()
             
             if not self.precondition:

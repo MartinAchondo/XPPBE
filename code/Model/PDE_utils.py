@@ -32,7 +32,7 @@ class PDE_utils():
 
         #neumann
         if 'N' in self.mesh.solver_mesh_names:
-            X,U = X_batches['K']
+            X,U = X_batches['N']
             loss_n = self.neumann_loss(self.mesh,model,X,U)
             L['N'] += loss_n
 

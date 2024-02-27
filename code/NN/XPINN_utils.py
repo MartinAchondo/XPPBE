@@ -117,48 +117,29 @@ class XPINN_utils():
             else:
                 self.L_X_domain[t] = self.mesh.domain_mesh_data[t]
 
-    # Full batch
-    def get_all_batches(self):
-        ((TX_b1, TX_b2),TX_d) = self.create_generators(num_batches=1)
-        X_b1 = self.get_batches(TX_b1)
-        X_b2 = self.get_batches(TX_b2)   
-        X_d = self.get_batches(TX_d) 
-        return X_b1,X_b2,X_d
+        
+    def get_batches(self, sample_method='random_sample'):
 
-    def create_generators(self, num_batches):
-        def generator(dataset):
-            for batch in dataset:
-                yield batch
-        L_SV = list()
-        for set_batches in self.L_X_solvers:
-            L = dict()
-            for t in set_batches:
-                new_dataset = set_batches[t]
-                L[t] = generator(self.create_batches(new_dataset,num_batches))
-            L_SV.append(L)
-        L_D = dict()
-        for t in self.L_X_domain:
-            if t in ('E'):
-                L_D[t] = self.L_X_domain[t]
-            elif t in ('I'):
-                new_dataset = self.L_X_domain[t]
-                L_D[t] = generator(self.create_batches(new_dataset,num_batches))
-        return L_SV,L_D
-    
-    def create_batches(self, dataset, num_batches=1):
-        batch_size = int(dataset.cardinality().numpy()/num_batches)
-        batches = dataset.batch(batch_size=batch_size)
-        return batches
+        if sample_method == 'full_batch':
+            X_b1,X_b2 = self.L_X_solvers
+            X_d = self.L_X_domain
+            return X_b1,X_b2,X_d
+        
+        elif sample_method == 'random_sample':
+            for i in range(2):
+                for bl in self.mesh.mesh_objs[i].meshes.values():
+                    type_b = bl['type']
+                    if type_b in ('R','D','N','Q'): 
+                        t = 'R' + str(i+1) if type_b=='R' else type_b
+                        x = self.mesh.region_meshes[t].get_dataset()
+                        x,y = self.mesh.mesh_objs[i].get_XU(x,bl)
+                        self.L_X_solvers[i][t] = (x,y)
+            X_b1,X_b2 = self.L_X_solvers
 
-    def get_batches(self, TX_b):
-        X_b = dict()
-        for t in TX_b:
-            if t in ('E'):
-                X_b[t] = TX_b[t]
-            else:
-                X_b[t] = next(TX_b[t])
-        return X_b
+            self.L_X_domain['I'] = (self.mesh.region_meshes['I'].get_dataset(),self.mesh.region_meshes['I'].normals)
+            X_d = self.L_X_domain
 
+            return X_b1,X_b2,X_d
 
     #utils
     def checkers_iterations(self):

@@ -35,9 +35,9 @@ class Region_Mesh():
             dataset = self.random_points_in_elements(self.vertices,self.elements,4)
         if self.type_m=='points':
             dataset = self.random_points_near_charges(self.charges[0],self.charges[1])
-        return dataset
+        return tf.constant(dataset, dtype=self.DTYPE)
     
-    def random_points_in_elements(vertices, elements,num_vert_per_elem):
+    def random_points_in_elements(self,vertices, elements,num_vert_per_elem):
         num_elements = len(elements)
         random_coordinates = np.random.uniform(0, 1, size=(num_elements, num_vert_per_elem))
         normalization_factors = np.sum(random_coordinates, axis=1, keepdims=True)
@@ -109,6 +109,8 @@ class Molecule_Mesh():
 
         self.interior_obj, self.exterior_obj = self.create_mesh_objs(Mesh_class)
 
+        self.mesh_objs = [self.interior_obj,self.exterior_obj]
+        
         print("Mesh initialization ready")
 
 
@@ -134,7 +136,7 @@ class Molecule_Mesh():
 
         vertx = self.mol_verts[self.mol_faces]
 
-        mol_faces_normal = np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :])
+        mol_faces_normal = np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]).astype(np.float32)
         self.mol_faces_normal = mol_faces_normal/np.linalg.norm(mol_faces_normal)
 
         self.mol_areas = np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1) / 2
@@ -147,7 +149,7 @@ class Molecule_Mesh():
         self.mol_mesh.export(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'), file_type='off')
 
         self.region_meshes['I'] = Region_Mesh('trimesh',self.mol_mesh,self.mol_verts,self.mol_faces)
-        self.region_meshes['I'].normals = self.mol_normal   # normals at verts, add at faces?
+        self.region_meshes['I'].normals = self.mol_faces_normal 
         self.region_meshes['I'].areas = self.mol_areas
 
     def create_sphere_mesh(self):
@@ -234,8 +236,7 @@ class Molecule_Mesh():
 
 
         #############################################################################
-
-        if self.plot:
+        if self.plot == 'batch':
             X_plot = dict()
             X_plot['Inner Domain'] = self.region_meshes['R1'].vertices
             X_plot['Charges'] = mesh_interior.prior_data['Q'].numpy()
@@ -243,7 +244,14 @@ class Molecule_Mesh():
             X_plot['Outer Domain'] = self.region_meshes['R2'].vertices
             X_plot['Outer Border'] = self.region_meshes['D'].vertices
             self.save_data_plot(X_plot)
-
+        elif self.plot == 'sample':
+            X_plot = dict()
+            X_plot['Inner Domain'] = self.region_meshes['R1'].get_dataset().numpy()
+            X_plot['Charges'] = self.region_meshes['Q'].get_dataset().numpy()
+            X_plot['Interface'] = self.region_meshes['I'].get_dataset().numpy()
+            X_plot['Outer Domain'] = self.region_meshes['R2'].get_dataset().numpy()
+            X_plot['Outer Border'] = self.region_meshes['D'].get_dataset().numpy()
+            self.save_data_plot(X_plot)
         return mesh_interior, mesh_exterior
     
 
@@ -332,6 +340,7 @@ class Molecule_Mesh():
 
 
     def create_Dataset_and_Tensor(cls,X):
+        return X
         if len(X) == 0:
             return None
         dataset_X = tf.data.Dataset.from_tensor_slices(X)
