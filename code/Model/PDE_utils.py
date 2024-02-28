@@ -10,7 +10,7 @@ class PDE_utils():
     def __init__(self):
         pass
     
-    def get_loss_PINN(self, X_batches, model):
+    def get_loss_PINN(self, X_batches, model, validation=False):
         L = self.create_L()
 
         #residual
@@ -37,7 +37,7 @@ class PDE_utils():
             L['N'] += loss_n
 
         # data known
-        if 'K' in self.mesh.solver_mesh_names:
+        if 'K' in self.mesh.solver_mesh_names and not validation:
             X,U = X_batches['K']
             loss_k = self.data_known_loss(self.mesh,model,X,U)
             L['K'] += loss_k    
@@ -67,17 +67,17 @@ class PDE_utils():
         Loss_d += loss
         return Loss_d
     
-    def get_loss_XPINN(self,solvers_t,solvers_i,X_domain):
+    def get_loss_XPINN(self,solvers_t,solvers_i,X_domain, validation=False):
         L = self.create_L()
 
         if 'Iu' and 'Id' in self.mesh.domain_mesh_names:
             L['Iu'] += self.get_loss_I(solvers_i[0],solvers_i[1],X_domain['I'], [True,False])
             L['Id'] += self.get_loss_I(solvers_i[0],solvers_i[1],X_domain['I'], [False,True])
 
-        if 'E' in self.mesh.domain_mesh_names:
+        if 'E' in self.mesh.domain_mesh_names and not validation:
             L['E'] += self.get_loss_experimental(solvers_t,X_domain['E'])
 
-        if 'G' in self.mesh.domain_mesh_names:
+        if 'G' in self.mesh.domain_mesh_names and not validation:
             L['G'] += self.get_loss_Gauss(solvers_t,X_domain['I'])
         return L
 

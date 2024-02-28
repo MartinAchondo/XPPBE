@@ -1,7 +1,4 @@
-import numpy as np
-import tensorflow as tf
-from time import time
-from tqdm import tqdm as log_progress
+import copy
 import logging
 import os
 import pandas as pd
@@ -19,8 +16,13 @@ class XPINN_utils():
         self.losses_names = ['TL','R1','D1','N1','K1','Q','R2','D2','N2','K2','G','Iu','Id','E','P1','P2']
         self.losses_names_1 = ['TL','R','D','N','K','Q','Iu','Id','P']
         self.losses_names_2 = ['TL','R','D','N','K','Iu','Id','E','G','P']
+        self.validation_names = ['TL','R1','D1','N1','Q','R2','D2','N2','Iu','Id']
         for t in self.losses_names:
             self.losses[t] = list()
+
+        self.validation_losses = dict()
+        for t in self.validation_names:
+            self.validation_losses[t] = list()
 
         self.G_solv_hist = dict()
         self.G_solv_hist['0'] = 0.0
@@ -64,12 +66,18 @@ class XPINN_utils():
         for solver,name in zip(self.solvers,names):
             solver.adapt_weights()
             solver.load_NeuralNet(dir_load,name)  
+        
         path_load = os.path.join(dir_load,'loss.csv')
         df = pd.read_csv(path_load)
-
         for t in self.losses_names:
             self.losses[t] = list(df[t])
         self.iter = len(self.losses['TL']) 
+
+        path_load = os.path.join(dir_load,'loss_validation.csv')
+        df = pd.read_csv(path_load)
+        for t in self.validation_names:
+            self.validation_losses[t] = list(df[t])
+
         self.add_losses_NN()
 
         path_load = os.path.join(dir_load,'G_solv.csv')
@@ -84,9 +92,15 @@ class XPINN_utils():
         df_dict = dict()
         for t in self.losses_names:
             df_dict[t] = list(map(lambda tensor: tensor.numpy(),self.losses[t]))
-
         df = pd.DataFrame.from_dict(df_dict)
         path_save = os.path.join(dir_save,'loss.csv')
+        df.to_csv(path_save)
+
+        df_dict = dict()
+        for t in self.validation_names:
+            df_dict[t] = list(map(lambda tensor: tensor.numpy(),self.validation_losses[t]))
+        df = pd.DataFrame.from_dict(df_dict)
+        path_save = os.path.join(dir_save,'loss_validation.csv')
         df.to_csv(path_save)
 
         df_2 = pd.DataFrame(self.G_solv_hist.items())
@@ -118,12 +132,11 @@ class XPINN_utils():
                 self.L_X_domain[t] = self.mesh.domain_mesh_data[t]
 
         
-    def get_batches(self, sample_method='random_sample'):
+    def get_batches(self, sample_method='random_sample', validation=False):
 
         if sample_method == 'full_batch':
             X_b1,X_b2 = self.L_X_solvers
             X_d = self.L_X_domain
-            return X_b1,X_b2,X_d
         
         elif sample_method == 'random_sample':
             for i in range(2):
@@ -139,7 +152,21 @@ class XPINN_utils():
             self.L_X_domain['I'] = (self.mesh.region_meshes['I'].get_dataset(),self.mesh.region_meshes['I'].normals)
             X_d = self.L_X_domain
 
+        if not validation:
             return X_b1,X_b2,X_d
+            
+        elif validation:
+            X_vb1 = copy.deepcopy(X_b1)
+            X_vb2 = copy.deepcopy(X_b2)
+            X_vd = copy.deepcopy(X_d)
+            for t in ('K','E','G'):
+                if t in X_vb1:
+                    del X_vb1[t]
+                if t in X_vb2:
+                    del X_vb2[t]
+                if t in X_vd:
+                    del X_vd[t]
+            return X_vb1,X_vb2,X_vd
 
     #utils
     def checkers_iterations(self):
@@ -197,6 +224,19 @@ class XPINN_utils():
                 self.save_models(dir_save, [f'model_1',f'model_2'])
 
 
+    def callback_validation(self,L1,L2):
+        for net,L in zip(['1','2'],[L1,L2]):
+            for t in self.losses_names:
+                t2 = t[0]
+                if t2 in ('R','N','D'):
+                    if t[1] == net:
+                        self.validation_losses[t2+net].append(L[1][t2])
+        for t in ('Q','Iu','Id'):
+            self.validation_losses[t].append(L1[1][t])
+        loss = L1[0] + L2[0]
+        self.validation_losses['TL'].append(loss)
+
+
     def add_losses_NN(self):
 
         for solver,names,cont in zip(self.solvers,[self.losses_names_1,self.losses_names_2],['1','2']):
@@ -205,12 +245,19 @@ class XPINN_utils():
                     solver.losses[t] = self.losses[t+cont]
                 elif t != 'TL': 
                     solver.losses[t] = self.losses[t]
-        
-        zipped_lists = zip(*self.solver1.losses.values())
-        self.solver1.losses['TL'] = [sum(values) for values in zipped_lists]
+                if t in ('R','N','D'):
+                    solver.validation_losses[t] = self.validation_losses[t+cont]
+                elif t in ('Iu','Id','Q'): 
+                    solver.validation_losses[t] = self.validation_losses[t]
+              
+        for solver in self.solvers:
+            zipped_lists = zip(*solver.losses.values())
+            solver.losses['TL'] = [sum(values) for values in zipped_lists]
 
-        zipped_lists = zip(*self.solver2.losses.values())
-        self.solver2.losses['TL'] = [sum(values) for values in zipped_lists]
+            zipped_lists = zip(*(solver.losses[key] for key in solver.validation_losses.keys()))
+            solver.losses['vTL'] = [sum(values) for values in zipped_lists]
 
+            zipped_lists = zip(*solver.validation_losses.values())
+            solver.validation_losses['TL'] = [sum(values) for values in zipped_lists]
 
 
