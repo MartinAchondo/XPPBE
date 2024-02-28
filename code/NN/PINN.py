@@ -18,6 +18,7 @@ class PINN():
        
         self.loss_hist = list()
         self.losses = dict()
+        self.validation_losses = dict()
         self.iter = 0
         self.lr = None
  

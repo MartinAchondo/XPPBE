@@ -264,7 +264,7 @@ class Molecule_Mesh():
             if type_b in ('I'):
                 N = self.mol_normal
                 X = tf.constant(self.mol_verts, dtype=self.DTYPE)
-                X_I = self.interior_obj.create_Datasets(X, N)
+                X_I = (X, N)
                 self.domain_mesh_names.add('Iu')
                 self.domain_mesh_names.add('Id')
                 self.domain_mesh_data[type_b] = X_I
@@ -317,8 +317,8 @@ class Molecule_Mesh():
                 X1 = tf.constant(interior_points, dtype=self.DTYPE)
                 X2 = tf.constant(exterior_points, dtype=self.DTYPE)
 
-                X_in = self.create_Dataset_and_Tensor(X1)
-                X_out = self.create_Dataset_and_Tensor(X2)
+                X_in = X1
+                X_out = X2
 
                 X_exp.append((X_in,X_out))
                 
@@ -338,14 +338,6 @@ class Molecule_Mesh():
                     X_plot['Experimental'] = explode_points[np.linalg.norm(explode_points-self.centroid, axis=1) <= self.R_exterior]
                     self.save_data_plot(X_plot)
 
-
-    def create_Dataset_and_Tensor(cls,X):
-        return X
-        if len(X) == 0:
-            return None
-        dataset_X = tf.data.Dataset.from_tensor_slices(X)
-        X_batches = dataset_X.batch(int(len(X)))
-        return next(iter(X_batches))
 
     def save_data_plot(self,X_plot):
         path_files = os.path.join(self.result_path,'results',self.simulation_name,'mesh')

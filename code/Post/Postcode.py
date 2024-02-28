@@ -32,75 +32,70 @@ class Postprocessing():
                           np.format_float_scientific(self.NN[1].losses['TL'][-1], unique=False, precision=3)]
 
 
-    def plot_loss_history(self, domain=1, plot_w=False):
+    def plot_loss_history(self, domain=1, plot_w=False, loss='all'):
         fig,ax = plt.subplots()
         domain -= 1
-        ax.semilogy(range(1,len(self.XPINN.losses['TL'])+1), self.XPINN.losses['TL'],'k--',label='Loss_XN')
-        ax.semilogy(range(1,len(self.NN[domain].losses['TL'])+1), self.NN[domain].losses['TL'],'k-',label='Loss_NN')
-        c = ['r','b','g', 'gold','c','m','lime','darkslategrey','salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']
+        c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime','E':'darkslategrey','G': 'salmon'}
+        c2 = {'royalblue','springgreen','aqua', 'pink','yellowgreen','teal'}
         for i,NN in enumerate(self.NN):
             if i==domain:
                 if not plot_w:
                     w = {'R': 1.0, 'D': 1.0, 'N': 1.0, 'K': 1.0, 'I': 1.0, 'E': 1.0, 'Q': 1.0, 'G': 1.0, 'Iu': 1.0, 'Id': 1.0}
                 elif plot_w:
                     w = NN.w_hist
-                meshes_names = NN.Mesh_names
-                if 'R' in meshes_names:
-                    ax.semilogy(range(1,len(NN.losses['R'])+1), w['R']*np.array(NN.losses['R']),c[0],label=f'Loss_R')
-                if 'D' in meshes_names:
-                    ax.semilogy(range(1,len(NN.losses['D'])+1), w['D']*np.array(NN.losses['D']),c[1],label=f'Loss_D')
-                if 'N' in meshes_names:
-                    ax.semilogy(range(1,len(NN.losses['N'])+1), w['N']*np.array(NN.losses['N']),c[2],label=f'Loss_N')
-                if 'K' in meshes_names:
-                    ax.semilogy(range(1,len(NN.losses['K'])+1), w['K']*np.array(NN.losses['K']),c[3],label=f'Loss_K')
-                if 'Q' in meshes_names:
-                    ax.semilogy(range(1,len(NN.losses['Q'])+1), w['Q']*np.array(NN.losses['Q']),c[4],label=f'Loss_Q')
-                if 'Iu' in meshes_names:
-                    ax.semilogy(range(1,len(self.XPINN.losses['Iu'])+1), w['Iu']*np.array(self.XPINN.losses['Iu']),c[5],label=f'Loss_Iu')
-                if 'Id' in meshes_names:
-                    ax.semilogy(range(1,len(self.XPINN.losses['Id'])+1), w['Id']*np.array(self.XPINN.losses['Id']),c[6],label=f'Loss_Id')
-                if 'E' in meshes_names:
-                    ax.semilogy(range(1,len(self.XPINN.losses['E'])+1), w['E']*np.array(self.XPINN.losses['E']),c[7],label=f'Loss_E')
-                if 'G' in meshes_names:
-                    ax.semilogy(range(1,len(self.XPINN.losses['G'])+1), w['G']*np.array(self.XPINN.losses['G']),c[8],label=f'Loss_G')    
+                
+                if plot_w==False and (loss=='TL' or loss=='all'):
+                    ax.semilogy(range(1,len(self.NN[domain].losses['TL'])+1), self.NN[domain].losses['TL'],'k-',label='Loss_NN')
+                for t in NN.Mesh_names:
+                    if t in loss or loss=='all':
+                        ax.semilogy(range(1,len(NN.losses[t])+1), w[t]*np.array(NN.losses[t]),c[t],label=f'Loss_{t}')
+
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel(r'$\mathcal{L}: Losses$')
         ax.set_title(f'Loss History of NN{domain+1}, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last[domain+1]}')
         ax.grid()
         if self.save:
-            path = f'loss_history_{domain+1}.png' if not plot_w  else f'loss_history_{domain+1}_w.png' 
+            path = f'loss_history_{domain+1}_loss{loss}.png' if not plot_w  else f'loss_history_{domain+1}_w.png' 
+            path_save = os.path.join(self.directory,path)
+            fig.savefig(path_save)
+            logger.info(f'Loss history Plot saved: {path}')
+
+    def plot_loss_validation_history(self, domain=1, loss='TL'):
+        fig,ax = plt.subplots()
+        domain -= 1
+        for i,NN in enumerate(self.NN):
+            if i==domain:               
+                if loss=='TL' or loss=='all':
+                    ax.semilogy(range(1,len(self.NN[domain].losses['vTL'])+1), self.NN[domain].losses['vTL'],'b-',label=f'{loss}_training')
+                    ax.semilogy(range(1,len(self.NN[domain].validation_losses['TL'])+1), self.NN[domain].validation_losses['TL'],'r-',label=f'{loss}_validation')
+                elif loss in NN.Mesh_names:
+                    ax.semilogy(range(1,len(self.NN[domain].losses[loss])+1), self.NN[domain].losses[loss],'b-',label=f'{loss}_training')
+                    ax.semilogy(range(1,len(self.NN[domain].validation_losses[loss])+1), self.NN[domain].validation_losses[loss],'r-',label=f'{loss}_validation')  
+
+        ax.legend()
+        ax.set_xlabel('$n: iterations$')
+        ax.set_ylabel(r'$\mathcal{L}: Losses$')
+        ax.set_title(f'Loss History of NN{domain+1}, Iterations: {self.XPINN.N_iters}')
+        ax.grid()
+        if self.save:
+            path = f'loss_val_history_{domain+1}_loss{loss}.png' 
             path_save = os.path.join(self.directory,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
 
 
+
     def plot_weights_history(self, domain=1):
         fig,ax = plt.subplots()
         domain -= 1
-        c = ['r','b','g', 'gold','c','m','lime','darkslategrey','salmon','royalblue','springgreen','aqua', 'pink','yellowgreen','teal']
+        c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime','E':'darkslategrey','G': 'salmon'}
         for i,NN in enumerate(self.NN):
             if i==domain:
                 w = NN.w_hist
-                meshes_names = NN.Mesh_names
-                if 'R' in meshes_names:
-                    ax.semilogy(range(1,len(w['R'])+1), w['R'], c[0],label=f'w_R')
-                if 'D' in meshes_names:
-                    ax.semilogy(range(1,len(w['D'])+1), w['D'], c[1],label=f'w_D')
-                if 'N' in meshes_names:
-                    ax.semilogy(range(1,len(w['N'])+1), w['N'], c[2],label=f'w_N')
-                if 'K' in meshes_names:
-                    ax.semilogy(range(1,len(w['K'])+1), w['K'], c[3],label=f'w_K')
-                if 'Q' in meshes_names:
-                    ax.semilogy(range(1,len(w['Q'])+1), w['Q'], c[4],label=f'w_Q')
-                if 'Iu' in meshes_names:
-                    ax.semilogy(range(1,len(w['Iu'])+1), w['Iu'], c[5],label=f'w_Iu')
-                if 'Id' in meshes_names:
-                    ax.semilogy(range(1,len(w['Id'])+1), w['Id'], c[6],label=f'w_Id')
-                if 'E' in meshes_names:
-                    ax.semilogy(range(1,len(w['E'])+1), w['E'],c[7],label=f'w_E')
-                if 'G' in meshes_names:
-                    ax.semilogy(range(1,len(w['G'])+1), w['G'],c[8],label=f'w_G')
+                for t in NN.Mesh_names:
+                    ax.semilogy(range(1,len(w[t])+1), w[t], c[t],label=f'w_{t}')
+                
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel('w: weights')

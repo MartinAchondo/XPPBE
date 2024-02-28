@@ -22,19 +22,19 @@ class XPINN(XPINN_utils):
         super().__init__()       
     
     
-    def loss_PINN(self, solver, X_batch, precond=False):
+    def loss_PINN(self, solver, X_batch, precond=False, validation=False):
         if precond:
             L = solver.PDE.get_loss_preconditioner_PINN(X_batch, solver.model)
         elif not precond:
-            L = solver.PDE.get_loss_PINN(X_batch, solver.model)
+            L = solver.PDE.get_loss_PINN(X_batch, solver.model, validation=validation)
         return L
 
 
-    def get_loss(self, X_batch, X_domain, solvers_t, solvers_i, w, precond=False):
+    def get_loss(self, X_batch, X_domain, solvers_t, solvers_i, w, precond=False, validation=False):
         s1,_ = solvers_i
-        L1 = self.loss_PINN(s1,X_batch,precond=precond)
+        L1 = self.loss_PINN(s1,X_batch,precond=precond, validation=validation)
         if not precond:    
-            L2 = self.PDE.get_loss_XPINN(solvers_t,solvers_i,X_domain)
+            L2 = self.PDE.get_loss_XPINN(solvers_t,solvers_i,X_domain, validation=validation)
             L = {k: L1.get(k, 0) + L2.get(k, 0) for k in set(L1) | set(L2)}
             loss = 0
             for t in s1.Mesh_names:
@@ -84,12 +84,22 @@ class XPINN(XPINN_utils):
             L1 = [loss1,L_loss1]
             L2 = [loss2,L_loss2]
             return L1,L2
+        
+        @tf.function
+        def caclulate_validation_loss(X_v, precond):
+            X_b1,X_b2,X_d = X_v
+            loss1,L_loss1 = self.get_loss(X_b1, X_d,self.solvers,[self.solver1,self.solver2], w=self.solver1.w, precond=precond, validation=True)
+            loss2,L_loss2 = self.get_loss(X_b2, X_d,self.solvers,[self.solver2,self.solver1], w=self.solver2.w, precond=precond, validation=True)
+            L1 = [loss1,L_loss1]
+            L2 = [loss2,L_loss2]
+            return L1,L2
 
         self.N_iters = N
         self.N_precond = N_precond
         self.N_steps = 0
         self.current_loss = 100
 
+        X_v = self.get_batches('full_batch', validation=True)
         X_b1,X_b2,X_d = self.get_batches(self.sample_method)
 
         self.pbar = log_progress(range(N))
@@ -109,14 +119,16 @@ class XPINN(XPINN_utils):
 
             self.iter+=1
             self.calculate_G_solv(self.calc_Gsolv_now)
+            L1_v, L2_v = caclulate_validation_loss(X_v, self.precondition)
             self.callback(L1,L2)
+            self.callback_validation(L1_v,L2_v)
             self.check_adapt_new_weights(self.adapt_w_now)
 
 
     def check_adapt_new_weights(self,adapt_now):
         
         if adapt_now:
-            X_b1,X_b2,X_d = self.get_all_batches()
+            X_b1,X_b2,X_d = self.get_batches(self.sample_method)
             self.modify_weights_by(self.solvers,[self.solver1,self.solver2],X_b1,X_d) 
             self.modify_weights_by(self.solvers,[self.solver2,self.solver1],X_b2,X_d) 
             

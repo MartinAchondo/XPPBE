@@ -42,7 +42,7 @@ class Solver_Mesh():
 
             if type_b in ('R','D','K','N','P','Q'):  
                 X,U = self.get_XU(X,bl)
-                self.solver_mesh_data[type_b] = self.create_Datasets(X,U)
+                self.solver_mesh_data[type_b] = (X,U)
 
             self.solver_mesh_names.add(type_b)
         
@@ -114,16 +114,6 @@ class Solver_Mesh():
     def stack_X(cls,x,y,z):
         R = tf.stack([x[:,0], y[:,0], z[:,0]], axis=1)
         return R
-    
-    def create_Dataset(cls,X):
-        return X
-        dataset_X = tf.data.Dataset.from_tensor_slices(X)
-        return dataset_X
-
-    def create_Datasets(cls, X, Y):
-        return (X,Y)
-        dataset_XY = tf.data.Dataset.from_tensor_slices((X, Y))
-        return dataset_XY
     
     def value_u_b(self,x, y, z, value):
         n = x.shape[0]
