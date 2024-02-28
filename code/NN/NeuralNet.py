@@ -56,14 +56,12 @@ class NeuralNet(tf.keras.Model):
                 super(CustomActivation, self).__init__(**kwargs)
                 self.units = units
                 self.adaptative_activation = adaptative_activation
-
             def build(self, input_shape):
                 self.a = self.add_weight(name='a',
                                         shape=(self.units,),
                                         initializer='ones',
                                         trainable=self.adaptative_activation)
                 super(CustomActivation, self).build(input_shape)
-
             def call(self, inputs):
                 a_expanded = tf.expand_dims(self.a, axis=0) 
                 activation_func = tf.keras.activations.get(activation)

@@ -1,17 +1,13 @@
-import numpy as np
 import tensorflow as tf
 from time import time
 from tqdm import tqdm as log_progress
 import logging
-import os
 
 from NN.XPINN_utils import XPINN_utils
-
 
 logger = logging.getLogger(__name__)
 
 
-        
 class XPINN(XPINN_utils):
     
     def __init__(self, PINN):

@@ -3,7 +3,6 @@ import platform
 import shutil
 
 
-
 def generate_msms_mesh(mesh_xyzr_path, output_dir, output_name, density, probe_radius=1.4):
 
     path = os.path.join(output_dir, f'{output_name}_d{density}')
@@ -28,7 +27,6 @@ def generate_msms_mesh(mesh_xyzr_path, output_dir, output_name, density, probe_r
     )
     print(command)
     os.system(command)
-
 
 
 def generate_nanoshaper_mesh(

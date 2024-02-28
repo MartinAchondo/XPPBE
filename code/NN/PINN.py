@@ -1,10 +1,6 @@
-import numpy as np
-import tensorflow as tf
-import matplotlib.pyplot as plt
-import pandas as pd
 import os
-from time import time
-from tqdm import tqdm as log_progress
+import tensorflow as tf
+import pandas as pd
 import logging
 
 

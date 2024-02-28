@@ -1,5 +1,5 @@
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 
 
 class PDE_utils():
@@ -43,7 +43,6 @@ class PDE_utils():
             L['K'] += loss_k    
 
         return L
-
 
     def dirichlet_loss(self,mesh,model,XD,UD):
         Loss_d = 0
@@ -111,7 +110,6 @@ class PDE_utils():
         n = x.shape[0]
         return tf.ones((n,1), dtype=self.DTYPE)*value
 
-
     ####################################################################################################################################################
 
     def aprox_exp(self,x):
@@ -136,7 +134,6 @@ class PDE_utils():
         u_yy = tape.gradient(u_y,y)
         u_zz = tape.gradient(u_z,z)
         del tape
-
         return u_xx + u_yy + u_zz
 
     def gradient(self,mesh,model,X):
@@ -151,7 +148,6 @@ class PDE_utils():
         u_y = tape.gradient(u,y)
         u_z = tape.gradient(u,z)
         del tape
-
         return (u_x,u_y,u_z)
     
     def directional_gradient(self,mesh,model,X,n_v):
@@ -159,5 +155,4 @@ class PDE_utils():
         dir_deriv = 0
         for j in range(3):
             dir_deriv += n_v[j]*gradient[j]
-
         return dir_deriv

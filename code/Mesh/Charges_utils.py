@@ -19,12 +19,9 @@ class Charges():
         return self.r_q + self.ion_r_explode
 
 
-
 def get_charges_list(pqr_path):
     q, x_q, r_q, atom_name, res_name, res_num = import_charges_from_pqr(pqr_path)
-
     q_list = list()
-
     for i in range(len(q)):
         q_list.append(Charges(q=q[i],
                               x_q=x_q[i], 
@@ -32,11 +29,9 @@ def get_charges_list(pqr_path):
                               atom_name=atom_name[i], 
                               res_name=res_name[i], 
                               res_num=res_num[i]))
-
     return q_list
 
 def import_charges_from_pqr(pqr_path):
-
     molecule_file = open(pqr_path, "r")
     molecule_data = molecule_file.read().split("\n")
     atom_count = 0
@@ -65,7 +60,6 @@ def import_charges_from_pqr(pqr_path):
         atom_name[count] = line[2]
         res_name[count] = line[3]
         res_num[count] = line[4]
-        
         count += 1
 
     return q, x_q, r_q, atom_name, res_name, res_num
@@ -87,7 +81,6 @@ def convert_pqr2xyzr(mesh_pqr_path, mesh_xyzr_path,for_mesh=False):
         
         if for_mesh and cont==1:
             xyzr_file.write(f'{x} {float(y)+0.001} {float(z)*1.001} {float(r)*0.01}\n')
-
 
 
 

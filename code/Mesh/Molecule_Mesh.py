@@ -56,7 +56,6 @@ class Region_Mesh():
         return random_points
 
     def generate_one_charge_dataset(self,x_q,r_q):            
-    
         x_q_tensor = tf.constant(x_q, dtype=self.DTYPE)
         sigma = self.G_sigma*3 if self.G_sigma<0.8*r_q else 0.8*r_q
         r = sigma * tf.sqrt(tf.random.uniform(shape=(self.N_pq,), minval=0, maxval=1))
@@ -77,7 +76,6 @@ class Molecule_Mesh():
     pi = np.pi
 
     def __init__(self, molecule, N_points, simulation='Main', path='', plot=False, result_path=''):
-
 
         for key, value in N_points.items():
             setattr(self, key, value)
@@ -108,11 +106,8 @@ class Molecule_Mesh():
         self.create_exterior_mesh()
 
         self.interior_obj, self.exterior_obj = self.create_mesh_objs(Mesh_class)
-
         self.mesh_objs = [self.interior_obj,self.exterior_obj]
-        
         print("Mesh initialization ready")
-
 
 
     def create_molecule_mesh(self):
@@ -135,17 +130,13 @@ class Molecule_Mesh():
         self.centroid = np.mean(self.mol_verts, axis=0)
 
         vertx = self.mol_verts[self.mol_faces]
-
         mol_faces_normal = np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]).astype(np.float32)
         self.mol_faces_normal = mol_faces_normal/np.linalg.norm(mol_faces_normal)
-
         self.mol_areas = np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1) / 2
-
         r = np.sqrt((self.mol_verts[:,0]-self.centroid[0])**2 + (self.mol_verts[:,1]-self.centroid[1])**2 + (self.mol_verts[:,2]-self.centroid[2])**2)
         self.R_mol = np.max(r)
     
         self.mol_mesh = trimesh.Trimesh(vertices=self.mol_verts, faces=self.mol_faces)
-
         self.mol_mesh.export(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'), file_type='off')
 
         self.region_meshes['I'] = Region_Mesh('trimesh',self.mol_mesh,self.mol_verts,self.mol_faces)
@@ -162,18 +153,15 @@ class Molecule_Mesh():
 
         mesh_molecule = pygamer.readOFF(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'))
         mesh_split = mesh_molecule.splitSurfaces() 
-
         print("Found %i meshes in 1"%len(mesh_split))
         
         mesh1 = mesh_split[0]  
         mesh1.correctNormals() 
         gInfo = mesh1.getRoot() 
-        
-        gInfo.ishole = False         
+        gInfo.ishole = False   
+
         meshes = [mesh1] 
-
         self.int_tetmesh = pygamer.makeTetMesh(meshes, '-pq'+str(self.hmin_interior)+'aYAO2/3')  
-
         self.region_meshes['R1'] = Region_Mesh('tetmesh',self.int_tetmesh)
 
     def create_exterior_mesh(self):
@@ -193,9 +181,7 @@ class Molecule_Mesh():
         gInfo.ishole = False
 
         meshes = [mesh1,mesh_sphere] 
-
         self.ext_tetmesh = pygamer.makeTetMesh(meshes, '-pq'+str(self.hmin_exterior)+'aYAO2/3') 
-
         self.region_meshes['R2'] = Region_Mesh('tetmesh',self.ext_tetmesh)
 
 
@@ -208,19 +194,14 @@ class Molecule_Mesh():
 
         self.R_exterior =  self.R_mol+self.dR_exterior
 
-        xmax, ymax, zmax = np.max(self.mol_verts, axis=0)
-        xmin, ymin, zmin = np.min(self.mol_verts, axis=0)
-        mesh_interior.lb = [xmin,ymin,zmin]
-        mesh_interior.ub = [xmax,ymax,zmax]
+        mol_min, mol_max = np.min(self.mol_verts, axis=0), np.max(self.mol_verts, axis=0)
+        mesh_interior.lb, mesh_interior.ub = mol_min.tolist(), mol_max.tolist()
+        mesh_exterior.lb, mesh_exterior.ub = (self.centroid - self.R_exterior).tolist(), (self.centroid + self.R_exterior).tolist()
 
-        xmax, ymax, zmax = self.R_exterior + self.centroid
-        xmin, ymin, zmin = -self.R_exterior + self.centroid
-        mesh_exterior.lb = [xmin,ymin,zmin]
-        mesh_exterior.ub = [xmax,ymax,zmax] 
-
-        mesh_interior.prior_data['R'] = tf.constant(self.region_meshes['R1'].vertices, dtype=self.DTYPE)
 
         #########################################################################
+
+        mesh_interior.prior_data['R'] = tf.constant(self.region_meshes['R1'].vertices, dtype=self.DTYPE)
 
         path_files = os.path.join(self.main_path,'Molecules')
         _,Lx_q,R_q,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
@@ -230,12 +211,11 @@ class Molecule_Mesh():
 
         #########################################################################
     
-
         mesh_exterior.prior_data['R'] = tf.constant(self.region_meshes['R2'].vertices, dtype=self.DTYPE)
         mesh_exterior.prior_data['D'] = tf.constant(self.region_meshes['D'].vertices, dtype=self.DTYPE)
 
-
         #############################################################################
+
         if self.plot == 'batch':
             X_plot = dict()
             X_plot['Inner Domain'] = self.region_meshes['R1'].vertices
@@ -254,7 +234,6 @@ class Molecule_Mesh():
             self.save_data_plot(X_plot)
         return mesh_interior, mesh_exterior
     
-
 
     def adapt_meshes_domain(self,data,q_list):
         
@@ -314,17 +293,13 @@ class Molecule_Mesh():
                 exterior_distances = np.linalg.norm(exterior_points-self.centroid, axis=1)
                 exterior_points = exterior_points[exterior_distances <= self.R_exterior]
 
-                X1 = tf.constant(interior_points, dtype=self.DTYPE)
-                X2 = tf.constant(exterior_points, dtype=self.DTYPE)
-
-                X_in = X1
-                X_out = X2
+                X_in = tf.constant(interior_points, dtype=self.DTYPE)
+                X_out = tf.constant(exterior_points, dtype=self.DTYPE)
 
                 X_exp.append((X_in,X_out))
                 
                 for q in q_list:
                     if q.atom_name == 'H' and str(q.res_num) in L_phi:
-
                         phi_ens = tf.constant(L_phi[str(q.res_num)] , dtype=self.DTYPE)
                         xq = tf.reshape(tf.constant(q.x_q, dtype=self.DTYPE), (1,3))
                         X_exp_values.append((xq,phi_ens))
@@ -347,12 +322,6 @@ class Molecule_Mesh():
             file_name = os.path.join(path_files,f'{subset_name}.csv')
             np.savetxt(file_name, subset_data, delimiter=',', header='X,Y,Z', comments='')
 
-
-    def plot_molecule(self):
-        mesh = self.mesh
-        mesh.visual.vertex_colors = [0.0, 0.0, 0.0, 1.0] 
-        mesh.visual.face_colors = [1.0, 0.0, 0.0, 0.9]  
-        mesh.show()
 
 
 if __name__=='__main__':

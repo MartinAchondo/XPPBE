@@ -46,7 +46,6 @@ class PBE(PDE_utils):
         PDEs = [self.PDE_in,self.PDE_out]
         return PDEs
 
-
     def get_charges(self):
         path_files = os.path.join(self.main_path,'Molecules')
         self.q_list = get_charges_list(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
@@ -76,14 +75,11 @@ class PBE(PDE_utils):
         for q_obj in self.q_list:
             qk = q_obj.q
             xk,yk,zk = q_obj.x_q
-            
             deltak = tf.exp((-1/(2*self.sigma**2))*((x-xk)**2+(y-yk)**2+(z-zk)**2))
             sum += qk*deltak
-
         normalizer = (1/((2*self.pi)**(3.0/2)*self.sigma**3))
         sum *= normalizer
         return (-1/self.epsilon_1)*sum
-
 
     def border_value(self,x,y,z):
         sum = 0
@@ -137,14 +133,11 @@ class PBE(PDE_utils):
                 G2_m_1 = 0.0
 
             C_phi2 = s2.model(X_out) * self.to_V * C
-
             r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
-
             G2_p = G2_p_1 + tf.math.reduce_sum(self.aprox_exp(-C_phi2)/r2**6)
             G2_m = G2_m_1 + tf.math.reduce_sum(self.aprox_exp(C_phi2)/r2**6)
 
             phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000  # to_mV
-
             phi_ens_L.append(phi_ens_pred)
 
         return phi_ens_L    
@@ -240,9 +233,7 @@ class Poisson(PDE_utils):
 
         for key, value in inputs.items():
             setattr(self, key, value)
-
         self.epsilon = self.epsilon_1
-
         super().__init__()
 
     def residual_loss(self,mesh,model,X,SU):
@@ -258,9 +249,7 @@ class Helmholtz(PDE_utils):
 
         for key, value in inputs.items():
             setattr(self, key, value)
-
         self.epsilon = self.epsilon_2
-
         super().__init__()
 
     def residual_loss(self,mesh,model,X,SU):
@@ -272,16 +261,13 @@ class Helmholtz(PDE_utils):
         return Loss_r  
 
 
-
 class Non_Linear(PDE_utils):
 
     def __init__(self, inputs):
 
         for key, value in inputs.items():
             setattr(self, key, value)
-
         self.epsilon = self.epsilon_2
-
         super().__init__()
 
     def residual_loss(self,mesh,model,X,SU):

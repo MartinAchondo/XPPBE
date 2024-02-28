@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import logging
@@ -31,6 +30,12 @@ class Postprocessing():
                           np.format_float_scientific(self.NN[0].losses['TL'][-1], unique=False, precision=3),
                           np.format_float_scientific(self.NN[1].losses['TL'][-1], unique=False, precision=3)]
 
+        save_folders = ['plots_solution', 'plots_losses', 'plots_weights', 'plots_meshes', 'plots_model']
+        
+        for folder in save_folders:
+            setattr(self, f'path_{folder}', folder)
+            path = os.path.join(self.directory, folder)
+            os.makedirs(path, exist_ok=True)
 
     def plot_loss_history(self, domain=1, plot_w=False, loss='all'):
         fig,ax = plt.subplots()
@@ -57,9 +62,10 @@ class Postprocessing():
         ax.grid()
         if self.save:
             path = f'loss_history_{domain+1}_loss{loss}.png' if not plot_w  else f'loss_history_{domain+1}_w.png' 
-            path_save = os.path.join(self.directory,path)
+            path_save = os.path.join(self.directory,self.path_plots_losses,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
+
 
     def plot_loss_validation_history(self, domain=1, loss='TL'):
         fig,ax = plt.subplots()
@@ -80,10 +86,9 @@ class Postprocessing():
         ax.grid()
         if self.save:
             path = f'loss_val_history_{domain+1}_loss{loss}.png' 
-            path_save = os.path.join(self.directory,path)
+            path_save = os.path.join(self.directory,self.path_plots_losses,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
-
 
 
     def plot_weights_history(self, domain=1):
@@ -104,7 +109,7 @@ class Postprocessing():
 
         if self.save:
             path = f'weights_history_{domain+1}.png'
-            path_save = os.path.join(self.directory,path)
+            path_save = os.path.join(self.directory,self.path_plots_weights,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
 
@@ -123,7 +128,7 @@ class Postprocessing():
 
         if self.save:
             path = 'Gsolv_history.png'
-            path_save = os.path.join(self.directory,path)
+            path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
 
 
@@ -157,7 +162,7 @@ class Postprocessing():
             fig.add_trace(trace)
 
         fig.update_layout(title='Dominio 3D', scene=dict(xaxis_title='X', yaxis_title='Y', zaxis_title='Z'))
-        fig.write_html(os.path.join(self.directory, 'collocation_points_plot_3d.html'))
+        fig.write_html(os.path.join(self.directory,self.path_plots_meshes, 'collocation_points_plot_3d.html'))
 
 
     def plot_mesh_3D(self):
@@ -196,7 +201,7 @@ class Postprocessing():
         fig = go.Figure(data=[element_trace,edge_trace])
         fig.update_layout(scene=dict(aspectmode='data'))
 
-        fig.write_html(os.path.join(self.directory,f'mesh_plot_3D.html'))
+        fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_3D.html'))
 
 
     def plot_interface_3D(self,variable='phi', values=None):
@@ -217,7 +222,7 @@ class Postprocessing():
 
         fig.update_layout(scene=dict(aspectmode='data'))
 
-        fig.write_html(os.path.join(self.directory, f'Interface_{variable}.html'))
+        fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}.html'))
 
 
     def plot_phi_line(self, N=100, x0=np.array([0,0,0]), theta=0, phi=np.pi/2):
@@ -264,7 +269,7 @@ class Postprocessing():
 
         if self.save:
             path = 'solution.png'
-            path_save = os.path.join(self.directory,path)
+            path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
 
 
@@ -311,7 +316,7 @@ class Postprocessing():
 
         if self.save:
             path = 'contour.png'
-            path_save = os.path.join(self.directory,path)
+            path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
 
 
@@ -372,7 +377,7 @@ class Postprocessing():
             json.dump(df_dict, json_file, indent=4)
 
     def save_model_summary(self):
-        path_save = os.path.join(self.directory,'models_summary.txt')
+        path_save = os.path.join(self.directory,self.path_plots_model,'models_summary.txt')
         with open(path_save, 'w') as f:
             print_func = lambda x: print(x, file=f)
             self.NN[0].model.summary(print_fn=print_func)
@@ -387,7 +392,7 @@ class Postprocessing():
 
         if self.save:
             path = f'model_architecture_{domain+1}.png'
-            path_save = os.path.join(self.directory,path)
+            path_save = os.path.join(self.directory,self.path_plots_model,path)
 
             tf.keras.utils.plot_model(visual_model, to_file=path_save,
                                         show_shapes=True,
@@ -405,11 +410,9 @@ class Born_Ion_Postprocessing(Postprocessing):
     def __init__(self,*kargs,**kwargs):
         super().__init__(*kargs,**kwargs)
 
-
     def plot_aprox_analytic(self, N=8000, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, zoom=False, lims=None, lims_zoom=None):
         
         fig, ax = plt.subplots()
-        
         r = np.linspace(-self.mesh.R_exterior,self.mesh.R_exterior,N)
         x = x0[0] + r * np.sin(phi) * np.cos(theta) + self.mesh.centroid[0]
         y = x0[1] + r * np.sin(phi) * np.sin(theta) + self.mesh.centroid[1]
@@ -484,7 +487,7 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         if self.save:
             path = 'analytic.png' if zoom==False else 'analytic_zoom.png'
-            path_save = os.path.join(self.directory,path)
+            path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
 
 
@@ -535,12 +538,12 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         if self.save:
             path = 'interface_line.png'
-            path_save = os.path.join(self.directory,path)
+            path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
 
 
     def L2_error_interface_analytic(self):
-        verts = self.XPINN.mesh.verts
+        verts = self.XPINN.mesh.mol_verts
         s1,s2 = self.XPINN.solvers
         u1 = s1.model(tf.constant(verts)).numpy()
         u2 = s2.model(tf.constant(verts)).numpy()

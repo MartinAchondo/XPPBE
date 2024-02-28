@@ -40,7 +40,7 @@ class PDE():
 
         def __init__(self):
                 
-                self.inputs = {'molecule': 'arg',
+                self.inputs = {'molecule': 'methanol',
                                 'epsilon_1':  1,
                                 'epsilon_2': 80,
                                 'kappa': 0.125,
@@ -51,11 +51,11 @@ class PDE():
                                 'hmin_exterior': 2.5,
                                 'density_mol': 3,
                                 'density_border': 3,
-                                'dx_experimental': 4,
+                                'dx_experimental': 2,
                                 'N_pq': 10,
                                 'G_sigma': 0.04,
                                 'mesh_generator': 'msms',
-                                'dR_exterior': 6
+                                'dR_exterior': 8
                                 }
 
         def create_simulation(self):
@@ -74,24 +74,24 @@ class PDE():
                         ) 
                 
                 self.meshes_in = dict()
-                self.meshes_in['1'] = {'type':'R', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
-                self.meshes_in['2'] = {'type':'Q', 'value':None, 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
-                self.meshes_in['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-                #self.meshes_in['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
+                self.meshes_in['1'] = {'type':'R', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
+                self.meshes_in['2'] = {'type':'Q', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
+                self.meshes_in['3'] = {'type':'K', 'file':'data_known.dat', 'noise': True}
+                #self.meshes_in['4'] = {'type':'P', 'file':'data_precond.dat'}
 
                 self.PBE_model.PDE_in.mesh.adapt_meshes(self.meshes_in)
 
                 self.meshes_out = dict()
-                self.meshes_out['1'] = {'type':'R', 'value':0.0, 'fun':None}
-                self.meshes_out['2'] = {'type':'D', 'value':None, 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
-                self.meshes_out['3'] = {'type':'K', 'value':None, 'fun':None, 'file':'data_known.dat'}
-                #self.meshes_out['4'] = {'type':'P', 'value':None, 'fun':None, 'file':'data_precond.dat'}
+                self.meshes_out['1'] = {'type':'R', 'value':0.0}
+                self.meshes_out['2'] = {'type':'D', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
+                self.meshes_out['3'] = {'type':'K', 'file':'data_known.dat'}
+                #self.meshes_out['4'] = {'type':'P', 'file':'data_precond.dat'}
                 self.PBE_model.PDE_out.mesh.adapt_meshes(self.meshes_out)
 
                 self.meshes_domain = dict()
-                self.meshes_domain['1'] = {'type':'I', 'value':None, 'fun':None}
+                self.meshes_domain['1'] = {'type':'I'}
                 self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
-                #self.meshes_domain['3'] = {'type':'G', 'value':None, 'fun':None}
+                #self.meshes_domain['3'] = {'type':'G'}
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
                 self.XPINN_solver = XPINN(PINN)
@@ -119,14 +119,14 @@ def main():
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
-                                   adapt_w_iter = 600,
+                                   adapt_w_iter = 1000,
                                    adapt_w_method = 'gradients',
                                    alpha = 0.7)             
 
         hyperparameters_in = {
                         'input_shape': (None,3),
-                        'num_hidden_layers': 2,
-                        'num_neurons_per_layer': 20,
+                        'num_hidden_layers': 4,
+                        'num_neurons_per_layer': 200,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'adaptative_activation': True,
@@ -137,10 +137,11 @@ def main():
 
         hyperparameters_out = {
                         'input_shape': (None,3),
-                        'num_hidden_layers': 2,
-                        'num_neurons_per_layer': 20,
+                        'num_hidden_layers': 4,
+                        'num_neurons_per_layer': 200,
                         'output_dim': 1,
                         'activation': 'tanh',
+                        'adaptative_activation': True,
                         'architecture_Net': 'FCNN',
                         'fourier_features': False
                 }
@@ -160,12 +161,12 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
 
-        N_iters = 200
+        N_iters = 10000
 
         precondition = False
         N_precond = 5
 
-        iters_save_model = 0
+        iters_save_model = 5000
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 

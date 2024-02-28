@@ -27,23 +27,20 @@ class Solver_Mesh():
             'I': self.X_I,
             'P': None,
         }
-
         self.prior_data = dict()
         self.solver_mesh_names = set()
+
 
     def adapt_meshes(self,meshes):
 
         self.meshes = meshes
-
         for bl in self.meshes.values():
             type_b = bl['type']
-
             X = self.prior_data[type_b] if type_b in self.prior_data else None
 
             if type_b in ('R','D','K','N','P','Q'):  
                 X,U = self.get_XU(X,bl)
                 self.solver_mesh_data[type_b] = (X,U)
-
             self.solver_mesh_names.add(type_b)
         
         del self.prior_data
@@ -76,9 +73,7 @@ class Solver_Mesh():
 
     def read_file_data(self,file):
         x_b, y_b, z_b, phi_b = list(), list(), list(), list()
-
         path_files = os.path.join(self.main_path,'Molecules')
-
         with open(os.path.join(path_files,self.molecule,file),'r') as f:
             for line in f:
                 condition, x, y, z, phi = line.strip().split()
@@ -89,19 +84,15 @@ class Solver_Mesh():
                     z_b.append(float(z))
                     phi_b.append(float(phi))
 
-        x_b = tf.constant(np.array(x_b, dtype=self.DTYPE))
-        y_b = tf.constant(np.array(y_b, dtype=self.DTYPE))
-        z_b = tf.constant(np.array(z_b, dtype=self.DTYPE))
-        phi_b = tf.constant(np.array(phi_b, dtype=self.DTYPE))
+        x_b = tf.constant(np.array(x_b, dtype=self.DTYPE)[:, None])
+        y_b = tf.constant(np.array(y_b, dtype=self.DTYPE)[:, None])
+        z_b = tf.constant(np.array(z_b, dtype=self.DTYPE)[:, None])
+        phi_b = tf.constant(np.array(phi_b, dtype=self.DTYPE)[:, None])
 
-        x_b = tf.reshape(x_b,[x_b.shape[0],1])
-        y_b = tf.reshape(y_b,[y_b.shape[0],1])
-        z_b = tf.reshape(z_b,[z_b.shape[0],1])
-        phi_b = tf.reshape(phi_b,[phi_b.shape[0],1])
-    
         X = tf.concat([x_b, y_b, z_b], axis=1)
 
         return X,phi_b
+
 
     @classmethod
     def get_X(cls,X):
