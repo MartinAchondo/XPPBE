@@ -226,6 +226,20 @@ class PBE(PDE_utils):
 
         return y
 
+    def analytic_Born_Ion_du(self,r):
+        rI = self.mesh.R_mol
+        epsilon_1 = self.epsilon_1
+        epsilon_2 = self.epsilon_2
+        kappa = self.kappa
+        q = self.q_list[0].q
+
+        f_IN = lambda r: (q/(4*self.pi)) * ( -1/(epsilon_1*r**2) )
+        f_OUT = lambda r: (q/(4*self.pi)) * (np.exp(-kappa*(r-rI))/(epsilon_2*(1+kappa*rI))) * (-kappa/r - 1/r**2)
+
+        y = np.piecewise(r, [r<=rI, r>rI], [f_IN, f_OUT])
+
+        return y
+
 
 class Poisson(PDE_utils):
 

@@ -491,7 +491,7 @@ class Born_Ion_Postprocessing(Postprocessing):
             fig.savefig(path_save)
 
 
-    def plot_line_interface(self,N=100):
+    def plot_line_interface(self,N=100,plot='u'):
 
         labels = ['Inside', 'Outside']
         colr = ['r','b']
@@ -518,26 +518,40 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         fig, ax = plt.subplots() 
 
-        for model in self.models:
-            U = model(XX_bl)
-            ax.plot(theta_bl[:,0],U[:,0], label=labels[i], c=colr[i])
+        for model,solver in zip(self.models,self.NN):
+            if plot=='u':
+                U = model(XX_bl)
+                ax.plot(theta_bl[:,0],U[:,0], label=labels[i], c=colr[i])
+            elif plot=='du':
+                radial_vector = XX_bl - self.mesh.centroid
+                magnitude = tf.norm(radial_vector, axis=1, keepdims=True)
+                normal_vector = radial_vector / magnitude
+                n_v = solver.mesh.get_X(normal_vector)
+                X = solver.mesh.get_X(XX_bl)
+                du = self.PDE.directional_gradient(solver.mesh,solver.model,X,n_v)
+                ax.plot(theta_bl[:,0],du[:,0]*solver.PDE.epsilon, label=labels[i], c=colr[i])
             i += 1
 
-        U2 = self.XPINN.PDE.analytic_Born_Ion(rr)
-        u2 = np.ones((N+1,1))*U2
-        ax.plot(theta_bl, u2, c='g', label='Analytic', linestyle='--')
+        if plot=='u':
+            U2 = self.XPINN.PDE.analytic_Born_Ion(rr)
+            u2 = np.ones((N+1,1))*U2
+            ax.plot(theta_bl, u2, c='g', label='Analytic', linestyle='--')
+        elif plot=='du':
+            dU2 = self.XPINN.PDE.analytic_Born_Ion_du(rr)
+            du2 = np.ones((N+1,1))*dU2*self.NN[0].PDE.epsilon
+            ax.plot(theta_bl, du2, c='g', label='Analytic', linestyle='--')
         
         ax.set_xlabel(r'$\beta$')
         ax.set_ylabel(r'$\phi_{\theta}$')
 
-        text_l = r'$\phi_{\theta}$'
+        text_l = r'$\phi_{\theta}$' if plot=='w' else r'd$\phi_{\theta}$'
         ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters}')
 
         ax.grid()
         ax.legend()
 
         if self.save:
-            path = 'interface_line.png'
+            path = f'interface_line_{plot}.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
 

@@ -202,6 +202,7 @@ def main():
         Post.plot_aprox_analytic();
         Post.plot_aprox_analytic(zoom=True);
         Post.plot_line_interface();
+        Post.plot_line_interface(plot='du');
 
         Post.plot_architecture(domain=1);
         Post.plot_architecture(domain=2);
