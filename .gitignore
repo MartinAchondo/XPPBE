@@ -25,6 +25,14 @@ pscp_post.bash
 .ipynb_checkpoints/
 
 # Results and test directories
+code/*
+!code/*/
+!code/Main_BornIon.py
+!code/Main_BornIon_Reg.py
+!code/Main_Molecule.py
+!code/run_simulations.bash
+!code/Allclean
+
 code/results
 /.results
 code/temp
@@ -38,7 +46,6 @@ code/pbj/
 code/pbj/*/
 .pbj/
 tutorials/results/
-
 
 # Files related to notes
 /.notes

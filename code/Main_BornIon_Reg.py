@@ -46,12 +46,12 @@ class PDE():
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'hmin_interior': 1.2,
-                                'hmin_exterior': 2.5,
-                                'density_mol': 3,
-                                'density_border': 3,
+                self.N_points = {'hmin_interior': 0.01,
+                                'hmin_exterior': 0.5,
+                                'density_mol': 40,
+                                'density_border': 4,
                                 'dx_experimental': 2,
-                                'N_pq': 10,
+                                'N_pq': 100,
                                 'G_sigma': 0.04,
                                 'mesh_generator': 'msms',
                                 'dR_exterior': 8

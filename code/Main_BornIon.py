@@ -46,12 +46,12 @@ class PDE():
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'hmin_interior': 1.2,
-                                'hmin_exterior': 2.5,
-                                'density_mol': 3,
-                                'density_border': 3,
+                self.N_points = {'hmin_interior': 0.01,
+                                'hmin_exterior': 0.5,
+                                'density_mol': 40,
+                                'density_border': 4,
                                 'dx_experimental': 2,
-                                'N_pq': 10,
+                                'N_pq': 100,
                                 'G_sigma': 0.04,
                                 'mesh_generator': 'msms',
                                 'dR_exterior': 8
@@ -61,7 +61,7 @@ class PDE():
 
                 self.Mol_mesh = Molecule_Mesh(self.inputs['molecule'], 
                                 N_points=self.N_points, 
-                                plot='sample',
+                                plot='batch',
                                 path=main_path,
                                 simulation=simulation_name
                                 )
@@ -89,7 +89,7 @@ class PDE():
 
                 self.meshes_domain = dict()
                 self.meshes_domain['1'] = {'type':'I'}
-                self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
+                #self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
                 #self.meshes_domain['3'] = {'type':'G'}
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
