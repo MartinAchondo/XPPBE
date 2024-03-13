@@ -4,9 +4,25 @@
 # IDE-specific files
 /.vscode
 
+# Results and test directories
+code/*
+!code/*/
+!code/Main_BornIon.py
+!code/Main_BornIon_Reg.py
+!code/Main_Molecule.py
+!code/run_simulations.bash
+!code/Allclean
+
+code/results
+/.results
+code/temp
+code/S_test.py
+code/S_temp.py
+
 # Compiled Python files
 __pycache__/
 /__pycache__
+*.pyc
 
 # Temporary and Log files
 ~$*
@@ -25,20 +41,6 @@ pscp_post.bash
 /.test
 .ipynb_checkpoints/
 
-# Results and test directories
-code/*
-!code/*/
-!code/Main_BornIon.py
-!code/Main_BornIon_Reg.py
-!code/Main_Molecule.py
-!code/run_simulations.bash
-!code/Allclean
-
-code/results
-/.results
-code/temp
-code/S_test.py
-code/S_temp.py
 
 # Simulation-related directories
 code/simulations_list/past_sims
