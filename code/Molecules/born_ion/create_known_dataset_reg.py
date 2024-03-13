@@ -13,7 +13,7 @@ R = 7
 
 def analytic(r):
 
-    f_IN = lambda r: (q / (4 * np.pi)) * (1 / (epsilon_1 * r) - 1 / (epsilon_1 * rI) + 1 / (epsilon_2 * (1 + kappa * rI) * rI))- (q / (4 * np.pi)) * (1 / (epsilon_1 * r))
+    f_IN = lambda r: (q / (4 * np.pi)) * (1 / (epsilon_1 * r) - 1 / (epsilon_1 * rI) + 1 / (epsilon_2 * (1 + kappa * rI) * rI)) - (q / (4 * np.pi)) * (1 / (epsilon_1 * r))
     f_OUT = lambda r: (q / (4 * np.pi)) * (np.exp(-kappa * (r - rI)) / (epsilon_2 * (1 + kappa * rI) * r)) - (q / (4 * np.pi)) * (1 / (epsilon_1 * r))
 
     y = np.piecewise(r, [r <= rI, r > rI], [f_IN, f_OUT])

@@ -183,7 +183,7 @@ class PBE(PDE_utils):
         u1 = solver.model(verts)
         u2 = solver_ex.model(verts)
         u_mean = (u1+u2)/2
-        return u_mean.numpy()
+        return u_mean.numpy(),u1.numpy(),u2.numpy()
     
     def get_dphi_interface(self,solver,solver_ex): 
         verts = tf.constant(self.mesh.mol_verts)     
@@ -196,7 +196,8 @@ class PBE(PDE_utils):
     
     def get_solvation_energy(self,solver,solver_ex):
 
-        u_interface = self.get_phi_interface(solver,solver_ex).flatten()
+        u_interface,_,_ = self.get_phi_interface(solver,solver_ex)
+        u_interface = u_interface.flatten()
         _,du_1,du_2 = self.get_dphi_interface(solver,solver_ex)
         du_1 = du_1.flatten()
         du_2 = du_2.flatten()

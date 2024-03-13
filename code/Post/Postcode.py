@@ -210,7 +210,7 @@ class Postprocessing():
         elements = self.mesh.mol_faces
          
         if variable == 'phi':
-            values = self.PDE.get_phi_interface(*self.NN)
+            values,_,_ = self.PDE.get_phi_interface(*self.NN)
         elif variable == 'dphi':
             values,_,_ = self.PDE.get_dphi_interface(*self.NN)
         values = values.flatten()
