@@ -158,12 +158,12 @@ class Molecule_Mesh():
         mesh_split = mesh_molecule.splitSurfaces() 
         print("Found %i meshes in 1"%len(mesh_split))
         
-        mesh1 = mesh_split[0]  
-        mesh1.correctNormals() 
-        gInfo = mesh1.getRoot() 
+        self.mesh_molecule_pyg = mesh_split[0]  
+        self.mesh_molecule_pyg.correctNormals() 
+        gInfo = self.mesh_molecule_pyg.getRoot() 
         gInfo.ishole = False   
 
-        meshes = [mesh1] 
+        meshes = [self.mesh_molecule_pyg] 
         self.int_tetmesh = pygamer.makeTetMesh(meshes, '-pq'+str(self.hmin_interior)+'aYAO2/3')  
         self.region_meshes['R1'] = Region_Mesh('tetmesh',self.int_tetmesh)
 
@@ -172,18 +172,24 @@ class Molecule_Mesh():
         mesh_split = mesh_molecule.splitSurfaces() 
         print("Found %i meshes in 1"%len(mesh_split))
         
-        mesh1 = mesh_split[0]  
-        mesh1.correctNormals() 
-        gInfo = mesh1.getRoot() 
+        self.mesh_molecule_pyg_2 = mesh_split[0]  
+        self.mesh_molecule_pyg_2.correctNormals() 
+        gInfo = self.mesh_molecule_pyg_2.getRoot() 
         gInfo.ishole = True   
 
-        mesh_sphere = pygamer.readOFF(os.path.join(self.path_files,'mesh_sphere'+f'_d{3}'+'.off'))
-        mesh_sphere.correctNormals()   
-        print("Found %i meshes in 2"%len(mesh_sphere.splitSurfaces()))
-        gInfo = mesh_sphere.getRoot() 
+        for faceID in self.mesh_molecule_pyg_2.faceIDs:
+            faceID.data().marker = 23
+
+        self.mesh_sphere_pyg = pygamer.readOFF(os.path.join(self.path_files,'mesh_sphere'+f'_d{self.density_border}'+'.off'))
+        self.mesh_sphere_pyg.correctNormals()   
+        print("Found %i meshes in 2"%len(self.mesh_sphere_pyg.splitSurfaces()))
+        gInfo = self.mesh_sphere_pyg.getRoot() 
         gInfo.ishole = False
 
-        meshes = [mesh1,mesh_sphere] 
+        for faceID in self.mesh_sphere_pyg.faceIDs:
+            faceID.data().marker = 50
+
+        meshes = [self.mesh_molecule_pyg_2,self.mesh_sphere_pyg] 
         self.ext_tetmesh = pygamer.makeTetMesh(meshes, '-pq'+str(self.hmin_exterior)+'aYAO2/3') 
         self.region_meshes['R2'] = Region_Mesh('tetmesh',self.ext_tetmesh)
 
