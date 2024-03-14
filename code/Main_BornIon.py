@@ -77,16 +77,16 @@ class PDE():
                 self.meshes_domain['1'] = {'domain': 'molecule', 'type':'R1', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
                 self.meshes_domain['2'] = {'domain': 'molecule', 'type':'Q1', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
                 self.meshes_domain['3'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known.dat', 'noise': True}
-                #self.meshes_domain['4'] = {'domain': 'molecule', 'type':'P1', 'file':'data_precond.dat'}
+                self.meshes_domain['4'] = {'domain': 'molecule', 'type':'P1', 'file':'data_precond.dat'}
 
                 self.meshes_domain['5'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
                 self.meshes_domain['6'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
                 self.meshes_domain['7'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known.dat'}
-                #self.meshes_domain['8'] = {'domain': 'solvent', 'type':'P2', 'file':'data_precond.dat'}
-                #self.meshes_domain['9'] = {'type': 'E2', 'file': 'data_experimental.dat'}
+                self.meshes_domain['8'] = {'domain': 'solvent', 'type':'P2', 'file':'data_precond.dat'}
+                self.meshes_domain['9'] = {'domain': 'solvent', 'type': 'E2', 'file': 'data_experimental.dat'}
  
                 self.meshes_domain['10'] = {'domain':'interface', 'type':'I'}
-                #self.meshes_domain['11'] = {'domain':'interface', 'type':'G'}
+                self.meshes_domain['11'] = {'domain':'interface', 'type':'G'}
 
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
         
@@ -156,8 +156,8 @@ def main():
 
         N_iters = 15
 
-        precondition = False
-        N_precond = 5
+        precondition = True
+        N_precond = 3
 
         iters_save_model = 6
         XPINN_solver.folder_path = folder_path

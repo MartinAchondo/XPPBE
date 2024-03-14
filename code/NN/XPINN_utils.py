@@ -136,10 +136,8 @@ class XPINN_utils():
             self.precondition = False
             del self.L_X_domain['P1']
             del self.L_X_domain['P2']
-            self.mesh.solver_mesh_data['P1'] = None
-            self.mesh.solver_mesh_names.remove('P1')
-            self.mesh.solver_mesh_data['P2'] = None
-            self.mesh.solver_mesh_names.remove('P2')
+            self.mesh.domain_mesh_names.remove('P1')
+            self.mesh.domain_mesh_names.remove('P2')
     
         if self.iter % 2 == 0:
             self.pbar.set_description("Loss: {:6.4e}".format(self.current_loss))                

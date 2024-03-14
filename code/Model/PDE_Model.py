@@ -154,18 +154,14 @@ class PBE(PDE_utils):
 
     def get_loss_Gauss(self,model,XI_data):
         loss = 0
-        ((XI,N_v),flag) = XI_data
+        ((XI,N_v,areas),flag) = XI_data
         X = self.mesh.get_X(XI)
         n_v = self.mesh.get_X(N_v)
         du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
         du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
         du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
 
-        faces = self.mesh.mol_faces
-        areas = self.mesh.areas
-        du_faces = tf.reduce_mean(tf.gather(du_prom, faces), axis=1)
-
-        integral = tf.reduce_sum(du_faces * areas)
+        integral = tf.reduce_sum(du_prom * areas)
         loss += tf.reduce_mean(tf.square(integral - self.total_charge))
 
         return loss

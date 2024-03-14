@@ -22,6 +22,7 @@ class XPINN(XPINN_utils):
                 loss += w[t]*L[t]
             return loss,L
         elif precond:
+            L = self.PDE.get_loss_preconditioner(X_batch, model)
             return L['P1']+L['P2'],L
 
     def get_grad(self,X_batch, model, w, precond=False):
@@ -87,7 +88,7 @@ class XPINN(XPINN_utils):
             L_v = caclulate_validation_loss(X_v, self.precondition)
             self.callback(L,L_v)
             self.check_adapt_new_weights(self.adapt_w_now)
-            
+
 
     def check_adapt_new_weights(self,adapt_now):
         

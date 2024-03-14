@@ -133,9 +133,11 @@ class Molecule_Mesh():
         vertx = self.mol_verts[self.mol_faces]
         mol_faces_normal = np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]).astype(np.float32)
         self.mol_faces_normal = mol_faces_normal/np.linalg.norm(mol_faces_normal)
-        self.mol_areas = np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1) / 2
+        self.mol_areas = 0.5*np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1).astype(np.float32)
         r = np.sqrt((self.mol_verts[:,0]-self.centroid[0])**2 + (self.mol_verts[:,1]-self.centroid[1])**2 + (self.mol_verts[:,2]-self.centroid[2])**2)
         self.R_mol = np.max(r)
+        element_vertices = self.mol_verts[self.mol_faces]
+        self.mol_faces_centroid = np.mean(element_vertices, axis=1).astype(np.float32)
     
         self.mol_mesh = trimesh.Trimesh(vertices=self.mol_verts, faces=self.mol_faces)
         self.mol_mesh.export(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'), file_type='off')
@@ -256,7 +258,7 @@ class Molecule_Mesh():
             
             elif type_b in ('G'):
                 self.domain_mesh_names.add(type_b)
-                self.domain_mesh_data[type_b] = (None,flag)
+                self.domain_mesh_data[type_b] = ((self.mol_faces_centroid,self.mol_faces_normal,self.mol_areas),flag)
 
             elif type_b[0] in ('E'):
                 file = bl['file']

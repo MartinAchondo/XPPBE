@@ -57,11 +57,10 @@ class PDE_utils():
             L['Id'] += self.get_loss_I(model,X_batches['I'], [False,True])
 
         if 'E2' in X_batches and not validation:
-            L['E'] += self.get_loss_experimental(model,X_batches['E'])
+            L['E2'] += self.get_loss_experimental(model,X_batches['E2'])
 
         if 'G' in X_batches and not validation:
-            L['G'] += self.get_loss_Gauss(model,X_batches['I'])
-        return L
+            L['G'] += self.get_loss_Gauss(model,X_batches['G'])
 
         return L
 
