@@ -10,92 +10,110 @@ class PDE_utils():
     def __init__(self):
         pass
     
-    def get_loss_PINN(self, X_batches, model, validation=False):
+    def get_loss(self, X_batches, model, validation=False):
         L = self.create_L()
 
         #residual
-        if 'R' in self.mesh.solver_mesh_names: 
-            X,SU = X_batches['R']
-            loss_r = self.residual_loss(self.mesh,model,self.mesh.get_X(X),SU)
-            L['R'] += loss_r   
+        if 'R1' in X_batches: 
+            ((X,SU),flag) = X_batches['R1']
+            loss_r = self.PDE_in.residual_loss(self.mesh,model,self.mesh.get_X(X),SU,flag)
+            L['R1'] += loss_r   
 
-        if 'Q' in self.mesh.solver_mesh_names: 
-            X,SU = X_batches['Q']
-            loss_q = self.residual_loss(self.mesh,model,self.mesh.get_X(X),SU)
-            L['Q'] += loss_q 
+        if 'R2' in X_batches: 
+            ((X,SU),flag) = X_batches['R2']
+            loss_r = self.PDE_out.residual_loss(self.mesh,model,self.mesh.get_X(X),SU,flag)
+            L['R2'] += loss_r   
+
+        if 'Q1' in X_batches: 
+            ((X,SU),flag) = X_batches['Q1']
+            loss_q = self.PDE_in.residual_loss(self.mesh,model,self.mesh.get_X(X),SU,flag)
+            L['Q1'] += loss_q 
 
         #dirichlet 
-        if 'D' in self.mesh.solver_mesh_names:
-            X,U = X_batches['D']
-            loss_d = self.dirichlet_loss(self.mesh,model,X,U)
-            L['D'] += loss_d
-
-        #neumann
-        if 'N' in self.mesh.solver_mesh_names:
-            X,U = X_batches['N']
-            loss_n = self.neumann_loss(self.mesh,model,X,U)
-            L['N'] += loss_n
+        if 'D2' in X_batches:
+            ((X,U),flag) = X_batches['D2']
+            loss_d = self.dirichlet_loss(self.mesh,model,X,U,flag)
+            L['D2'] += loss_d
 
         # data known
-        if 'K' in self.mesh.solver_mesh_names and not validation:
-            X,U = X_batches['K']
-            loss_k = self.data_known_loss(self.mesh,model,X,U)
-            L['K'] += loss_k    
+        if 'K1' in X_batches and not validation:
+            ((X,U),flag) = X_batches['K1']
+            loss_k = self.data_known_loss(self.mesh,model,X,U,flag)
+            L['K1'] += loss_k   
+
+        if 'K2' in X_batches and not validation:
+            ((X,U),flag) = X_batches['K2']
+            loss_k = self.data_known_loss(self.mesh,model,X,U,flag)
+            L['K2'] += loss_k 
+
+        #neumann
+        if 'N1' in X_batches:
+            ((X,U),flag) = X_batches['N1']
+            loss_n = self.neumann_loss(self.mesh,model,X,U,flag)
+            L['N1'] += loss_n
+
+        if 'I' in X_batches:
+            L['Iu'] += self.get_loss_I(model,X_batches['I'], [True,False])
+            L['Id'] += self.get_loss_I(model,X_batches['I'], [False,True])
+
+        if 'E2' in X_batches and not validation:
+            L['E'] += self.get_loss_experimental(model,X_batches['E'])
+
+        if 'G' in X_batches and not validation:
+            L['G'] += self.get_loss_Gauss(model,X_batches['I'])
+        return L
 
         return L
 
-    def dirichlet_loss(self,mesh,model,XD,UD):
+
+    def dirichlet_loss(self,mesh,model,XD,UD,flag):
+        num = 0 if flag=='molecule' else 1
         Loss_d = 0
-        u_pred = model(XD)
+        u_pred = model(XD,flag)[:,num]
         loss = tf.reduce_mean(tf.square(UD - u_pred)) 
         Loss_d += loss
         return Loss_d
 
-    def neumann_loss(self,mesh,model,XN,UN,V=None):
+    def neumann_loss(self,mesh,model,XN,UN,flag,V=None):
+        num = 0 if flag=='molecule' else 1
         Loss_n = 0
-        X = mesh.get_X(XN)
-        grad = self.directional_gradient(mesh,model,X,self.normal_vector(X))
+        X = mesh.get_X(XN)[:,num]
+        grad = self.directional_gradient(mesh,model,X,self.normal_vector(X),flag)
         loss = tf.reduce_mean(tf.square(UN-grad))
         Loss_n += loss
         return Loss_n
     
-    def data_known_loss(self,mesh,model,XK,UK):
+    def data_known_loss(self,mesh,model,XK,UK,flag):
+        num = 0 if flag=='molecule' else 1
         Loss_d = 0
-        u_pred = model(XK)
+        u_pred = model(XK,flag)[:,num]
         loss = tf.reduce_mean(tf.square(UK - u_pred)) 
         Loss_d += loss
         return Loss_d
     
-    def get_loss_XPINN(self,solvers_t,solvers_i,X_domain, validation=False):
-        L = self.create_L()
 
-        if 'Iu' and 'Id' in self.mesh.domain_mesh_names:
-            L['Iu'] += self.get_loss_I(solvers_i[0],solvers_i[1],X_domain['I'], [True,False])
-            L['Id'] += self.get_loss_I(solvers_i[0],solvers_i[1],X_domain['I'], [False,True])
 
-        if 'E' in self.mesh.domain_mesh_names and not validation:
-            L['E'] += self.get_loss_experimental(solvers_t,X_domain['E'])
-
-        if 'G' in self.mesh.domain_mesh_names and not validation:
-            L['G'] += self.get_loss_Gauss(solvers_t,X_domain['I'])
-        return L
-
-    def get_loss_preconditioner_PINN(self, X_batches, model):
+    def get_loss_preconditioner(self, X_batches, model):
         L = self.create_L()
 
         #residual
-        if 'P' in self.mesh.solver_mesh_names:
-            X,U = X_batches['P']
-            loss_p = self.data_known_loss(self.mesh,model,X,U)
-            L['P'] += loss_p  
+        if 'P1' in X_batches:
+            ((X,U),flag) = X_batches['P1']
+            loss_p = self.data_known_loss(self.mesh,model,X,U,flag)
+            L['P1'] += loss_p  
+
+        if 'P2' in X_batches:
+            ((X,U),flag) = X_batches['P2']
+            loss_p = self.data_known_loss(self.mesh,model,X,U,flag)
+            L['P2'] += loss_p  
             
         return L
     
     @classmethod
     def create_L(cls):
-        names = ['R','D','N','K','I','P','E','Q','G','Iu','Id']
+        cls.names = ['R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','E2','P1','P2']
         L = dict()
-        for t in names:
+        for t in cls.names:
             L[t] = tf.constant(0.0, dtype=cls.DTYPE)
         return L
     
@@ -119,14 +137,15 @@ class PDE_utils():
 
     # Differential operators
 
-    def laplacian(self,mesh,model,X):
+    def laplacian(self,mesh,model,X,flag):
+        num = 0 if flag=='molecule' else 1
         x,y,z = X
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(x)
             tape.watch(y)
             tape.watch(z)
             R = mesh.stack_X(x,y,z)
-            u = model(R)
+            u = model(R,flag)[:,num]
             u_x = tape.gradient(u,x)
             u_y = tape.gradient(u,y)
             u_z = tape.gradient(u,z)
@@ -136,22 +155,23 @@ class PDE_utils():
         del tape
         return u_xx + u_yy + u_zz
 
-    def gradient(self,mesh,model,X):
+    def gradient(self,mesh,model,X,flag):
+        num = 0 if flag=='molecule' else 1
         x,y,z = X
         with tf.GradientTape(persistent=True,watch_accessed_variables=False) as tape:
             tape.watch(x)
             tape.watch(y)
             tape.watch(z)
             R = mesh.stack_X(x,y,z)
-            u = model(R)
+            u = model(R,flag)[:,num]
         u_x = tape.gradient(u,x)
         u_y = tape.gradient(u,y)
         u_z = tape.gradient(u,z)
         del tape
         return (u_x,u_y,u_z)
     
-    def directional_gradient(self,mesh,model,X,n_v):
-        gradient = self.gradient(mesh,model,X)
+    def directional_gradient(self,mesh,model,X,n_v,flag):
+        gradient = self.gradient(mesh,model,X,flag)
         dir_deriv = 0
         for j in range(3):
             dir_deriv += n_v[j]*gradient[j]

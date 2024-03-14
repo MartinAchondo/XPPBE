@@ -10,85 +10,54 @@ logger = logging.getLogger(__name__)
 
 class XPINN(XPINN_utils):
     
-    def __init__(self, PINN):
-
-        self.solver1, self.solver2 = PINN(), PINN()
-        self.solvers = [self.solver1,self.solver2]
-          
+    def __init__(self):
         super().__init__()       
     
-    
-    def loss_PINN(self, solver, X_batch, precond=False, validation=False):
-        if precond:
-            L = solver.PDE.get_loss_preconditioner_PINN(X_batch, solver.model)
-        elif not precond:
-            L = solver.PDE.get_loss_PINN(X_batch, solver.model, validation=validation)
-        return L
 
-
-    def get_loss(self, X_batch, X_domain, solvers_t, solvers_i, w, precond=False, validation=False):
-        s1,_ = solvers_i
-        L1 = self.loss_PINN(s1,X_batch,precond=precond, validation=validation)
-        if not precond:    
-            L2 = self.PDE.get_loss_XPINN(solvers_t,solvers_i,X_domain, validation=validation)
-            L = {k: L1.get(k, 0) + L2.get(k, 0) for k in set(L1) | set(L2)}
-            loss = 0
-            for t in s1.Mesh_names:
+    def get_loss(self, X_batch, model, w, precond=False, validation=False):
+        loss = 0.0
+        if not precond:
+            L = self.PDE.get_loss(X_batch, model, validation=validation)
+            for t in self.mesh.domain_mesh_names:
                 loss += w[t]*L[t]
             return loss,L
         elif precond:
-            return L1['P'],L1
-            
+            return L['P1']+L['P2'],L
 
-    def get_grad(self,X_batch,X_domain,solvers_t,solvers_i, w, precond=False):
+    def get_grad(self,X_batch, model, w, precond=False):
         with tf.GradientTape(persistent=True) as tape:
-            tape.watch(solvers_i[0].model.trainable_variables)
-            loss,L = self.get_loss(X_batch, X_domain,solvers_t,solvers_i, w, precond)
-        g = tape.gradient(loss, solvers_i[0].model.trainable_variables)
+            tape.watch(model.trainable_variables)
+            loss,L = self.get_loss(X_batch, model, w, precond)
+        g = tape.gradient(loss, model.trainable_variables)
         del tape
         return loss, L, g
     
     
     def main_loop(self, N=1000, N_precond=10):
         
-        optimizer1,optimizer2 = self.create_optimizers()
+        optimizer = self.create_optimizer()
         if self.precondition:
-            optimizer1P,optimizer2P = self.create_optimizers(precond=True)
+            optimizer_P = self.create_optimizer(precond=True)
 
         @tf.function
-        def train_step(X_batch,X_domain, ws,precond=False):
-            X_batch1, X_batch2 = X_batch
-            loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1,X_domain,self.solvers ,[self.solver1,self.solver2], ws[0], precond)
-            loss2, L_loss2, grad_theta2 = self.get_grad(X_batch2,X_domain,self.solvers ,[self.solver2,self.solver1], ws[1], precond)
-
-            optimizer1.apply_gradients(zip(grad_theta1, self.solver1.model.trainable_variables))
-            optimizer2.apply_gradients(zip(grad_theta2, self.solver2.model.trainable_variables))
-
-            L1 = [loss1,L_loss1]
-            L2 = [loss2,L_loss2]
-            return L1,L2
+        def train_step(X_batch, ws,precond=False):
+            loss, L_loss, grad_theta = self.get_grad(X_batch, self.model, ws, precond)
+            optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
+            L = [loss,L_loss]
+            return L
 
         @tf.function
         def train_step_precond(X_batch, ws, precond=True):
-            X_batch1, X_batch2 = X_batch
-            loss1, L_loss1, grad_theta1 = self.get_grad(X_batch1,None,None ,[self.solver1,self.solver2], ws[0], precond)
-            loss2, L_loss2, grad_theta2 = self.get_grad(X_batch2,None,None ,[self.solver2,self.solver1], ws[1], precond)
-
-            optimizer1P.apply_gradients(zip(grad_theta1, self.solver1.model.trainable_variables))
-            optimizer2P.apply_gradients(zip(grad_theta2, self.solver2.model.trainable_variables))
-
-            L1 = [loss1,L_loss1]
-            L2 = [loss2,L_loss2]
-            return L1,L2
+            loss, L_loss, grad_theta = self.get_grad(X_batch, self.model, ws, precond)
+            optimizer_P.apply_gradients(zip(grad_theta, self.model.trainable_variables))
+            L = [loss,L_loss]
+            return L
         
         @tf.function
         def caclulate_validation_loss(X_v, precond):
-            X_b1,X_b2,X_d = X_v
-            loss1,L_loss1 = self.get_loss(X_b1, X_d,self.solvers,[self.solver1,self.solver2], w=self.solver1.w, precond=precond, validation=True)
-            loss2,L_loss2 = self.get_loss(X_b2, X_d,self.solvers,[self.solver2,self.solver1], w=self.solver2.w, precond=precond, validation=True)
-            L1 = [loss1,L_loss1]
-            L2 = [loss2,L_loss2]
-            return L1,L2
+            loss,L_loss = self.get_loss(X_v,self.model,self.w, precond=precond, validation=True)
+            L = [loss,L_loss]
+            return L
 
         self.N_iters = N
         self.N_precond = N_precond
@@ -96,82 +65,77 @@ class XPINN(XPINN_utils):
         self.current_loss = 100
 
         X_v = self.get_batches('full_batch', validation=True)
-        X_b1,X_b2,X_d = self.get_batches(self.sample_method)
+        X_d = self.get_batches(self.sample_method)
 
         self.pbar = log_progress(range(N))
 
         for i in self.pbar:
 
             if self.sample_method == 'random_sample':
-                X_b1,X_b2,X_d = self.get_batches(self.sample_method)
+                X_d = self.get_batches(self.sample_method)
                 
             self.checkers_iterations()
             
             if not self.precondition:
-                L1,L2 = train_step((X_b1,X_b2), X_d, ws=[self.solver1.w,self.solver2.w])   
+                L = train_step(X_d, ws=self.w)   
 
             elif self.precondition:        
-                L1,L2 = train_step_precond((X_b1,X_b2), ws=[self.solver1.w,self.solver2.w])
+                L = train_step_precond(X_d, ws=self.w)
 
             self.iter+=1
             self.calculate_G_solv(self.calc_Gsolv_now)
-            L1_v, L2_v = caclulate_validation_loss(X_v, self.precondition)
-            self.callback(L1,L2)
-            self.callback_validation(L1_v,L2_v)
+            L_v = caclulate_validation_loss(X_v, self.precondition)
+            self.callback(L,L_v)
             self.check_adapt_new_weights(self.adapt_w_now)
 
+        print(len(self.losses['R1']))
+        print(len(self.validation_losses['R1']))
 
     def check_adapt_new_weights(self,adapt_now):
         
         if adapt_now:
-            X_b1,X_b2,X_d = self.get_batches(self.sample_method)
-            self.modify_weights_by(self.solvers,[self.solver1,self.solver2],X_b1,X_d) 
-            self.modify_weights_by(self.solvers,[self.solver2,self.solver1],X_b2,X_d) 
+            X_d = self.get_batches(self.sample_method)
+            self.modify_weights_by(self.model,X_d) 
             
 
-    def modify_weights_by(self,solvers_t,solvers_i,X_batch,X_domain):
+    def modify_weights_by(self,model,X_domain):
         
-        solver = solvers_i[0]
         L = dict()
         if self.adapt_w_method == 'gradients':
             with tf.GradientTape(persistent=True) as tape:
-                tape.watch(solver.model.trainable_variables)
-                _,L_loss = self.get_loss(X_batch, X_domain, solvers_t, solvers_i, solver.w)
+                tape.watch(model.trainable_variables)
+                _,L_loss = self.get_loss(X_domain, model, self.w)
 
-            for t in solver.Mesh_names:
+            for t in self.mesh.domain_mesh_names:
                 loss = L_loss[t]
-                grads = tape.gradient(loss, solver.model.trainable_variables)
-                grads = [grad if grad is not None else tf.zeros_like(var) for grad, var in zip(grads, solver.model.trainable_variables)]
+                grads = tape.gradient(loss, model.trainable_variables)
+                grads = [grad if grad is not None else tf.zeros_like(var) for grad, var in zip(grads, model.trainable_variables)]
                 gradient_norm = tf.sqrt(sum([tf.reduce_sum(tf.square(g)) for g in grads]))
                 L[t] = gradient_norm
             del tape
 
         elif self.adapt_w_method == 'values':
-            _,L = self.get_loss(X_batch, X_domain, solvers_t, solvers_i, solver.w) 
+            _,L = self.get_loss(X_domain, model, self.w) 
 
+        eps = 1e-9
         loss_wo_w = sum(L.values())
-        for t in solver.Mesh_names:
-            eps = 1e-9
+        for t in self.mesh.domain_mesh_names:
             w = float(loss_wo_w/(L[t]+eps))
-            solver.w[t] = self.alpha_w*solver.w[t] + (1-self.alpha_w)*w  
+            self.w[t] = self.alpha_w*self.w[t] + (1-self.alpha_w)*w  
 
     def calculate_G_solv(self,calc_now):
         if calc_now:
-            G_solv = self.PDE.get_solvation_energy(*self.solvers)
+            G_solv = self.PDE.get_solvation_energy(self.model)
             self.G_solv_hist[str(self.iter)] = G_solv   
 
-    def create_optimizers(self, precond=False):
+    def create_optimizer(self, precond=False):
         if self.optimizer_name == 'Adam':
             if not precond:
-                optim1 = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr)
-                optim2 = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr)
-                optimizers = [optim1,optim2]
-                return optimizers
+                optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
+                return optim
             elif precond:           
-                optim1P = tf.keras.optimizers.Adam(learning_rate=self.solver1.lr_p)
-                optim2P = tf.keras.optimizers.Adam(learning_rate=self.solver2.lr_p)
-                optimizers_p = [optim1P,optim2P]
-                return optimizers_p
+                optimP = tf.keras.optimizers.Adam(learning_rate=self.lr_p)
+                return optimP
 
 
     def solve(self,N=1000, precond=False, N_precond=10, save_model=0, G_solve_iter=100):
@@ -189,9 +153,6 @@ class XPINN(XPINN_utils):
         logger.info(f' Total steps: {self.N_steps}')
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
-
-        self.add_losses_NN()
-
 
 
 if __name__=='__main__':

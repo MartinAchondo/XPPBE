@@ -1,19 +1,22 @@
 import numpy as np
 import tensorflow as tf
 
+
 class XPINN_NeuralNet(tf.keras.Model):
 
-    def __init__(self,hyperparameters,**kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, hyperparameters, **kwargs):
+        super().__init__(name='XPINN_NN', **kwargs)
         param_1, param_2 = hyperparameters
-        self.NNs = [NeuralNet(**param_1,name='Molecule_NN'), NeuralNet(**param_2,name='Solvent_NN')]
+        self.NNs = [NeuralNet(**param_1, name='Molecule_NN'), NeuralNet(**param_2, name='Solvent_NN')]
 
     def call(self, X, flag):
         outputs = tf.zeros([tf.shape(X)[0], 2])   
         if flag == 'molecule':
-            outputs = tf.concat([self.NNs[0](X), tf.zeros_like(self.NNs[0](X))], axis=1)
+            output = self.NNs[0](X)
+            outputs = tf.concat([output, tf.zeros_like(output)], axis=1)
         elif flag == 'solvent':
-            outputs = tf.concat([tf.zeros_like(self.NNs[1](X)), self.NNs[1](X)], axis=1)
+            output = self.NNs[1](X)
+            outputs = tf.concat([tf.zeros_like(output), output], axis=1)
         elif flag =='interface':
             outputs = tf.concat([self.NNs[0](X), self.NNs[1](X)], axis=1)
         return outputs
@@ -21,6 +24,7 @@ class XPINN_NeuralNet(tf.keras.Model):
     def build_Net(self):
         self.NNs[0].build_Net()
         self.NNs[1].build_Net()
+
 
 
 class NeuralNet(tf.keras.Model):
@@ -72,7 +76,7 @@ class NeuralNet(tf.keras.Model):
                     return tf.concat([tf.sin(2.0*np.pi*Z), tf.cos(2.0*np.pi*Z)], axis=-1)
             self.fourier_features.add(SinCosLayer(name='fourier_sincos_layer'))
 
-
+        # Custom activation function
         class CustomActivation(tf.keras.layers.Layer):
             def __init__(self, units=1, adaptative_activation=False, **kwargs):
                 super(CustomActivation, self).__init__(**kwargs)
@@ -125,7 +129,7 @@ class NeuralNet(tf.keras.Model):
                                               name=f'layer_1')
 
         # Output layer
-        self.out = tf.keras.layers.Dense(output_dim, name=f'layer_output')
+        self.out = tf.keras.layers.Dense(output_dim, name=f'output_layer')
 
     def build_Net(self):
         self.build(self.input_shape_N)

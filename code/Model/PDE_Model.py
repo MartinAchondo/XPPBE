@@ -28,13 +28,11 @@ class PBE(PDE_utils):
             setattr(self, key, value)
         
         self.PDE_in = Poisson(inputs)
-        self.PDE_in.mesh = self.mesh.interior_obj
 
         if model=='linear':
             self.PDE_out = Helmholtz(inputs)
         elif model=='nonlinear':
             self.PDE_out = Non_Linear(inputs)
-        self.PDE_out.mesh = self.mesh.exterior_obj
 
         self.get_charges()
         self.get_integral_operators()
@@ -91,40 +89,36 @@ class PBE(PDE_utils):
         return (1/(4*self.pi*self.epsilon_2))*sum
 
 
-    def get_loss_I(self,solver,solver_ex,XI_data,components=[True,True]):
+    def get_loss_I(self,model,XI_data,components=[True,True]):
         
         loss = 0
-        XI,N_v = XI_data
-        X = solver.mesh.get_X(XI)
+        ((XI,N_v),flag) = XI_data
+        X = self.mesh.get_X(XI)
 
         if components[0]:
-            u_1 = solver.model(XI)
-            u_2 = solver_ex.model(XI)
-            u_prom = (u_1+u_2)/2
-            loss += tf.reduce_mean(tf.square(u_1 - u_prom)) 
+            u = model(XI,flag)
+            loss += tf.reduce_mean(tf.square(u[:,0]-u[:,1])) 
 
         if components[1]:
-            n_v = solver.mesh.get_X(N_v)
-            du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
-            du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
-            du_prom = (du_1*solver.PDE.epsilon + du_2*solver_ex.PDE.epsilon)/2
-            loss += tf.reduce_mean(tf.square(du_1*solver.PDE.epsilon - du_prom))
+            n_v = self.mesh.get_X(N_v)
+            du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
+            du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
+            loss += tf.reduce_mean(tf.square(du_1*self.PDE_in.epsilon - du_2*self.PDE_out.epsilon))
             
         return loss
     
-    def get_phi_ens(self,solvers,X_mesh,X_q):
+    def get_phi_ens(self,model,X_mesh,X_q):
         
         kT = self.kb*self.T
         C = self.qe/kT                
 
-        s1,s2 = solvers
-        X_in,X_out = X_mesh
+        ((X_in,X_out),flag) = X_mesh
         phi_ens_L = list()
 
         for x_q in X_q:
 
             if X_in != None:
-                C_phi1 = s1.model(X_in) * self.to_V * C 
+                C_phi1 = model(X_in,flag)[:,0] * self.to_V * C 
                 r1 = tf.sqrt(tf.reduce_sum(tf.square(x_q - X_in), axis=1, keepdims=True))
                 G2_p_1 =  tf.math.reduce_sum(self.aprox_exp(-C_phi1)/r1**6)
                 G2_m_1 = tf.math.reduce_sum(self.aprox_exp(C_phi1)/r1**6)
@@ -132,7 +126,7 @@ class PBE(PDE_utils):
                 G2_p_1 = 0.0
                 G2_m_1 = 0.0
 
-            C_phi2 = s2.model(X_out) * self.to_V * C
+            C_phi2 = model(X_out,flag)[:,1] * self.to_V * C
             r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
             G2_p = G2_p_1 + tf.math.reduce_sum(self.aprox_exp(-C_phi2)/r2**6)
             G2_m = G2_m_1 + tf.math.reduce_sum(self.aprox_exp(C_phi2)/r2**6)
@@ -142,13 +136,13 @@ class PBE(PDE_utils):
 
         return phi_ens_L    
 
-    def get_loss_experimental(self,solvers,X_exp):             
+    def get_loss_experimental(self,model,X_exp):             
 
         loss = tf.constant(0.0, dtype=self.DTYPE)
         n = len(X_exp)
-        X,X_values = X_exp
+        ((X,X_values),flag) = X_exp
         x_q_L,phi_ens_exp_L = zip(*X_values)
-        phi_ens_pred_L = self.get_phi_ens(solvers,X,x_q_L)
+        phi_ens_pred_L = self.get_phi_ens(model,(X,flag),x_q_L)
 
         for phi_pred,phi_exp in zip(phi_ens_pred_L,phi_ens_exp_L):
             loss += tf.square(phi_pred - phi_exp)
@@ -158,15 +152,14 @@ class PBE(PDE_utils):
         return loss
     
 
-    def get_loss_Gauss(self,solvers,XI_data):
+    def get_loss_Gauss(self,model,XI_data):
         loss = 0
-        s1,s2 = solvers
-        XI,N_v = XI_data
-        X = s1.mesh.get_X(XI)
-        n_v = s1.mesh.get_X(N_v)
-        du_1 = self.directional_gradient(s1.mesh,s1.model,X,n_v)
-        du_2 = self.directional_gradient(s2.mesh,s2.model,X,n_v)
-        du_prom = (du_1*s1.PDE.epsilon + du_2*s2.PDE.epsilon)/2
+        ((XI,N_v),flag) = XI_data
+        X = self.mesh.get_X(XI)
+        n_v = self.mesh.get_X(N_v)
+        du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
+        du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
+        du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
 
         faces = self.mesh.mol_faces
         areas = self.mesh.areas
@@ -178,30 +171,29 @@ class PBE(PDE_utils):
         return loss
 
 
-    def get_phi_interface(self,solver,solver_ex):      
+    def get_phi_interface(self,model):      
         verts = tf.constant(self.mesh.mol_verts)
-        u1 = solver.model(verts)
-        u2 = solver_ex.model(verts)
-        u_mean = (u1+u2)/2
-        return u_mean.numpy(),u1.numpy(),u2.numpy()
+        u = model(verts,'interface')
+        u_mean = (u[:,0]+u[:,1])/2
+        return u_mean.numpy(),u[:,0].numpy(),u[:,1].numpy()
     
-    def get_dphi_interface(self,solver,solver_ex): 
+    def get_dphi_interface(self,model): 
         verts = tf.constant(self.mesh.mol_verts)     
-        X = solver.mesh.get_X(verts)
-        n_v = solver.mesh.get_X(self.mesh.mol_normal)
-        du_1 = self.directional_gradient(solver.mesh,solver.model,X,n_v)
-        du_2 = self.directional_gradient(solver_ex.mesh,solver_ex.model,X,n_v)
-        du_prom = (du_1*solver.PDE.epsilon + du_2*solver_ex.PDE.epsilon)/2
+        X = self.mesh.get_X(verts)
+        n_v = self.mesh.get_X(self.mesh.mol_normal)
+        du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
+        du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
+        du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
         return du_prom.numpy(),du_1.numpy(),du_2.numpy()
     
-    def get_solvation_energy(self,solver,solver_ex):
+    def get_solvation_energy(self,model):
 
-        u_interface,_,_ = self.get_phi_interface(solver,solver_ex)
+        u_interface,_,_ = self.get_phi_interface(model)
         u_interface = u_interface.flatten()
-        _,du_1,du_2 = self.get_dphi_interface(solver,solver_ex)
+        _,du_1,du_2 = self.get_dphi_interface(model)
         du_1 = du_1.flatten()
         du_2 = du_2.flatten()
-        du_1_interface = (du_1+du_2*solver_ex.PDE.epsilon/solver.PDE.epsilon)/2
+        du_1_interface = (du_1+du_2*self.PDE_out.epsilon/self.PDE_in.epsilon)/2
 
         phi = bempp.api.GridFunction(self.space, coefficients=u_interface)
         dphi = bempp.api.GridFunction(self.space, coefficients=du_1_interface)
@@ -251,9 +243,9 @@ class Poisson(PDE_utils):
         self.epsilon = self.epsilon_1
         super().__init__()
 
-    def residual_loss(self,mesh,model,X,SU):
+    def residual_loss(self,mesh,model,X,SU,flag):
         x,y,z = X
-        r = self.laplacian(mesh,model,X) - SU       
+        r = self.laplacian(mesh,model,X,flag) - SU       
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
 
@@ -267,11 +259,12 @@ class Helmholtz(PDE_utils):
         self.epsilon = self.epsilon_2
         super().__init__()
 
-    def residual_loss(self,mesh,model,X,SU):
+    def residual_loss(self,mesh,model,X,SU,flag):
+        num = 0 if flag=='molecule' else 1
         x,y,z = X
         R = mesh.stack_X(x,y,z)
-        u = model(R)
-        r = self.laplacian(mesh,model,X) - self.kappa**2*u      
+        u = model(R,flag)[:,num]
+        r = self.laplacian(mesh,model,X,flag) - self.kappa**2*u      
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r  
 
@@ -285,11 +278,12 @@ class Non_Linear(PDE_utils):
         self.epsilon = self.epsilon_2
         super().__init__()
 
-    def residual_loss(self,mesh,model,X,SU):
+    def residual_loss(self,mesh,model,X,SU,flag):
+        num = 0 if flag=='molecule' else 1
         x,y,z = X
         R = mesh.stack_X(x,y,z)
-        u = model(R)
-        r = self.laplacian(mesh,model,X) - self.kappa**2*tf.math.sinh(u)     
+        u = model(R,flag)[:,num]
+        r = self.laplacian(mesh,model,X,flag) - self.kappa**2*tf.math.sinh(u)     
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
     

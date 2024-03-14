@@ -20,15 +20,13 @@ class Postprocessing():
         self.directory = directory
 
         self.XPINN = XPINN
-        self.NN = [XPINN.solver1,XPINN.solver2]
-        self.models = [XPINN.solver1.model,XPINN.solver2.model]
-        self.meshes = [XPINN.solver1.mesh,XPINN.solver2.mesh]
+        self.model = XPINN.model
         self.mesh = XPINN.mesh
         self.PDE = XPINN.PDE
 
         self.loss_last = [np.format_float_scientific(self.XPINN.losses['TL'][-1], unique=False, precision=3),
-                          np.format_float_scientific(self.NN[0].losses['TL'][-1], unique=False, precision=3),
-                          np.format_float_scientific(self.NN[1].losses['TL'][-1], unique=False, precision=3)]
+                          np.format_float_scientific(self.XPINN.losses['TL1'][-1], unique=False, precision=3),
+                          np.format_float_scientific(self.XPINN.losses['TL2'][-1], unique=False, precision=3)]
 
         save_folders = ['plots_solution', 'plots_losses', 'plots_weights', 'plots_meshes', 'plots_model']
         
@@ -39,53 +37,54 @@ class Postprocessing():
 
     def plot_loss_history(self, domain=1, plot_w=False, loss='all'):
         fig,ax = plt.subplots()
-        domain -= 1
         c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime','E':'darkslategrey','G': 'salmon'}
         c2 = {'royalblue','springgreen','aqua', 'pink','yellowgreen','teal'}
-        for i,NN in enumerate(self.NN):
-            if i==domain:
+        for i in ['1','2']:
+            if int(i)==domain:
                 if not plot_w:
-                    w = {'R': 1.0, 'D': 1.0, 'N': 1.0, 'K': 1.0, 'I': 1.0, 'E': 1.0, 'Q': 1.0, 'G': 1.0, 'Iu': 1.0, 'Id': 1.0}
+                    w = {'R'+i: 1.0, 'D'+i: 1.0, 'N'+i: 1.0, 'K'+i: 1.0, 'E'+i: 1.0, 'Q'+i: 1.0, 'G': 1.0, 'Iu': 1.0, 'Id': 1.0}
                 elif plot_w:
-                    w = NN.w_hist
+                    w = self.XPINN.w_hist
                 
                 if plot_w==False and (loss=='TL' or loss=='all'):
-                    ax.semilogy(range(1,len(self.NN[domain].losses['TL'])+1), self.NN[domain].losses['TL'],'k-',label='Loss_NN')
-                for t in NN.Mesh_names:
-                    if t in loss or loss=='all':
-                        ax.semilogy(range(1,len(NN.losses[t])+1), w[t]*np.array(NN.losses[t]),c[t],label=f'Loss_{t}')
+                    ax.semilogy(range(1,len(self.XPINN.losses['TL'+i])+1), self.XPINN.losses['TL'+i],'k-',label='Loss_NN')
+                for t in self.XPINN.losses_names_list[int(i)-1]:
+                    t2 = t if t in ('Iu','Id','G') else t[0]
+                    if (t2 in loss or loss=='all') and not t in 'TL' and t in self.mesh.domain_mesh_names:
+                        cx = c[t] if t in ('Iu','Id','G') else c[t[0]]
+                        ax.semilogy(range(1,len(self.XPINN.losses[t])+1), w[t]*np.array(self.XPINN.losses[t]),cx,label=f'Loss_{t}')
 
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel(r'$\mathcal{L}: Losses$')
-        ax.set_title(f'Loss History of NN{domain+1}, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last[domain+1]}')
+        ax.set_title(f'Loss History of NN{domain}, Iterations: {self.XPINN.N_iters}, Loss: {self.loss_last[domain]}')
         ax.grid()
         if self.save:
-            path = f'loss_history_{domain+1}_loss{loss}.png' if not plot_w  else f'loss_history_{domain+1}_w.png' 
+            path = f'loss_history_{domain}_loss{loss}.png' if not plot_w  else f'loss_history_{domain}_w.png' 
             path_save = os.path.join(self.directory,self.path_plots_losses,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
 
-
     def plot_loss_validation_history(self, domain=1, loss='TL'):
         fig,ax = plt.subplots()
-        domain -= 1
-        for i,NN in enumerate(self.NN):
-            if i==domain:               
+        for i in ['1','2']:
+            if int(i)==domain:               
                 if loss=='TL' or loss=='all':
-                    ax.semilogy(range(1,len(self.NN[domain].losses['vTL'])+1), self.NN[domain].losses['vTL'],'b-',label=f'{loss}_training')
-                    ax.semilogy(range(1,len(self.NN[domain].validation_losses['TL'])+1), self.NN[domain].validation_losses['TL'],'r-',label=f'{loss}_validation')
-                elif loss in NN.Mesh_names:
-                    ax.semilogy(range(1,len(self.NN[domain].losses[loss])+1), self.NN[domain].losses[loss],'b-',label=f'{loss}_training')
-                    ax.semilogy(range(1,len(self.NN[domain].validation_losses[loss])+1), self.NN[domain].validation_losses[loss],'r-',label=f'{loss}_validation')  
+                    ax.semilogy(range(1,len(self.XPINN.losses['vTL'+i])+1), self.XPINN.losses['vTL'+i],'b-',label=f'{loss}_training')
+                    ax.semilogy(range(1,len(self.XPINN.validation_losses['TL'+i])+1), self.XPINN.validation_losses['TL'+i],'r-',label=f'{loss}_validation')
+                else:
+                    t = loss if loss in ('Iu','Id','G') else loss+i
+                    if t in self.mesh.domain_mesh_names :
+                        ax.semilogy(range(1,len(self.XPINN.losses[t])+1), self.XPINN.losses[t],'b-',label=f'{loss}_training')
+                        ax.semilogy(range(1,len(self.XPINN.validation_losses[t])+1), self.XPINN.validation_losses[t],'r-',label=f'{loss}_validation')  
 
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel(r'$\mathcal{L}: Losses$')
-        ax.set_title(f'Loss History of NN{domain+1}, Iterations: {self.XPINN.N_iters}')
+        ax.set_title(f'Loss History of NN{domain}, Iterations: {self.XPINN.N_iters}')
         ax.grid()
         if self.save:
-            path = f'loss_val_history_{domain+1}_loss{loss}.png' 
+            path = f'loss_val_history_{domain}_loss{loss}.png' 
             path_save = os.path.join(self.directory,self.path_plots_losses,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
@@ -93,22 +92,23 @@ class Postprocessing():
 
     def plot_weights_history(self, domain=1):
         fig,ax = plt.subplots()
-        domain -= 1
         c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime','E':'darkslategrey','G': 'salmon'}
-        for i,NN in enumerate(self.NN):
-            if i==domain:
-                w = NN.w_hist
-                for t in NN.Mesh_names:
-                    ax.semilogy(range(1,len(w[t])+1), w[t], c[t],label=f'w_{t}')
+        for i in ['1','2']:
+            if int(i)==domain:
+                w = self.XPINN.w_hist
+                for t in self.XPINN.losses_names_list[int(i)-1]:
+                    if t in self.mesh.domain_mesh_names:
+                        cx = c[t] if t in ('Iu','Id','G') else c[t[0]]
+                        ax.semilogy(range(1,len(w[t])+1), w[t], cx,label=f'w_{t}')
                 
         ax.legend()
         ax.set_xlabel('$n: iterations$')
         ax.set_ylabel('w: weights')
-        ax.set_title(f'Weights History of NN{domain+1}, Iterations: {self.XPINN.N_iters}')
+        ax.set_title(f'Weights History of NN{domain}, Iterations: {self.XPINN.N_iters}')
         ax.grid()
 
         if self.save:
-            path = f'weights_history_{domain+1}.png'
+            path = f'weights_history_{domain}.png'
             path_save = os.path.join(self.directory,self.path_plots_weights,path)
             fig.savefig(path_save)
             logger.info(f'Loss history Plot saved: {path}')
@@ -210,9 +210,9 @@ class Postprocessing():
         elements = self.mesh.mol_faces
          
         if variable == 'phi':
-            values,_,_ = self.PDE.get_phi_interface(*self.NN)
+            values,_,_ = self.PDE.get_phi_interface(self.XPINN.model)
         elif variable == 'dphi':
-            values,_,_ = self.PDE.get_dphi_interface(*self.NN)
+            values,_,_ = self.PDE.get_dphi_interface(self.XPINN.model)
         values = values.flatten()
 
         fig = go.Figure()
@@ -235,8 +235,8 @@ class Postprocessing():
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,_ = self.get_interior_exterior(points)
         
-        u_in = self.XPINN.solver1.model(tf.constant(X_in))
-        u_out = self.XPINN.solver2.model(tf.constant(X_out))
+        u_in = self.XPINN.model(tf.constant(X_in),'molecule')[:,0]
+        u_out = self.XPINN.model(tf.constant(X_out),'solvent')[:,1]
 
         X_in -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
@@ -251,9 +251,9 @@ class Postprocessing():
         r_out_1 = -r_out[:n]
         r_out_2 = r_out[n:]
 
-        ax.plot(r_in,u_in[:,0], label='Solute', c='r')
-        ax.plot(r_out_1,u_out[:n,0], label='Solvent', c='b')
-        ax.plot(r_out_2,u_out[n:,0], c='b')
+        ax.plot(r_in,u_in[:], label='Solute', c='r')
+        ax.plot(r_out_1,u_out[:n], label='Solvent', c='b')
+        ax.plot(r_out_2,u_out[n:], c='b')
         
         ax.set_xlabel('r')
         ax.set_ylabel(r'$\phi_{\theta}$')
@@ -297,12 +297,12 @@ class Postprocessing():
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,bools = self.get_interior_exterior(points,R_exterior)
 
-        u_in = self.XPINN.solver1.model(tf.constant(X_in))
-        u_out = self.XPINN.solver2.model(tf.constant(X_out))
+        u_in = self.XPINN.model(tf.constant(X_in),'molecule')[:,0]
+        u_out = self.XPINN.model(tf.constant(X_out),'solvent')[:,1]
 
         vmax,vmin = self.get_max_min(u_in,u_out)
-        s = ax.scatter(T.ravel()[bools[0]], S.ravel()[bools[0]], c=u_in[:,0],vmin=vmin,vmax=vmax)
-        s = ax.scatter(T.ravel()[bools[1]], S.ravel()[bools[1]], c=u_out[:,0],vmin=vmin,vmax=vmax)
+        s = ax.scatter(T.ravel()[bools[0]], S.ravel()[bools[0]], c=u_in[:],vmin=vmin,vmax=vmax)
+        s = ax.scatter(T.ravel()[bools[1]], S.ravel()[bools[1]], c=u_out[:],vmin=vmin,vmax=vmax)
 
         fig.colorbar(s, ax=ax)
         ax.set_xlabel(r'$u$')
@@ -339,15 +339,6 @@ class Postprocessing():
         bools = (interior_points_bool,bool_2)
         return interior_points,exterior_points, bools
     
-    def L2_error_interface_continuity(self):
-        verts = tf.constant(self.XPINN.mesh.mol_verts)
-        s1,s2 = self.XPINN.solvers
-        u1 = s1.model(verts).numpy()
-        u2 = s2.model(verts).numpy()
-        u_dif = (u1-u2)
-        error = np.sqrt(np.sum(u_dif**2)/np.sum(u1**2))
-        return error
-    
     def save_values_file(self,save=True):
      
         max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
@@ -380,15 +371,17 @@ class Postprocessing():
         path_save = os.path.join(self.directory,self.path_plots_model,'models_summary.txt')
         with open(path_save, 'w') as f:
             print_func = lambda x: print(x, file=f)
-            self.NN[0].model.summary(print_fn=print_func)
+            self.XPINN.model.summary(print_fn=print_func)
             print("\n\n", file=f)
-            self.NN[1].model.summary(print_fn=print_func)
+            self.XPINN.model.NNs[0].summary(print_fn=print_func)
+            print("\n\n", file=f) 
+            self.XPINN.model.NNs[1].summary(print_fn=print_func)
 
     def plot_architecture(self,domain=1):
         
         domain -= 1
-        input_layer = tf.keras.layers.Input(shape=self.XPINN.solvers[domain].model.input_shape_N[1:], name='input')
-        visual_model = tf.keras.models.Model(inputs=input_layer, outputs=self.XPINN.solvers[domain].model.call(input_layer))
+        input_layer = tf.keras.layers.Input(shape=self.XPINN.model.NNs[domain].input_shape_N[1:], name='input')
+        visual_model = tf.keras.models.Model(inputs=input_layer, outputs=self.XPINN.model.NNs[domain].call(input_layer))
 
         if self.save:
             path = f'model_architecture_{domain+1}.png'
@@ -401,8 +394,6 @@ class Postprocessing():
                                         expand_nested=True,
                                         show_layer_activations=True,
                                         dpi = 150)
-        
-        self.XPINN.solvers[domain].model.build_Net()
 
 
 class Born_Ion_Postprocessing(Postprocessing):
@@ -420,8 +411,8 @@ class Born_Ion_Postprocessing(Postprocessing):
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,_ = self.get_interior_exterior(points)
         
-        u_in = self.XPINN.solver1.model(tf.constant(X_in))
-        u_out = self.XPINN.solver2.model(tf.constant(X_out))
+        u_in = self.XPINN.model(tf.constant(X_in),'molecule')[:,0]
+        u_out = self.XPINN.model(tf.constant(X_out),'solvent')[:,1]
 
         X_in -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
@@ -436,9 +427,9 @@ class Born_Ion_Postprocessing(Postprocessing):
         r_out_1 = -r_out[:n]
         r_out_2 = r_out[n:]
 
-        ax.plot(r_in,u_in[:,0], label='Aprox', c='b')
-        ax.plot(r_out_1,u_out[:n,0], c='b')
-        ax.plot(r_out_2,u_out[n:,0], c='b')
+        ax.plot(r_in,u_in[:], label='Aprox', c='b')
+        ax.plot(r_out_1,u_out[:n], c='b')
+        ax.plot(r_out_2,u_out[n:], c='b')
 
         points -= self.mesh.centroid
         r = np.sqrt(points[:,0]**2 + points[:,1]**2 + points[:,2]**2)
@@ -451,9 +442,9 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         if zoom:
             axin = ax.inset_axes([0.6, 0.02, 0.38, 0.38])
-            axin.plot(r_in,u_in[:,0], c='b')
-            axin.plot(r_out_1,u_out[:n,0], c='b')
-            axin.plot(r_out_2,u_out[n:,0], c='b')
+            axin.plot(r_in,u_in[:], c='b')
+            axin.plot(r_out_1,u_out[:n], c='b')
+            axin.plot(r_out_2,u_out[n:], c='b')
             axin.plot(r,u_an, c='r', linestyle='--')
             R = self.XPINN.mesh.R_mol
             axin.set_xlim(0.9*R,1.1*R)
@@ -518,18 +509,22 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         fig, ax = plt.subplots() 
 
-        for model,solver in zip(self.models,self.NN):
+        for i in [0,1]:
+            flag = 'molecule' if i==0 else 'solvent'
             if plot=='u':
-                U = model(XX_bl)
-                ax.plot(theta_bl[:,0],U[:,0], label=labels[i], c=colr[i])
+                U = self.XPINN.model(XX_bl,flag)[:,i]
+                ax.plot(theta_bl[:,0],U[:], label=labels[i], c=colr[i])
             elif plot=='du':
                 radial_vector = XX_bl - self.mesh.centroid
                 magnitude = tf.norm(radial_vector, axis=1, keepdims=True)
                 normal_vector = radial_vector / magnitude
-                n_v = solver.mesh.get_X(normal_vector)
-                X = solver.mesh.get_X(XX_bl)
-                du = self.PDE.directional_gradient(solver.mesh,solver.model,X,n_v)
-                ax.plot(theta_bl[:,0],du[:,0]*solver.PDE.epsilon, label=labels[i], c=colr[i])
+                n_v = self.mesh.get_X(normal_vector)
+                X = self.mesh.get_X(XX_bl)
+                du = self.PDE.directional_gradient(self.mesh,self.XPINN.model,X,n_v,flag)
+                if i==0:
+                    ax.plot(theta_bl[:,0],du[:,0]*self.PDE.PDE_in.epsilon, label=labels[i], c=colr[i])
+                else:
+                    ax.plot(theta_bl[:,0],du[:,0]*self.PDE.PDE_out.epsilon, label=labels[i], c=colr[i])
             i += 1
 
         if plot=='u':
@@ -538,7 +533,7 @@ class Born_Ion_Postprocessing(Postprocessing):
             ax.plot(theta_bl, u2, c='g', label='Analytic', linestyle='--')
         elif plot=='du':
             dU2 = self.XPINN.PDE.analytic_Born_Ion_du(rr)
-            du2 = np.ones((N+1,1))*dU2*self.NN[0].PDE.epsilon
+            du2 = np.ones((N+1,1))*dU2*self.PDE.PDE_in.epsilon
             ax.plot(theta_bl, du2, c='g', label='Analytic', linestyle='--')
         
         ax.set_xlabel(r'$\beta$')
@@ -558,9 +553,9 @@ class Born_Ion_Postprocessing(Postprocessing):
 
     def L2_error_interface_analytic(self):
         verts = self.XPINN.mesh.mol_verts
-        s1,s2 = self.XPINN.solvers
-        u1 = s1.model(tf.constant(verts)).numpy()
-        u2 = s2.model(tf.constant(verts)).numpy()
+
+        u = self.XPINN.model(tf.constant(verts),'interface').numpy()
+        u1,u2 = u[:,0],u[:,1]
         u_mean = (u1+u2)/2
 
         r = np.sqrt(verts[:,0]**2 + verts[:,1]**2 + verts[:,2]**2)
