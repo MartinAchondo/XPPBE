@@ -1,6 +1,7 @@
 import copy
 import logging
 import os
+import json
 import pandas as pd
 import tensorflow as tf
 
@@ -35,7 +36,8 @@ class XPINN_utils():
         self.lr = None
 
 
-    def create_NeuralNet(self,NN_class, hyperparameters, *args, **kwargs):
+    def create_NeuralNet(self, NN_class, hyperparameters, *args, **kwargs):
+        self.hyperparameters = hyperparameters
         self.model = NN_class(hyperparameters, *args, **kwargs)
         self.model.build_Net()
 
@@ -195,17 +197,21 @@ class XPINN_utils():
 
         if self.save_model_iter > 0:
             if (self.iter % self.save_model_iter == 0 and self.iter>1) or self.iter==self.N_iters:
-                dir_save = os.path.join(self.folder_path,f'iter_{self.iter}')
+                dir_save = os.path.join(self.folder_path,'iterations',f'iter_{self.iter}')
                 self.save_model(dir_save)
 
 
     #################################################
 
-    def load_NeuralNet(self,dir_load):   
+    def load_NeuralNet(self,NN_class,dir_load,iter_path):   
 
-        path = os.path.join(os.getcwd(),dir_load)
-        NN_model = tf.keras.models.load_model(path, compile=False)
-        self.model = NN_model
+        with open(os.path.join(dir_load,'plots_model','hyperparameters.json'), "r") as json_file:
+            hyper = json.load(json_file)
+        hyperparameters = [hyper['Molecule_NN'],hyper['Solvent_NN']]
+        self.create_NeuralNet(NN_class, hyperparameters)
+
+        path = os.path.join(dir_load,'iterations',iter_path)
+        self.model.load_weights(os.path.join(path,'weights'))
         
         path_load = os.path.join(path,'w_hist.csv')
         df = pd.read_csv(path_load)
@@ -214,32 +220,32 @@ class XPINN_utils():
             self.w_hist[t] = list(df[t])
             self.w[t] = self.w_hist[t][-1]
        
-        path_load = os.path.join(dir_load,'loss.csv')
+        path_load = os.path.join(path,'loss.csv')
         df = pd.read_csv(path_load)
         for t in self.losses_names:
             self.losses[t] = list(df[t])
         self.iter = len(self.losses['TL']) 
 
-        path_load = os.path.join(dir_load,'loss_validation.csv')
+        path_load = os.path.join(path,'loss_validation.csv')
         df = pd.read_csv(path_load)
         for t in self.validation_names:
             self.validation_losses[t] = list(df[t])
 
-        path_load = os.path.join(dir_load,'G_solv.csv')
+        path_load = os.path.join(path,'G_solv.csv')
         df_2 = pd.read_csv(path_load)
         for iters,G_solv in zip(list(df_2['iter']),list(df_2['G_solv'])):
             self.G_solv_hist[str(iters)] = G_solv
 
 
     def save_model(self,dir_save):
-        dir_path = os.path.join(os.getcwd(),dir_save)
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-        self.model.save(os.path.join(dir_path))
+
+        if not os.path.exists(dir_save):
+            os.makedirs(dir_save)
+        self.model.save_weights(os.path.join(dir_save,'weights'))
 
         df_dict = pd.DataFrame.from_dict(self.w_hist)
         df = pd.DataFrame.from_dict(df_dict)
-        path_save = os.path.join(os.path.join(dir_path),'w_hist.csv')
+        path_save = os.path.join(dir_save,'w_hist.csv')
         df.to_csv(path_save)
 
         df_dict = dict()

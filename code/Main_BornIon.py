@@ -102,6 +102,7 @@ def main():
         sim.create_simulation()
 
         XPINN_solver = sim.XPINN_solver
+        XPINN_solver.folder_path = folder_path
 
 
         weights = {'E2': 100.5,
@@ -109,7 +110,7 @@ def main():
 
         XPINN_solver.adapt_weights([weights,weights],
                                    adapt_weights = True,
-                                   adapt_w_iter = 5,
+                                   adapt_w_iter = 1000,
                                    adapt_w_method = 'gradients',
                                    alpha = 0.7)             
 
@@ -153,7 +154,7 @@ def main():
         lr_p = 0.001
         XPINN_solver.adapt_optimizer(optimizer,lr,lr_p)
 
-        N_iters = 16
+        N_iters = 15
 
         precondition = False
         N_precond = 5
@@ -165,7 +166,7 @@ def main():
                         precond = precondition, 
                         N_precond = N_precond,  
                         save_model = iters_save_model, 
-                        G_solve_iter=4)
+                        G_solve_iter=1000)
 
 
         Post = Postprocessing(XPINN_solver, save=True, directory=folder_path)

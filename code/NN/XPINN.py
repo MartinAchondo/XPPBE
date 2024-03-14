@@ -87,9 +87,7 @@ class XPINN(XPINN_utils):
             L_v = caclulate_validation_loss(X_v, self.precondition)
             self.callback(L,L_v)
             self.check_adapt_new_weights(self.adapt_w_now)
-
-        print(len(self.losses['R1']))
-        print(len(self.validation_losses['R1']))
+            
 
     def check_adapt_new_weights(self,adapt_now):
         

@@ -376,6 +376,10 @@ class Postprocessing():
             self.XPINN.model.NNs[0].summary(print_fn=print_func)
             print("\n\n", file=f) 
             self.XPINN.model.NNs[1].summary(print_fn=print_func)
+        
+        path_save = os.path.join(self.directory,self.path_plots_model,'hyperparameters.json')
+        with open(path_save, "w") as json_file:
+            json.dump({'Molecule_NN': self.XPINN.hyperparameters[0], 'Solvent_NN': self.XPINN.hyperparameters[1]}, json_file, indent=4)
 
     def plot_architecture(self,domain=1):
         
