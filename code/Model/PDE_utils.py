@@ -66,26 +66,23 @@ class PDE_utils():
 
 
     def dirichlet_loss(self,mesh,model,XD,UD,flag):
-        num = 0 if flag=='molecule' else 1
         Loss_d = 0
-        u_pred = model(XD,flag)[:,num]
+        u_pred = self.get_phi(XD,flag,model)
         loss = tf.reduce_mean(tf.square(UD - u_pred)) 
         Loss_d += loss
         return Loss_d
 
     def neumann_loss(self,mesh,model,XN,UN,flag,V=None):
-        num = 0 if flag=='molecule' else 1
         Loss_n = 0
-        X = mesh.get_X(XN)[:,num]
+        X = mesh.get_X(XN)
         grad = self.directional_gradient(mesh,model,X,self.normal_vector(X),flag)
         loss = tf.reduce_mean(tf.square(UN-grad))
         Loss_n += loss
         return Loss_n
     
     def data_known_loss(self,mesh,model,XK,UK,flag):
-        num = 0 if flag=='molecule' else 1
         Loss_d = 0
-        u_pred = model(XK,flag)[:,num]
+        u_pred = self.get_phi(XK,flag,model)
         loss = tf.reduce_mean(tf.square(UK - u_pred)) 
         Loss_d += loss
         return Loss_d
@@ -137,14 +134,13 @@ class PDE_utils():
     # Differential operators
 
     def laplacian(self,mesh,model,X,flag):
-        num = 0 if flag=='molecule' else 1
         x,y,z = X
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(x)
             tape.watch(y)
             tape.watch(z)
             R = mesh.stack_X(x,y,z)
-            u = model(R,flag)[:,num]
+            u = self.get_phi(R,flag,model)
             u_x = tape.gradient(u,x)
             u_y = tape.gradient(u,y)
             u_z = tape.gradient(u,z)
@@ -155,14 +151,13 @@ class PDE_utils():
         return u_xx + u_yy + u_zz
 
     def gradient(self,mesh,model,X,flag):
-        num = 0 if flag=='molecule' else 1
         x,y,z = X
         with tf.GradientTape(persistent=True,watch_accessed_variables=False) as tape:
             tape.watch(x)
             tape.watch(y)
             tape.watch(z)
             R = mesh.stack_X(x,y,z)
-            u = model(R,flag)[:,num]
+            u = self.get_phi(R,flag,model)
         u_x = tape.gradient(u,x)
         u_y = tape.gradient(u,y)
         u_z = tape.gradient(u,z)
@@ -175,3 +170,5 @@ class PDE_utils():
         for j in range(3):
             dir_deriv += n_v[j]*gradient[j]
         return dir_deriv
+    
+    

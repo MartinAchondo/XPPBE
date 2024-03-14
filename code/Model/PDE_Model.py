@@ -27,12 +27,12 @@ class PBE(PDE_utils):
         for key, value in inputs.items():
             setattr(self, key, value)
         
-        self.PDE_in = Poisson(inputs)
+        self.PDE_in = Poisson(self,inputs)
 
         if model=='linear':
-            self.PDE_out = Helmholtz(inputs)
+            self.PDE_out = Helmholtz(self,inputs)
         elif model=='nonlinear':
-            self.PDE_out = Non_Linear(inputs)
+            self.PDE_out = Non_Linear(self,inputs)
 
         self.get_charges()
         self.get_integral_operators()
@@ -89,17 +89,17 @@ class PBE(PDE_utils):
         return (1/(4*self.pi*self.epsilon_2))*sum
 
 
-    def get_loss_I(self,model,XI_data,components=[True,True]):
+    def get_loss_I(self,model,XI_data,loss_type=[True,True]):
         
         loss = 0
         ((XI,N_v),flag) = XI_data
         X = self.mesh.get_X(XI)
 
-        if components[0]:
-            u = model(XI,flag)
+        if loss_type[0]:
+            u = self.get_phi(XI,flag,model)
             loss += tf.reduce_mean(tf.square(u[:,0]-u[:,1])) 
 
-        if components[1]:
+        if loss_type[1]:
             n_v = self.mesh.get_X(N_v)
             du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
             du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
@@ -118,7 +118,7 @@ class PBE(PDE_utils):
         for x_q in X_q:
 
             if X_in != None:
-                C_phi1 = model(X_in,flag)[:,0] * self.to_V * C 
+                C_phi1 = self.get_phi(X_in,flag, model) * self.to_V * C 
                 r1 = tf.sqrt(tf.reduce_sum(tf.square(x_q - X_in), axis=1, keepdims=True))
                 G2_p_1 =  tf.math.reduce_sum(self.aprox_exp(-C_phi1)/r1**6)
                 G2_m_1 = tf.math.reduce_sum(self.aprox_exp(C_phi1)/r1**6)
@@ -126,7 +126,7 @@ class PBE(PDE_utils):
                 G2_p_1 = 0.0
                 G2_m_1 = 0.0
 
-            C_phi2 = model(X_out,flag)[:,1] * self.to_V * C
+            C_phi2 = self.get_phi(X_out,flag, model) * self.to_V * C
             r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
             G2_p = G2_p_1 + tf.math.reduce_sum(self.aprox_exp(-C_phi2)/r2**6)
             G2_m = G2_m_1 + tf.math.reduce_sum(self.aprox_exp(C_phi2)/r2**6)
@@ -166,10 +166,28 @@ class PBE(PDE_utils):
 
         return loss
 
+    def get_phi(self,X,flag,model,value='phi'):
+        if flag=='molecule':
+            phi = model(X,flag)[:,0]
+        elif flag=='solvent':
+            phi = model(X,flag)[:,1]
+        elif flag=='interface':
+            phi = model(X,flag)
+        if value =='phi':
+            return phi
+        
+        elif value == 'react':
+            if flag != 'interface':
+                phi -= self.G(*self.mesh.get_X(X))
+            elif flag =='interface':
+                phi[:,0] -= self.G(*self.mesh.get_X(X))   
+                phi[:,1] -= self.G(*self.mesh.get_X(X)) 
+            return phi 
+        
 
     def get_phi_interface(self,model):      
         verts = tf.constant(self.mesh.mol_verts)
-        u = model(verts,'interface')
+        u = self.get_phi(verts,'interface',model)
         u_mean = (u[:,0]+u[:,1])/2
         return u_mean.numpy(),u[:,0].numpy(),u[:,1].numpy()
     
@@ -229,11 +247,21 @@ class PBE(PDE_utils):
 
         return y
 
+    def G(self,x,y,z):
+        sum = tf.constant(0, dtype=self.DTYPE)
+        for q_obj in self.q_list:
+            qk = q_obj.q
+            xk,yk,zk = q_obj.x_q
+            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            sum += qk/r
+        return (1/(self.epsilon_1*4*self.pi))*sum[:,0]
 
-class Poisson(PDE_utils):
 
-    def __init__(self, inputs):
+class Poisson():
 
+    def __init__(self, PBE, inputs):
+        
+        self.PBE = PBE
         for key, value in inputs.items():
             setattr(self, key, value)
         self.epsilon = self.epsilon_1
@@ -241,45 +269,45 @@ class Poisson(PDE_utils):
 
     def residual_loss(self,mesh,model,X,SU,flag):
         x,y,z = X
-        r = self.laplacian(mesh,model,X,flag) - SU       
+        r = self.PBE.laplacian(mesh,model,X,flag) - SU       
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
 
 
-class Helmholtz(PDE_utils):
+class Helmholtz():
 
-    def __init__(self, inputs):
+    def __init__(self, PBE, inputs):
 
+        self.PBE = PBE
         for key, value in inputs.items():
             setattr(self, key, value)
         self.epsilon = self.epsilon_2
         super().__init__()
 
     def residual_loss(self,mesh,model,X,SU,flag):
-        num = 0 if flag=='molecule' else 1
         x,y,z = X
         R = mesh.stack_X(x,y,z)
-        u = model(R,flag)[:,num]
-        r = self.laplacian(mesh,model,X,flag) - self.kappa**2*u      
+        u = self.PBE.get_phi(R,flag,model)
+        r = self.PBE.laplacian(mesh,model,X,flag) - self.kappa**2*u      
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r  
 
 
-class Non_Linear(PDE_utils):
+class Non_Linear():
 
-    def __init__(self, inputs):
+    def __init__(self, PBE, inputs):
 
+        self.PBE = PBE
         for key, value in inputs.items():
             setattr(self, key, value)
         self.epsilon = self.epsilon_2
         super().__init__()
 
     def residual_loss(self,mesh,model,X,SU,flag):
-        num = 0 if flag=='molecule' else 1
         x,y,z = X
         R = mesh.stack_X(x,y,z)
-        u = model(R,flag)[:,num]
-        r = self.laplacian(mesh,model,X,flag) - self.kappa**2*tf.math.sinh(u)     
+        u = self.PBE.get_phi(R,flag,model)
+        r = self.PBE.laplacian(mesh,model,X,flag) - self.kappa**2*tf.math.sinh(u)     
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
     

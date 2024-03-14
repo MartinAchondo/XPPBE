@@ -189,6 +189,7 @@ def main():
         Post.plot_interface_3D(variable='phi');
         Post.plot_interface_3D(variable='dphi');
         Post.plot_phi_line();
+        Post.plot_phi_line(plot='react');
         Post.plot_phi_contour();
         Post.save_values_file();
         Post.save_model_summary();

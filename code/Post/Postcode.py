@@ -225,7 +225,7 @@ class Postprocessing():
         fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}.html'))
 
 
-    def plot_phi_line(self, N=100, x0=np.array([0,0,0]), theta=0, phi=np.pi/2):
+    def plot_phi_line(self, N=100, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, plot='phi'):
         fig, ax = plt.subplots()
         
         r = np.linspace(-self.mesh.R_exterior,self.mesh.R_exterior,N)
@@ -235,8 +235,8 @@ class Postprocessing():
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,_ = self.get_interior_exterior(points)
         
-        u_in = self.XPINN.model(tf.constant(X_in),'molecule')[:,0]
-        u_out = self.XPINN.model(tf.constant(X_out),'solvent')[:,1]
+        u_in = self.PDE.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model, plot)
+        u_out = self.PDE.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model, plot)
 
         X_in -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
@@ -268,7 +268,7 @@ class Postprocessing():
         ax.legend()
 
         if self.save:
-            path = 'solution.png'
+            path = f'solution_{plot}.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
 
@@ -297,8 +297,8 @@ class Postprocessing():
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,bools = self.get_interior_exterior(points,R_exterior)
 
-        u_in = self.XPINN.model(tf.constant(X_in),'molecule')[:,0]
-        u_out = self.XPINN.model(tf.constant(X_out),'solvent')[:,1]
+        u_in = self.PDE.get_phi(tf.constant(X_in),'molecule',self.model)
+        u_out = self.PDE.get_phi(tf.constant(X_out),'solvent',self.model)
 
         vmax,vmin = self.get_max_min(u_in,u_out)
         s = ax.scatter(T.ravel()[bools[0]], S.ravel()[bools[0]], c=u_in[:],vmin=vmin,vmax=vmax)
@@ -415,8 +415,8 @@ class Born_Ion_Postprocessing(Postprocessing):
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,_ = self.get_interior_exterior(points)
         
-        u_in = self.XPINN.model(tf.constant(X_in),'molecule')[:,0]
-        u_out = self.XPINN.model(tf.constant(X_out),'solvent')[:,1]
+        u_in = self.PDE.get_phi(tf.constant(X_in),'molecule',self.model)
+        u_out = self.PDE.get_phi(tf.constant(X_out),'solvent',self.model)
 
         X_in -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
@@ -513,10 +513,9 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         fig, ax = plt.subplots() 
 
-        for i in [0,1]:
-            flag = 'molecule' if i==0 else 'solvent'
+        for i,flag in zip([0,1],['molecule','solvent']):
             if plot=='u':
-                U = self.XPINN.model(XX_bl,flag)[:,i]
+                U = self.PDE.get_phi(XX_bl,flag,self.model)
                 ax.plot(theta_bl[:,0],U[:], label=labels[i], c=colr[i])
             elif plot=='du':
                 radial_vector = XX_bl - self.mesh.centroid
@@ -524,7 +523,7 @@ class Born_Ion_Postprocessing(Postprocessing):
                 normal_vector = radial_vector / magnitude
                 n_v = self.mesh.get_X(normal_vector)
                 X = self.mesh.get_X(XX_bl)
-                du = self.PDE.directional_gradient(self.mesh,self.XPINN.model,X,n_v,flag)
+                du = self.PDE.directional_gradient(self.mesh,self.model,X,n_v,flag)
                 if i==0:
                     ax.plot(theta_bl[:,0],du[:,0]*self.PDE.PDE_in.epsilon, label=labels[i], c=colr[i])
                 else:
@@ -558,7 +557,7 @@ class Born_Ion_Postprocessing(Postprocessing):
     def L2_error_interface_analytic(self):
         verts = self.XPINN.mesh.mol_verts
 
-        u = self.XPINN.model(tf.constant(verts),'interface').numpy()
+        u = self.PDE.get_phi(tf.constant(verts),'interface',self.model).numpy()
         u1,u2 = u[:,0],u[:,1]
         u_mean = (u1+u2)/2
 
@@ -584,4 +583,4 @@ class Born_Ion_Postprocessing(Postprocessing):
 
 
 if __name__=='__main__':
-    pass
+    pass 
