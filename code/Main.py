@@ -29,8 +29,8 @@ logger.info('================================================')
 
 # Inputs
 ###############################################
-equations = ['standard', 'regularized_scheme_1']
-equation = equations[0]
+equations = ['standard', 'regularized_scheme_1','regularized_scheme_2']
+equation = equations[2]
 network = 'xpinn'
 
 
@@ -69,6 +69,8 @@ class PDE():
                         from Model.PDE_Model import PBE
                 elif equation == 'regularized_scheme_1':
                         from Model.PDE_Model_R1 import PBE_Reg as PBE
+                elif equation == 'regularized_scheme_2':
+                        from Model.PDE_Model_R2 import PBE_Reg as PBE
 
                 self.PBE_model = PBE(self.inputs,
                         mesh=self.Mol_mesh, 
@@ -96,6 +98,14 @@ class PDE():
                         self.meshes_domain['5'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
                         self.meshes_domain['6'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)-self.PBE_model.G(x,y,z)}
                         self.meshes_domain['7'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known_reg.dat'}
+
+                elif equation == 'regularized_scheme_2':
+                        self.meshes_domain['1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
+                        #self.meshes_domain['2'] = {'domain': 'molecule', 'type':'Q1', 'value':0.0}
+                        self.meshes_domain['3'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known_reg.dat'}
+                        self.meshes_domain['5'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
+                        self.meshes_domain['6'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
+                        self.meshes_domain['7'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known.dat'}
                 
                 self.meshes_domain['9'] = {'domain': 'solvent', 'type': 'E2', 'file': 'data_experimental.dat'}
                 self.meshes_domain['10'] = {'domain':'interface', 'type':'I'}

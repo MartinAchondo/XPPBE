@@ -49,22 +49,23 @@ class PBE(PDE_utils):
             phi = tf.reshape(model(X,flag)[:,1], (-1,1))
         elif flag=='interface':
             phi = model(X,flag)
-        if value =='phi':
-            return phi
-        
-        elif value == 'react':
+
+        if value=='phi':
+            return phi 
+
+        if value == 'react':
             if flag != 'interface':
-                phi -= self.G(*self.mesh.get_X(X))
+                phi_r = phi - self.G(*self.mesh.get_X(X))
             elif flag =='interface':
                 G_val = self.G(*self.mesh.get_X(X))
-                return tf.stack([tf.reshape(phi[:,0],(-1,1))-G_val,tf.reshape(phi[:,1],(-1,1))-G_val], axis=1)
-            return phi 
+                phi_r = tf.stack([tf.reshape(phi[:,0],(-1,1))-G_val,tf.reshape(phi[:,1],(-1,1))-G_val], axis=1)
+        return phi_r
 
     def get_dphi(self,X,Nv,flag,model,value='phi'):
         x = self.mesh.get_X(X)
         nv = self.mesh.get_X(Nv)
-        du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='react')
-        du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='react')
+        du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='phi')
+        du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='phi')
         if value=='react':
             du_1 -= self.dG_n(*x,Nv)
             du_2 -= self.dG_n(*x,Nv)
@@ -78,13 +79,8 @@ class PBE(PDE_utils):
     
     def get_dphi_interface(self,model, value='phi'): 
         verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)     
-        X = self.mesh.get_X(verts)
-        n_v = self.mesh.get_X(self.mesh.mol_normal)
-        du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
-        du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
-        if value=='react':
-            du_1 -= self.dG_n(*X,self.mesh.mol_normal)
-            du_2 -= self.dG_n(*X,self.mesh.mol_normal)
+        N_v = self.mesh.mol_normal
+        du_1,du_2 = self.get_dphi(verts,N_v,'',model,value)
         du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
         return du_prom.numpy(),du_1.numpy(),du_2.numpy()
     
@@ -149,9 +145,7 @@ class PBE(PDE_utils):
             loss += tf.reduce_mean(tf.square(u[:,0]-u[:,1])) 
 
         if loss_type[1]:
-            n_v = self.mesh.get_X(N_v)
-            du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
-            du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
+            du_1,du_2 = self.get_dphi(XI,N_v,flag,model,value='phi')
             loss += tf.reduce_mean(tf.square(du_1*self.PDE_in.epsilon - du_2*self.PDE_out.epsilon))
             
         return loss
@@ -174,10 +168,7 @@ class PBE(PDE_utils):
     def get_loss_Gauss(self,model,XI_data):
         loss = 0
         ((XI,N_v,areas),flag) = XI_data
-        X = self.mesh.get_X(XI)
-        n_v = self.mesh.get_X(N_v)
-        du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
-        du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
+        du_1,du_2 = self.get_dphi(XI,N_v,flag,model,value='phi')
         du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
 
         integral = tf.reduce_sum(du_prom * areas)

@@ -12,7 +12,7 @@ class PBE_Reg(PBE):
 
         self.PDE_in = Laplace(self,self.inputs)
         if self.eq=='linear':
-            self.PDE_out = Linear(self,self.inputs)
+            self.PDE_out = Helmholtz(self,self.inputs)
         elif self.eq=='nonlinear':
             self.PDE_out = Non_Linear(self,self.inputs)
 
@@ -21,10 +21,12 @@ class PBE_Reg(PBE):
         if flag=='molecule':
             phi_r = tf.reshape(model(X,flag)[:,0], (-1,1)) 
         elif flag=='solvent':
-            phi_r = tf.reshape(model(X,flag)[:,1], (-1,1))
+            phi_r = tf.reshape(model(X,flag)[:,1], (-1,1)) - self.G(*self.mesh.get_X(X))
         elif flag=='interface':
-            phi_r = model(X,flag)
-        
+            phi_t = model(X,flag)
+            G_val = self.G(*self.mesh.get_X(X))
+            phi_r = tf.stack([tf.reshape(phi_t[:,0],(-1,1)),tf.reshape(phi_t[:,1],(-1,1))-G_val], axis=1)
+
         if value =='react':
             return phi_r
         
@@ -40,10 +42,11 @@ class PBE_Reg(PBE):
         x = self.mesh.get_X(X)
         nv = self.mesh.get_X(Nv)
         du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='react')
-        du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='react')
+        du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='phi')
         if value=='phi':
             du_1 += self.dG_n(*x,Nv)
-            du_2 += self.dG_n(*x,Nv)
+        elif value =='react':
+            du_2 -= self.dG_n(*x,Nv)
         return du_1,du_2
 
 
@@ -62,9 +65,9 @@ class Laplace():
         r = self.PBE.laplacian(mesh,model,X,flag,value='react')     
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
+    
 
-
-class Linear():
+class Helmholtz():
 
     def __init__(self, PBE, inputs):
 
@@ -77,8 +80,8 @@ class Linear():
     def residual_loss(self,mesh,model,X,SU,flag):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
-        u = self.PBE.get_phi(R,flag,model,value='react')
-        r = self.PBE.laplacian(mesh,model,X,flag,value='react') - self.kappa**2*(u)      
+        u = self.PBE.get_phi(R,flag,model)
+        r = self.PBE.laplacian(mesh,model,X,flag) - self.kappa**2*u      
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r  
 
@@ -96,8 +99,7 @@ class Non_Linear():
     def residual_loss(self,mesh,model,X,SU,flag):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
-        u = self.PBE.get_phi(R,flag,model,value='react')
-        r = self.PBE.laplacian(mesh,model,X,flag,value='react') - self.kappa**2*tf.math.sinh(u)     
+        u = self.PBE.get_phi(R,flag,model)
+        r = self.PBE.laplacian(mesh,model,X,flag) - self.kappa**2*tf.math.sinh(u)     
         Loss_r = tf.reduce_mean(tf.square(r))
         return Loss_r
-    

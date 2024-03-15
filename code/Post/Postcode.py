@@ -9,6 +9,8 @@ import os
 import pandas as pd
 import json
 
+plt.rcParams['figure.max_open_warning'] = 50
+
 logger = logging.getLogger(__name__)
 
 class Postprocessing():
