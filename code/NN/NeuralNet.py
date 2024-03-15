@@ -1,10 +1,35 @@
-import tensorflow as tf
 import numpy as np
-import os
+import tensorflow as tf
+
+
+class XPINN_NeuralNet(tf.keras.Model):
+
+    def __init__(self, hyperparameters, **kwargs):
+        super().__init__(name='XPINN_NN', **kwargs)
+        param_1, param_2 = hyperparameters
+        self.NNs = [NeuralNet(**param_1, name='Molecule_NN'), NeuralNet(**param_2, name='Solvent_NN')]
+
+    def call(self, X, flag):
+        outputs = tf.zeros([tf.shape(X)[0], 2])   
+        if flag == 'molecule':
+            output = self.NNs[0](X)
+            outputs = tf.concat([output, tf.zeros_like(output)], axis=1)
+        elif flag == 'solvent':
+            output = self.NNs[1](X)
+            outputs = tf.concat([tf.zeros_like(output), output], axis=1)
+        elif flag =='interface':
+            outputs = tf.concat([self.NNs[0](X), self.NNs[1](X)], axis=1)
+        return outputs
+    
+    def build_Net(self):
+        self.NNs[0].build_Net()
+        self.NNs[1].build_Net()
+
+
 
 class NeuralNet(tf.keras.Model):
 
-    def __init__(self, lb, ub, 
+    def __init__(self, 
                  input_shape=(None, 3),
                  output_dim=1,
                  num_hidden_layers=2,
@@ -17,6 +42,7 @@ class NeuralNet(tf.keras.Model):
                  fourier_features=False, 
                  num_fourier_features=128, 
                  fourier_sigma=1,
+                 scale=([-1.,-1.,-1.],[1.,1.,1.]),
                  **kwargs):
         super().__init__(**kwargs)
 
@@ -24,8 +50,8 @@ class NeuralNet(tf.keras.Model):
         self.num_hidden_layers = num_hidden_layers
         self.num_hidden_blocks = num_hidden_blocks
         self.output_dim = output_dim
-        self.lb = lb
-        self.ub = ub
+        self.lb = tf.constant(scale[0])
+        self.ub = tf.constant(scale[1])
         self.architecture_Net = architecture_Net
         self.num_fourier_features = num_fourier_features
         self.sigma = fourier_sigma
@@ -34,7 +60,7 @@ class NeuralNet(tf.keras.Model):
         # Scale layer
         self.scale = tf.keras.layers.Lambda(
             lambda x: 2.0 * (x - self.lb) / (self.ub - self.lb) - 1.0, 
-            name=f'layer_input')
+            name=f'scale_layer')
 
         # Fourier feature layer
         if self.use_fourier_features:
@@ -50,7 +76,7 @@ class NeuralNet(tf.keras.Model):
                     return tf.concat([tf.sin(2.0*np.pi*Z), tf.cos(2.0*np.pi*Z)], axis=-1)
             self.fourier_features.add(SinCosLayer(name='fourier_sincos_layer'))
 
-
+        # Custom activation function
         class CustomActivation(tf.keras.layers.Layer):
             def __init__(self, units=1, adaptative_activation=False, **kwargs):
                 super(CustomActivation, self).__init__(**kwargs)
@@ -103,7 +129,7 @@ class NeuralNet(tf.keras.Model):
                                               name=f'layer_1')
 
         # Output layer
-        self.out = tf.keras.layers.Dense(output_dim, name=f'layer_output')
+        self.out = tf.keras.layers.Dense(output_dim, name=f'output_layer')
 
     def build_Net(self):
         self.build(self.input_shape_N)
@@ -143,10 +169,12 @@ if __name__=='__main__':
                 'output_dim': 1,
                 'activation': 'tanh',
                 'adaptative_activation': True,
-                'architecture_Net': 'ResNet',
-                'fourier_features': True
+                'architecture_Net': 'FCNN',
+                'fourier_features': True,
+                'scale': ([-1.,-1.,-1.],[1.,1.,1.])
         }
-    model = NeuralNet(lb=-1,ub=1, **hyperparameters)
+    model = XPINN_NeuralNet([hyperparameters,hyperparameters])
     model.build_Net()
-    model.summary()
+    model.NNs[0].summary()
+    model.NNs[1].summary()
 

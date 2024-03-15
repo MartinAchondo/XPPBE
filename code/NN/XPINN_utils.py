@@ -1,7 +1,9 @@
 import copy
 import logging
 import os
+import json
 import pandas as pd
+import tensorflow as tf
 
 
 logger = logging.getLogger(__name__)
@@ -12,11 +14,14 @@ class XPINN_utils():
 
     def __init__(self):
 
+        self.losses_names = ['TL','TL1','TL2','vTL1','vTL2','R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','E2','P1','P2']
+        self.losses_names_1 = ['TL1','R1','D1','N1','K1','Q1','Iu','Id','G','P1']
+        self.losses_names_2 = ['TL2','R2','D2','N2','K2','Iu','Id','E2','G','P2']
+        self.validation_names = ['TL','TL1','TL2','R1','D1','N1','Q1','R2','D2','N2','Iu','Id']
+        self.w_names = self.losses_names[5:]
+        self.losses_names_list = [self.losses_names_1,self.losses_names_2]
+        
         self.losses = dict()
-        self.losses_names = ['TL','R1','D1','N1','K1','Q','R2','D2','N2','K2','G','Iu','Id','E','P1','P2']
-        self.losses_names_1 = ['TL','R','D','N','K','Q','Iu','Id','P']
-        self.losses_names_2 = ['TL','R','D','N','K','Iu','Id','E','G','P']
-        self.validation_names = ['TL','R1','D1','N1','Q','R2','D2','N2','Iu','Id']
         for t in self.losses_names:
             self.losses[t] = list()
 
@@ -30,13 +35,21 @@ class XPINN_utils():
         self.iter = 0
         self.lr = None
 
+
+    def create_NeuralNet(self, NN_class, hyperparameters, *args, **kwargs):
+        self.hyperparameters = hyperparameters
+        self.model = NN_class(hyperparameters, *args, **kwargs)
+        self.model.build_Net()
+
+    def adapt_optimizer(self,optimizer,lr,lr_p=0.001):
+        self.optimizer_name = optimizer
+        self.lr = lr
+        self.lr_p = lr_p
+
     def adapt_PDEs(self,PDE):
         self.PDE = PDE
         self.mesh = self.PDE.mesh
-        for solver,pde in zip(self.solvers, PDE.get_PDEs):
-            solver.adapt_PDE(pde)
         self.adapt_datasets()
-        self.set_mesh_names()
         print("PDEs and datasets ready")
 
     def adapt_weights(self,weights,adapt_weights=False,adapt_w_iter=2000,adapt_w_method='gradients',alpha=0.3):
@@ -45,85 +58,27 @@ class XPINN_utils():
         self.adapt_w_method = adapt_w_method
         self.alpha_w = alpha
 
-        for solver,weight in zip(self.solvers,weights):
-            solver.adapt_weights(**weight) 
+        self.w = dict()
 
-    def create_NeuralNets(self,NN_class,hyperparameters):
-        for solver,hyperparameter in zip(self.solvers,hyperparameters):
-            solver.create_NeuralNet(NN_class,**hyperparameter)
+        w = weights[0]
+        for w_name in self.w_names:
+            if not w_name in w:
+                self.w[w_name] = 1.0
+            else:
+                self.w[w_name] = w[w_name]
 
-    def adapt_optimizers(self,optimizer,lrs,lr_p=0.001):
-        for solver,lr in zip(self.solvers,lrs):
-            solver.adapt_optimizer(optimizer,lr,lr_p)
-        self.optimizer_name = optimizer
+        self.w_hist = dict()
+        for t in self.w:
+            self.w_hist[t] = list()
+
 
     def set_points_methods(self, sample_method='batches', N_batches=1, sample_size=1000):
         self.sample_method = sample_method
         self.N_batches = N_batches
         self.sample_size = sample_size
 
-    def load_NeuralNets(self,dir_load,names):   
-        for solver,name in zip(self.solvers,names):
-            solver.adapt_weights()
-            solver.load_NeuralNet(dir_load,name)  
-        
-        path_load = os.path.join(dir_load,'loss.csv')
-        df = pd.read_csv(path_load)
-        for t in self.losses_names:
-            self.losses[t] = list(df[t])
-        self.iter = len(self.losses['TL']) 
-
-        path_load = os.path.join(dir_load,'loss_validation.csv')
-        df = pd.read_csv(path_load)
-        for t in self.validation_names:
-            self.validation_losses[t] = list(df[t])
-
-        self.add_losses_NN()
-
-        path_load = os.path.join(dir_load,'G_solv.csv')
-        df_2 = pd.read_csv(path_load)
-        for iters,G_solv in zip(list(df_2['iter']),list(df_2['G_solv'])):
-            self.G_solv_hist[str(iters)] = G_solv
-
-    def save_models(self,dir_save,names):
-        for solver,name in zip(self.solvers,names):
-            solver.save_model(dir_save,name)  
-
-        df_dict = dict()
-        for t in self.losses_names:
-            df_dict[t] = list(map(lambda tensor: tensor.numpy(),self.losses[t]))
-        df = pd.DataFrame.from_dict(df_dict)
-        path_save = os.path.join(dir_save,'loss.csv')
-        df.to_csv(path_save)
-
-        df_dict = dict()
-        for t in self.validation_names:
-            df_dict[t] = list(map(lambda tensor: tensor.numpy(),self.validation_losses[t]))
-        df = pd.DataFrame.from_dict(df_dict)
-        path_save = os.path.join(dir_save,'loss_validation.csv')
-        df.to_csv(path_save)
-
-        df_2 = pd.DataFrame(self.G_solv_hist.items())
-        df_2.columns = ['iter','G_solv']
-        path_save = os.path.join(dir_save,'G_solv.csv')
-        df_2.to_csv(path_save)        
-
-    ######################################################
-
-    def set_mesh_names(self):
-        for solver in self.solvers:
-            solver.Mesh_names = solver.mesh.solver_mesh_names.union(self.mesh.domain_mesh_names)
-        if 'E' in self.solver1.Mesh_names:
-            self.solver1.Mesh_names.remove('E')
 
     def adapt_datasets(self):
-        self.L_X_solvers = list()
-        for solver in self.solvers:
-            L_batches = dict()
-            for t in solver.mesh.solver_mesh_names:
-                L_batches[t] = solver.mesh.solver_mesh_data[t]
-            self.L_X_solvers.append(L_batches)
-
         self.L_X_domain = dict()
         for t in self.mesh.domain_mesh_names:
             if t in ('Iu','Id'):
@@ -131,42 +86,35 @@ class XPINN_utils():
             else:
                 self.L_X_domain[t] = self.mesh.domain_mesh_data[t]
 
-        
+
+    ######################################################
+
     def get_batches(self, sample_method='random_sample', validation=False):
 
         if sample_method == 'full_batch':
-            X_b1,X_b2 = self.L_X_solvers
             X_d = self.L_X_domain
         
         elif sample_method == 'random_sample':
-            for i in range(2):
-                for bl in self.mesh.mesh_objs[i].meshes.values():
-                    type_b = bl['type']
-                    if type_b in ('R','D','N','Q'): 
-                        t = 'R' + str(i+1) if type_b=='R' else type_b
-                        x = self.mesh.region_meshes[t].get_dataset()
-                        x,y = self.mesh.mesh_objs[i].get_XU(x,bl)
-                        self.L_X_solvers[i][t] = (x,y)
-            X_b1,X_b2 = self.L_X_solvers
+            for bl in self.mesh.meshes_info.values():
+                type_b = bl['type']
+                flag = bl['domain']
+                if type_b[0] in ('R','D','N','Q'): 
+                    x = self.mesh.region_meshes[type_b].get_dataset()
+                    x,y = self.mesh.get_XU(x,bl)
+                    self.L_X_domain[type_b] = ((x,y),flag)
 
-            self.L_X_domain['I'] = (self.mesh.region_meshes['I'].get_dataset(),self.mesh.region_meshes['I'].normals)
+            self.L_X_domain['I'] = ((self.mesh.region_meshes['I'].get_dataset(),self.mesh.region_meshes['I'].normals),'interface')
             X_d = self.L_X_domain
 
         if not validation:
-            return X_b1,X_b2,X_d
+            return X_d
             
         elif validation:
-            X_vb1 = copy.deepcopy(X_b1)
-            X_vb2 = copy.deepcopy(X_b2)
             X_vd = copy.deepcopy(X_d)
-            for t in ('K','E','G'):
-                if t in X_vb1:
-                    del X_vb1[t]
-                if t in X_vb2:
-                    del X_vb2[t]
+            for t in ('K1','K2','E2','G'):
                 if t in X_vd:
                     del X_vd[t]
-            return X_vb1,X_vb2,X_vd
+            return X_vd
 
     #utils
     def checkers_iterations(self):
@@ -186,78 +134,133 @@ class XPINN_utils():
         # check precondition
         if self.iter>=self.N_precond and self.precondition:
             self.precondition = False
-            for data,solver in zip(self.L_X_solvers,self.solvers):
-                del data['P']
-                solver.mesh.solver_mesh_data['P'] = None
-                solver.mesh.solver_mesh_names.remove('P')
-                solver.Mesh_names.remove('P')
-        
+            del self.L_X_domain['P1']
+            del self.L_X_domain['P2']
+            self.mesh.domain_mesh_names.remove('P1')
+            self.mesh.domain_mesh_names.remove('P2')
+    
         if self.iter % 2 == 0:
             self.pbar.set_description("Loss: {:6.4e}".format(self.current_loss))                
 
-    def callback(self, L1,L2):
+    def callback(self, L_loss,Lv_loss):
 
-        for net,L in zip(['1','2'],[L1,L2]):
-            for t in self.losses_names:
-                t2 = t[0]
-                if t2 in ('R','N','D','K','P'):
-                    if t[1] == net:
-                        self.losses[t2+net].append(L[1][t2])
+        loss,L = L_loss
+        for t in self.losses_names:
+            if not 'TL' in t:
+                self.losses[t].append(L[t])
 
-        for t in ('Q','Iu','Id','G','E'):
-            self.losses[t].append(L1[1][t])
-
-        loss = L1[0] + L2[0]
         self.losses['TL'].append(loss)
         self.current_loss = loss.numpy()
- 
-        self.solver1.L = L1[1]
-        self.solver2.L = L2[1]
 
-        for solver in self.solvers:
-            for t in solver.L_names:
-                solver.w_hist[t].append(solver.w[t])
+        loss1 = 0.0
+        loss1v = 0.0
+        for t in self.losses_names_1:
+            if t != 'TL1':
+                loss1 += L[t]
+                if t in self.validation_names:
+                    loss1v += L[t]
+        self.losses['TL1'].append(loss1)
+        self.losses['vTL1'].append(loss1v)
 
-        if self.save_model_iter > 0:
-            if self.iter % self.save_model_iter == 0 and self.iter>1:
-                dir_save = os.path.join(self.folder_path,f'iter_{self.iter}')
-                self.save_models(dir_save, [f'model_1',f'model_2'])
+        loss2 = 0.0
+        loss2v = 0.0
+        for t in self.losses_names_2:
+            if t != 'TL2':
+                loss2 += L[t]
+                if t in self.validation_names:
+                    loss2v += L[t]
+        self.losses['TL2'].append(loss2)
+        self.losses['vTL2'].append(loss2v)
+        
+        for t in self.w_names:
+            self.w_hist[t].append(self.w[t])
 
-
-    def callback_validation(self,L1,L2):
-        for net,L in zip(['1','2'],[L1,L2]):
-            for t in self.losses_names:
-                t2 = t[0]
-                if t2 in ('R','N','D'):
-                    if t[1] == net:
-                        self.validation_losses[t2+net].append(L[1][t2])
-        for t in ('Q','Iu','Id'):
-            self.validation_losses[t].append(L1[1][t])
-        loss = L1[0] + L2[0]
+        loss,L = Lv_loss
+        for t in self.validation_names:
+            if not 'TL' in t:
+                self.validation_losses[t].append(L[t])
         self.validation_losses['TL'].append(loss)
 
+        loss1 = 0.0
+        for t in self.validation_names:
+            if t!= 'TL1' and '1' in t:
+                loss1 += L[t]
+        self.validation_losses['TL1'].append(loss1)
 
-    def add_losses_NN(self):
+        loss2 = 0.0
+        for t in self.validation_names:
+            if t!= 'TL2' and '2' in t:
+                loss2 += L[t]
+        self.validation_losses['TL2'].append(loss2)
 
-        for solver,names,cont in zip(self.solvers,[self.losses_names_1,self.losses_names_2],['1','2']):
-            for t in names:
-                if t in ('R','N','D','K','P'):
-                    solver.losses[t] = self.losses[t+cont]
-                elif t != 'TL': 
-                    solver.losses[t] = self.losses[t]
-                if t in ('R','N','D'):
-                    solver.validation_losses[t] = self.validation_losses[t+cont]
-                elif t in ('Iu','Id','Q'): 
-                    solver.validation_losses[t] = self.validation_losses[t]
-              
-        for solver in self.solvers:
-            zipped_lists = zip(*solver.losses.values())
-            solver.losses['TL'] = [sum(values) for values in zipped_lists]
-
-            zipped_lists = zip(*(solver.losses[key] for key in solver.validation_losses.keys()))
-            solver.losses['vTL'] = [sum(values) for values in zipped_lists]
-
-            zipped_lists = zip(*solver.validation_losses.values())
-            solver.validation_losses['TL'] = [sum(values) for values in zipped_lists]
+        if self.save_model_iter > 0:
+            if (self.iter % self.save_model_iter == 0 and self.iter>1) or self.iter==self.N_iters:
+                dir_save = os.path.join(self.folder_path,'iterations',f'iter_{self.iter}')
+                self.save_model(dir_save)
 
 
+    #################################################
+
+    def load_NeuralNet(self,NN_class,dir_load,iter_path):   
+
+        with open(os.path.join(dir_load,'plots_model','hyperparameters.json'), "r") as json_file:
+            hyper = json.load(json_file)
+        hyperparameters = [hyper['Molecule_NN'],hyper['Solvent_NN']]
+        self.create_NeuralNet(NN_class, hyperparameters)
+
+        path = os.path.join(dir_load,'iterations',iter_path)
+        self.model.load_weights(os.path.join(path,'weights'))
+        
+        path_load = os.path.join(path,'w_hist.csv')
+        df = pd.read_csv(path_load)
+        self.w_hist,self.w = dict(),dict()
+        for t in self.w_names:
+            self.w_hist[t] = list(df[t])
+            self.w[t] = self.w_hist[t][-1]
+       
+        path_load = os.path.join(path,'loss.csv')
+        df = pd.read_csv(path_load)
+        for t in self.losses_names:
+            self.losses[t] = list(df[t])
+        self.iter = len(self.losses['TL']) 
+
+        path_load = os.path.join(path,'loss_validation.csv')
+        df = pd.read_csv(path_load)
+        for t in self.validation_names:
+            self.validation_losses[t] = list(df[t])
+
+        path_load = os.path.join(path,'G_solv.csv')
+        df_2 = pd.read_csv(path_load)
+        for iters,G_solv in zip(list(df_2['iter']),list(df_2['G_solv'])):
+            self.G_solv_hist[str(iters)] = G_solv
+
+
+    def save_model(self,dir_save):
+
+        if not os.path.exists(dir_save):
+            os.makedirs(dir_save)
+        self.model.save_weights(os.path.join(dir_save,'weights'))
+
+        df_dict = pd.DataFrame.from_dict(self.w_hist)
+        df = pd.DataFrame.from_dict(df_dict)
+        path_save = os.path.join(dir_save,'w_hist.csv')
+        df.to_csv(path_save)
+
+        df_dict = dict()
+        for t in self.losses_names:
+            df_dict[t] = list(map(lambda tensor: tensor.numpy(),self.losses[t]))
+        df = pd.DataFrame.from_dict(df_dict)
+        path_save = os.path.join(dir_save,'loss.csv')
+        df.to_csv(path_save)
+
+        df_dict = dict()
+        for t in self.validation_names:
+            df_dict[t] = list(map(lambda tensor: tensor.numpy(),self.validation_losses[t]))
+        df = pd.DataFrame.from_dict(df_dict)
+        path_save = os.path.join(dir_save,'loss_validation.csv')
+        df.to_csv(path_save)
+
+        df_2 = pd.DataFrame(self.G_solv_hist.items())
+        df_2.columns = ['iter','G_solv']
+        path_save = os.path.join(dir_save,'G_solv.csv')
+        df_2.to_csv(path_save)       

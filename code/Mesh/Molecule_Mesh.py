@@ -4,7 +4,6 @@ import tensorflow as tf
 import trimesh
 import pygamer
 
-from Mesh.Solver_Mesh import Solver_Mesh
 from Mesh.Charges_utils import import_charges_from_pqr, convert_pqr2xyzr
 from Mesh.Mesh_utils  import generate_msms_mesh,generate_nanoshaper_mesh
 
@@ -91,22 +90,24 @@ class Molecule_Mesh():
         self.path_xyzr = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.xyzr')
         
         self.region_meshes = dict()
+        self.prior_data = dict()
 
-        self.read_create_meshes(Solver_Mesh)
+        self.read_create_meshes()
 
         self.domain_mesh_names = set()
         self.domain_mesh_data = dict()
         self.domain_mesh_N = dict()
+        
     
-    def read_create_meshes(self, Mesh_class):
+    def read_create_meshes(self):
 
         self.create_molecule_mesh()
         self.create_sphere_mesh()
         self.create_interior_mesh()
         self.create_exterior_mesh()
 
-        self.interior_obj, self.exterior_obj = self.create_mesh_objs(Mesh_class)
-        self.mesh_objs = [self.interior_obj,self.exterior_obj]
+        self.create_mesh_obj()
+
         print("Mesh initialization ready")
 
 
@@ -132,9 +133,12 @@ class Molecule_Mesh():
         vertx = self.mol_verts[self.mol_faces]
         mol_faces_normal = np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]).astype(np.float32)
         self.mol_faces_normal = mol_faces_normal/np.linalg.norm(mol_faces_normal)
-        self.mol_areas = np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1) / 2
+        mol_areas = 0.5*np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1).astype(np.float32)
+        self.mol_areas = mol_areas.reshape(-1,1)
         r = np.sqrt((self.mol_verts[:,0]-self.centroid[0])**2 + (self.mol_verts[:,1]-self.centroid[1])**2 + (self.mol_verts[:,2]-self.centroid[2])**2)
         self.R_mol = np.max(r)
+        element_vertices = self.mol_verts[self.mol_faces]
+        self.mol_faces_centroid = np.mean(element_vertices, axis=1).astype(np.float32)
     
         self.mol_mesh = trimesh.Trimesh(vertices=self.mol_verts, faces=self.mol_faces)
         self.mol_mesh.export(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'), file_type='off')
@@ -147,7 +151,7 @@ class Molecule_Mesh():
         r = self.R_mol + self.dR_exterior
         self.sphere_mesh = trimesh.creation.icosphere(radius=r, subdivisions=self.density_border)
         self.sphere_mesh.export(os.path.join(self.path_files,'mesh_sphere'+f'_d{self.density_border}'+'.off'),file_type='off')
-        self.region_meshes['D'] = Region_Mesh('trimesh',self.sphere_mesh)
+        self.region_meshes['D2'] = Region_Mesh('trimesh',self.sphere_mesh)
 
     def create_interior_mesh(self):
 
@@ -155,12 +159,12 @@ class Molecule_Mesh():
         mesh_split = mesh_molecule.splitSurfaces() 
         print("Found %i meshes in 1"%len(mesh_split))
         
-        mesh1 = mesh_split[0]  
-        mesh1.correctNormals() 
-        gInfo = mesh1.getRoot() 
+        self.mesh_molecule_pyg = mesh_split[0]  
+        self.mesh_molecule_pyg.correctNormals() 
+        gInfo = self.mesh_molecule_pyg.getRoot() 
         gInfo.ishole = False   
 
-        meshes = [mesh1] 
+        meshes = [self.mesh_molecule_pyg] 
         self.int_tetmesh = pygamer.makeTetMesh(meshes, '-pq'+str(self.hmin_interior)+'aYAO2/3')  
         self.region_meshes['R1'] = Region_Mesh('tetmesh',self.int_tetmesh)
 
@@ -169,91 +173,104 @@ class Molecule_Mesh():
         mesh_split = mesh_molecule.splitSurfaces() 
         print("Found %i meshes in 1"%len(mesh_split))
         
-        mesh1 = mesh_split[0]  
-        mesh1.correctNormals() 
-        gInfo = mesh1.getRoot() 
+        self.mesh_molecule_pyg_2 = mesh_split[0]  
+        self.mesh_molecule_pyg_2.correctNormals() 
+        gInfo = self.mesh_molecule_pyg_2.getRoot() 
         gInfo.ishole = True   
 
-        mesh_sphere = pygamer.readOFF(os.path.join(self.path_files,'mesh_sphere'+f'_d{3}'+'.off'))
-        mesh_sphere.correctNormals()   
-        print("Found %i meshes in 2"%len(mesh_sphere.splitSurfaces()))
-        gInfo = mesh_sphere.getRoot() 
+        for faceID in self.mesh_molecule_pyg_2.faceIDs:
+            faceID.data().marker = 23
+
+        self.mesh_sphere_pyg = pygamer.readOFF(os.path.join(self.path_files,'mesh_sphere'+f'_d{self.density_border}'+'.off'))
+        self.mesh_sphere_pyg.correctNormals()   
+        print("Found %i meshes in 2"%len(self.mesh_sphere_pyg.splitSurfaces()))
+        gInfo = self.mesh_sphere_pyg.getRoot() 
         gInfo.ishole = False
 
-        meshes = [mesh1,mesh_sphere] 
+        for faceID in self.mesh_sphere_pyg.faceIDs:
+            faceID.data().marker = 50
+
+        meshes = [self.mesh_molecule_pyg_2,self.mesh_sphere_pyg] 
         self.ext_tetmesh = pygamer.makeTetMesh(meshes, '-pq'+str(self.hmin_exterior)+'aYAO2/3') 
         self.region_meshes['R2'] = Region_Mesh('tetmesh',self.ext_tetmesh)
 
 
-    def create_mesh_objs(self, Mesh_class):
-        
-        mesh_interior = Mesh_class(name=1, molecule=self.molecule, path=self.main_path)
-        mesh_exterior = Mesh_class(name=2, molecule=self.molecule, path=self.main_path)
-
-        #########################################################################
+    def create_mesh_obj(self):
 
         self.R_exterior =  self.R_mol+self.dR_exterior
 
         mol_min, mol_max = np.min(self.mol_verts, axis=0), np.max(self.mol_verts, axis=0)
-        mesh_interior.lb, mesh_interior.ub = mol_min.tolist(), mol_max.tolist()
-        mesh_exterior.lb, mesh_exterior.ub = (self.centroid - self.R_exterior).tolist(), (self.centroid + self.R_exterior).tolist()
-
+        self.scale_1 = [mol_min.tolist(), mol_max.tolist()]
+        self.scale_2 = [(self.centroid - self.R_exterior).tolist(), (self.centroid + self.R_exterior).tolist()]
 
         #########################################################################
 
-        mesh_interior.prior_data['R'] = tf.constant(self.region_meshes['R1'].vertices, dtype=self.DTYPE)
+        self.prior_data['R1'] = tf.constant(self.region_meshes['R1'].vertices, dtype=self.DTYPE)
 
         path_files = os.path.join(self.main_path,'Molecules')
         _,Lx_q,R_q,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
 
-        self.region_meshes['Q'] = Region_Mesh(type_m='points', obj=None,charges=(Lx_q,R_q), G_sigma=self.G_sigma, N_pq=self.N_pq)
-        mesh_interior.prior_data['Q'] = self.region_meshes['Q'].get_dataset()
+        self.region_meshes['Q1'] = Region_Mesh(type_m='points', obj=None,charges=(Lx_q,R_q), G_sigma=self.G_sigma, N_pq=self.N_pq)
+        self.prior_data['Q1'] = self.region_meshes['Q1'].get_dataset()
 
         #########################################################################
     
-        mesh_exterior.prior_data['R'] = tf.constant(self.region_meshes['R2'].vertices, dtype=self.DTYPE)
-        mesh_exterior.prior_data['D'] = tf.constant(self.region_meshes['D'].vertices, dtype=self.DTYPE)
+        self.prior_data['R2'] = tf.constant(self.region_meshes['R2'].vertices, dtype=self.DTYPE)
+        self.prior_data['D2'] = tf.constant(self.region_meshes['D2'].vertices, dtype=self.DTYPE)
 
         #############################################################################
 
         if self.plot == 'batch':
             X_plot = dict()
             X_plot['Inner Domain'] = self.region_meshes['R1'].vertices
-            X_plot['Charges'] = mesh_interior.prior_data['Q'].numpy()
+            X_plot['Charges'] = self.prior_data['Q1'].numpy()
             X_plot['Interface'] = self.region_meshes['I'].vertices
             X_plot['Outer Domain'] = self.region_meshes['R2'].vertices
-            X_plot['Outer Border'] = self.region_meshes['D'].vertices
+            X_plot['Outer Border'] = self.region_meshes['D2'].vertices
             self.save_data_plot(X_plot)
         elif self.plot == 'sample':
             X_plot = dict()
             X_plot['Inner Domain'] = self.region_meshes['R1'].get_dataset().numpy()
-            X_plot['Charges'] = self.region_meshes['Q'].get_dataset().numpy()
+            X_plot['Charges'] = self.region_meshes['Q1'].get_dataset().numpy()
             X_plot['Interface'] = self.region_meshes['I'].get_dataset().numpy()
             X_plot['Outer Domain'] = self.region_meshes['R2'].get_dataset().numpy()
-            X_plot['Outer Border'] = self.region_meshes['D'].get_dataset().numpy()
+            X_plot['Outer Border'] = self.region_meshes['D2'].get_dataset().numpy()
             self.save_data_plot(X_plot)
-        return mesh_interior, mesh_exterior
     
 
     def adapt_meshes_domain(self,data,q_list):
-        
-        for bl in data.values():
-            type_b = bl['type']
 
-            if type_b in ('I'):
+        self.meshes_info = data
+        
+        for bl in self.meshes_info.values():
+
+            type_b = bl['type']
+            flag = bl['domain'] 
+            X = self.prior_data[type_b] if type_b in self.prior_data else None
+
+            if type_b[0] in ('R','D','K','N','P','Q'):  
+                X,U = self.get_XU(X,bl)
+                self.domain_mesh_data[type_b] = ((X,U),flag)
+                self.domain_mesh_names.add(type_b)
+                #del self.prior_data
+
+            elif type_b in ('I'):
                 N = self.mol_normal
                 X = tf.constant(self.mol_verts, dtype=self.DTYPE)
                 X_I = (X, N)
                 self.domain_mesh_names.add('Iu')
                 self.domain_mesh_names.add('Id')
-                self.domain_mesh_data[type_b] = X_I
+                self.domain_mesh_data[type_b] = (X_I,flag)
                 self.domain_mesh_N[type_b] = len(X)
             
             elif type_b in ('G'):
                 self.domain_mesh_names.add(type_b)
-                self.domain_mesh_data[type_b] = None
+                self.domain_mesh_data[type_b] = ((tf.constant(self.mol_faces_centroid, dtype=self.DTYPE),
+                                                  tf.constant(self.mol_faces_normal, dtype=self.DTYPE),
+                                                  tf.constant(self.mol_areas, dtype=self.DTYPE)
+                                                  ),flag)
 
-            elif type_b in ('E'):
+            elif type_b[0] in ('E'):
                 file = bl['file']
                 path_files = os.path.join(self.main_path,'Molecules')
 
@@ -306,13 +323,79 @@ class Molecule_Mesh():
 
                 X_exp.append(X_exp_values)
                 self.domain_mesh_names.add(type_b)
-                self.domain_mesh_data[type_b] = X_exp
+                self.domain_mesh_data[type_b] = (X_exp,flag)
 
                 if self.plot:
                     X_plot = dict()
                     X_plot['Experimental'] = explode_points[np.linalg.norm(explode_points-self.centroid, axis=1) <= self.R_exterior]
                     self.save_data_plot(X_plot)
 
+
+    def get_XU(self,X,bl):  #QUE FLAG VENGA AQUI !!!!
+
+        value = bl['value'] if 'value' in bl else None
+        fun = bl['fun'] if 'fun' in bl else None
+        file = bl['file'] if 'file' in bl else None
+
+        if X != None:
+            x,y,z = self.get_X(X)
+        if value != None:
+            U = self.value_u_b(x, y, z, value=value)
+        elif fun != None:
+            U = fun(x, y, z)
+        elif file != None:
+            X,U = self.read_file_data(file,bl['domain'])
+            noise = bl['noise'] if 'noise' in bl else False
+            if noise:
+                U = U*self.add_noise(U)
+        return X,U
+
+    def add_noise(self,x):    
+        n = x.shape[0]
+        mu, sigma = 1, 0.1
+        s = np.array(np.random.default_rng().normal(mu, sigma, n), dtype='float32')
+        s = tf.reshape(s,[n,1])
+        return s
+
+    def read_file_data(self,file,domain):
+        name = 1 if domain=='molecule' else 2
+        x_b, y_b, z_b, phi_b = list(), list(), list(), list()
+        path_files = os.path.join(self.main_path,'Molecules')
+        with open(os.path.join(path_files,self.molecule,file),'r') as f:
+            for line in f:
+                condition, x, y, z, phi = line.strip().split()
+
+                if int(condition) == name:
+                    x_b.append(float(x))
+                    y_b.append(float(y))
+                    z_b.append(float(z))
+                    phi_b.append(float(phi))
+
+        x_b = tf.constant(np.array(x_b, dtype=self.DTYPE)[:, None])
+        y_b = tf.constant(np.array(y_b, dtype=self.DTYPE)[:, None])
+        z_b = tf.constant(np.array(z_b, dtype=self.DTYPE)[:, None])
+        phi_b = tf.constant(np.array(phi_b, dtype=self.DTYPE)[:, None])
+
+        X = tf.concat([x_b, y_b, z_b], axis=1)
+
+        return X,phi_b
+
+
+    @classmethod
+    def get_X(cls,X):
+        R = list()
+        for i in range(X.shape[1]):
+            R.append(X[:,i:i+1])
+        return R
+
+    @classmethod
+    def stack_X(cls,x,y,z):
+        R = tf.stack([x[:,0], y[:,0], z[:,0]], axis=1)
+        return R
+    
+    def value_u_b(self,x, y, z, value):
+        n = x.shape[0]
+        return tf.ones((n,1), dtype=self.DTYPE)*value
 
     def save_data_plot(self,X_plot):
         path_files = os.path.join(self.result_path,'results',self.simulation_name,'mesh')

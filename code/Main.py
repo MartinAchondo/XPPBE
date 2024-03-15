@@ -6,14 +6,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-
 from Mesh.Molecule_Mesh import Molecule_Mesh
-from Model.PDE_Model import PBE
-from NN.NeuralNet import NeuralNet
-from NN.PINN import PINN 
 from NN.XPINN import XPINN
-from Post.Postcode import Postprocessing
-
 
 simulation_name = os.path.basename(os.path.abspath(__file__)).replace('.py','')
 main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)))
@@ -35,24 +29,28 @@ logger.info('================================================')
 
 # Inputs
 ###############################################
+equations = ['standard', 'regularized_scheme_1']
+equation = equations[0]
+network = 'xpinn'
+
 
 class PDE():
 
         def __init__(self):
-                
-                self.inputs = {'molecule': 'methanol',
+
+                self.inputs = {'molecule': 'born_ion',
                                 'epsilon_1':  1,
                                 'epsilon_2': 80,
                                 'kappa': 0.125,
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'hmin_interior': 1.2,
-                                'hmin_exterior': 2.5,
-                                'density_mol': 3,
-                                'density_border': 3,
+                self.N_points = {'hmin_interior': 0.01,
+                                'hmin_exterior': 0.5,
+                                'density_mol': 40,
+                                'density_border': 4,
                                 'dx_experimental': 2,
-                                'N_pq': 10,
+                                'N_pq': 100,
                                 'G_sigma': 0.04,
                                 'mesh_generator': 'msms',
                                 'dR_exterior': 8
@@ -62,39 +60,52 @@ class PDE():
 
                 self.Mol_mesh = Molecule_Mesh(self.inputs['molecule'], 
                                 N_points=self.N_points, 
-                                plot='sample',
+                                plot='batch',
                                 path=main_path,
                                 simulation=simulation_name
                                 )
-        
+    
+                if equation == 'standard':
+                        from Model.PDE_Model import PBE
+                elif equation == 'regularized_scheme_1':
+                        from Model.PDE_Model_R1 import PBE_Reg as PBE
+
                 self.PBE_model = PBE(self.inputs,
                         mesh=self.Mol_mesh, 
                         model='linear',
                         path=main_path
                         ) 
                 
-                self.meshes_in = dict()
-                self.meshes_in['1'] = {'type':'R', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
-                self.meshes_in['2'] = {'type':'Q', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
-                self.meshes_in['3'] = {'type':'K', 'file':'data_known.dat', 'noise': True}
-                #self.meshes_in['4'] = {'type':'P', 'file':'data_precond.dat'}
 
-                self.PBE_model.PDE_in.mesh.adapt_meshes(self.meshes_in)
+                self.meshes_domain = dict()               
 
-                self.meshes_out = dict()
-                self.meshes_out['1'] = {'type':'R', 'value':0.0}
-                self.meshes_out['2'] = {'type':'D', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
-                self.meshes_out['3'] = {'type':'K', 'file':'data_known.dat'}
-                #self.meshes_out['4'] = {'type':'P', 'file':'data_precond.dat'}
-                self.PBE_model.PDE_out.mesh.adapt_meshes(self.meshes_out)
+                if equation == 'standard':
+                        self.meshes_domain['1'] = {'domain': 'molecule', 'type':'R1', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
+                        self.meshes_domain['2'] = {'domain': 'molecule', 'type':'Q1', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
+                        self.meshes_domain['3'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known.dat'}
+                        #self.meshes_domain['4'] = {'domain': 'molecule', 'type':'P1', 'file':'data_precond.dat'}
+                        self.meshes_domain['5'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
+                        self.meshes_domain['6'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
+                        self.meshes_domain['7'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known.dat'}
+                        #self.meshes_domain['8'] = {'domain': 'solvent', 'type':'P2', 'file':'data_precond.dat'}
+                       
+                elif equation == 'regularized_scheme_1':
+                        self.meshes_domain['1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
+                        #self.meshes_domain['2'] = {'domain': 'molecule', 'type':'Q1', 'value':0.0}
+                        self.meshes_domain['3'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known_reg.dat'}
+                        self.meshes_domain['5'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
+                        self.meshes_domain['6'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)-self.PBE_model.G(x,y,z)}
+                        self.meshes_domain['7'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known_reg.dat'}
+                
+                self.meshes_domain['9'] = {'domain': 'solvent', 'type': 'E2', 'file': 'data_experimental.dat'}
+                self.meshes_domain['10'] = {'domain':'interface', 'type':'I'}
+                self.meshes_domain['11'] = {'domain':'interface', 'type':'G'}
 
-                self.meshes_domain = dict()
-                self.meshes_domain['1'] = {'type':'I'}
-                self.meshes_domain['2'] = {'type': 'E', 'file': 'data_experimental.dat'}
-                #self.meshes_domain['3'] = {'type':'G'}
+
                 self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
-        
-                self.XPINN_solver = XPINN(PINN)
+    
+
+                self.XPINN_solver = XPINN()
 
                 self.XPINN_solver.adapt_PDEs(self.PBE_model)
 
@@ -106,15 +117,10 @@ def main():
         sim.create_simulation()
 
         XPINN_solver = sim.XPINN_solver
+        XPINN_solver.folder_path = folder_path
 
 
-        weights = {'w_r': 1,
-                   'w_d': 1,
-                   'w_n': 1,
-                   'w_i': 1,
-                   'w_k': 1,
-                   'w_e': 1,
-                   'w_g': 1
+        weights = {'E2': 100.5,
                   }
 
         XPINN_solver.adapt_weights([weights,weights],
@@ -126,27 +132,32 @@ def main():
         hyperparameters_in = {
                         'input_shape': (None,3),
                         'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 200,
+                        'num_neurons_per_layer': 20,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'adaptative_activation': True,
                         'architecture_Net': 'FCNN',
                         'fourier_features': True,
-                        'num_fourier_features': 128
+                        'num_fourier_features': 12,
+                        'scale': XPINN_solver.mesh.scale_1
                 }
 
         hyperparameters_out = {
                         'input_shape': (None,3),
                         'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 200,
+                        'num_neurons_per_layer': 20,
                         'output_dim': 1,
                         'activation': 'tanh',
                         'adaptative_activation': True,
                         'architecture_Net': 'FCNN',
-                        'fourier_features': False
+                        'fourier_features': False,
+                        'scale': XPINN_solver.mesh.scale_2
                 }
 
-        XPINN_solver.create_NeuralNets(NeuralNet,[hyperparameters_in,hyperparameters_out])
+        if network == 'xpinn':
+            from NN.NeuralNet import XPINN_NeuralNet
+
+        XPINN_solver.create_NeuralNet(XPINN_NeuralNet,[hyperparameters_in,hyperparameters_out])
 
         XPINN_solver.set_points_methods(sample_method='random_sample')
 
@@ -159,14 +170,14 @@ def main():
                 decay_rate=0.9,
                 staircase=True)
         lr_p = 0.001
-        XPINN_solver.adapt_optimizers(optimizer,[lr,lr],lr_p)
+        XPINN_solver.adapt_optimizer(optimizer,lr,lr_p)
 
-        N_iters = 10000
+        N_iters = 2
 
         precondition = False
-        N_precond = 5
+        N_precond = 3
 
-        iters_save_model = 5000
+        iters_save_model = 6
         XPINN_solver.folder_path = folder_path
 
         XPINN_solver.solve(N=N_iters, 
@@ -175,6 +186,10 @@ def main():
                         save_model = iters_save_model, 
                         G_solve_iter=1000)
 
+        if sim.inputs['molecule'] == 'born_ion':
+            from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
+        else:
+            from Post.Postcode import Postprocessing
 
         Post = Postprocessing(XPINN_solver, save=True, directory=folder_path)
 
@@ -192,14 +207,27 @@ def main():
 
         Post.plot_G_solv_history();
         Post.plot_collocation_points_3D();
-        Post.plot_mesh_3D();
+        Post.plot_vol_mesh_3D();
+        Post.plot_surface_mesh_3D();
         Post.plot_interface_3D(variable='phi');
         Post.plot_interface_3D(variable='dphi');
-        Post.plot_phi_line();
-        Post.plot_phi_contour();
+        Post.plot_phi_line(); 
+        Post.plot_phi_line(value='react'); 
+        Post.plot_phi_contour(); 
+        Post.plot_phi_contour(value='react'); 
+
+        if sim.inputs['molecule'] == 'born_ion':
+            Post.plot_aprox_analytic(); 
+            Post.plot_aprox_analytic(value='react'); 
+            Post.plot_aprox_analytic(zoom=True); 
+            Post.plot_aprox_analytic(zoom=True, value='react'); 
+            Post.plot_line_interface(); 
+            Post.plot_line_interface(plot='du'); 
+            Post.plot_line_interface(value='react'); 
+            Post.plot_line_interface(plot='du',value='react'); 
+
         Post.save_values_file();
         Post.save_model_summary();
-
         Post.plot_architecture(domain=1);
         Post.plot_architecture(domain=2);
 
