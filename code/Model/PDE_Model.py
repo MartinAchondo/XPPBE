@@ -1,10 +1,8 @@
-import os
 import tensorflow as tf
 import numpy as np
 import bempp.api
 
 from Model.PDE_utils import PDE_utils
-from Mesh.Charges_utils import get_charges_list
 
 
 class PBE(PDE_utils):
@@ -20,18 +18,17 @@ class PBE(PDE_utils):
 
         self.mesh = mesh
         self.main_path = path
+        self.eq = model
 
         self.sigma = self.mesh.G_sigma
-
         self.inputs = inputs
         for key, value in inputs.items():
             setattr(self, key, value)
         
         self.PDE_in = Poisson(self,inputs)
-
-        if model=='linear':
+        if self.eq=='linear':
             self.PDE_out = Helmholtz(self,inputs)
-        elif model=='nonlinear':
+        elif self.eq=='nonlinear':
             self.PDE_out = Non_Linear(self,inputs)
 
         self.get_charges()
@@ -43,70 +40,74 @@ class PBE(PDE_utils):
     def get_PDEs(self):
         PDEs = [self.PDE_in,self.PDE_out]
         return PDEs
-
-    def get_charges(self):
-        path_files = os.path.join(self.main_path,'Molecules')
-        self.q_list = get_charges_list(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
-        n = len(self.q_list)
-        self.qs = np.zeros(n)
-        self.x_qs = np.zeros((n,3))
-        for i,q in enumerate(self.q_list):
-            self.qs[i] = q.q
-            self.x_qs[i,:] = q.x_q
-        self.total_charge = np.sum(self.qs)
-
-    def get_integral_operators(self):
-
-        elements = self.mesh.mol_faces
-        vertices = self.mesh.mol_verts
-        self.grid = bempp.api.Grid(vertices.transpose(), elements.transpose())
-
-        self.space = bempp.api.function_space(self.grid, "P", 1)
-        self.dirichl_space = self.space
-        self.neumann_space = self.space
-
-        self.slp_q = bempp.api.operators.potential.laplace.single_layer(self.neumann_space, self.x_qs.transpose())
-        self.dlp_q = bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, self.x_qs.transpose())
-
-    def source(self,x,y,z):
-        sum = 0
-        for q_obj in self.q_list:
-            qk = q_obj.q
-            xk,yk,zk = q_obj.x_q
-            deltak = tf.exp((-1/(2*self.sigma**2))*((x-xk)**2+(y-yk)**2+(z-zk)**2))
-            sum += qk*deltak
-        normalizer = (1/((2*self.pi)**(3.0/2)*self.sigma**3))
-        sum *= normalizer
-        return (-1/self.epsilon_1)*sum
-
-    def border_value(self,x,y,z):
-        sum = 0
-        for q_obj in self.q_list:
-            qk = q_obj.q
-            xk,yk,zk = q_obj.x_q
-            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
-            sum += qk*tf.exp(-self.kappa*r)/r
-        return (1/(4*self.pi*self.epsilon_2))*sum
-
-
-    def get_loss_I(self,model,XI_data,loss_type=[True,True]):
-        
-        loss = 0
-        ((XI,N_v),flag) = XI_data
-        X = self.mesh.get_X(XI)
-
-        if loss_type[0]:
-            u = self.get_phi(XI,flag,model)
-            loss += tf.reduce_mean(tf.square(u[:,0]-u[:,1])) 
-
-        if loss_type[1]:
-            n_v = self.mesh.get_X(N_v)
-            du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
-            du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
-            loss += tf.reduce_mean(tf.square(du_1*self.PDE_in.epsilon - du_2*self.PDE_out.epsilon))
-            
-        return loss
     
+
+    def get_phi(self,X,flag,model,value='phi'):
+        if flag=='molecule':
+            phi = tf.reshape(model(X,flag)[:,0], (-1,1))
+        elif flag=='solvent':
+            phi = tf.reshape(model(X,flag)[:,1], (-1,1))
+        elif flag=='interface':
+            phi = model(X,flag)
+        if value =='phi':
+            return phi
+        
+        elif value == 'react':
+            if flag != 'interface':
+                phi -= self.G(*self.mesh.get_X(X))
+            elif flag =='interface':
+                G_val = self.G(*self.mesh.get_X(X))
+                return tf.stack([tf.reshape(phi[:,0],(-1,1))-G_val,tf.reshape(phi[:,1],(-1,1))-G_val], axis=1)
+            return phi 
+
+    def get_dphi(self,X,Nv,flag,model,value='phi'):
+        x = self.mesh.get_X(X)
+        nv = self.mesh.get_X(Nv)
+        du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='react')
+        du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='react')
+        if value=='react':
+            du_1 -= self.dG_n(*x,Nv)
+            du_2 -= self.dG_n(*x,Nv)
+        return du_1,du_2
+        
+    def get_phi_interface(self,model,**kwargs):      
+        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)
+        u = self.get_phi(verts,'interface',model,**kwargs)
+        u_mean = (u[:,0]+u[:,1])/2
+        return u_mean.numpy(),u[:,0].numpy(),u[:,1].numpy()
+    
+    def get_dphi_interface(self,model, value='phi'): 
+        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)     
+        X = self.mesh.get_X(verts)
+        n_v = self.mesh.get_X(self.mesh.mol_normal)
+        du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
+        du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
+        if value=='react':
+            du_1 -= self.dG_n(*X,self.mesh.mol_normal)
+            du_2 -= self.dG_n(*X,self.mesh.mol_normal)
+        du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
+        return du_prom.numpy(),du_1.numpy(),du_2.numpy()
+    
+    def get_solvation_energy(self,model):
+
+        u_interface,_,_ = self.get_phi_interface(model)
+        u_interface = u_interface.flatten()
+        _,du_1,du_2 = self.get_dphi_interface(model)
+        du_1 = du_1.flatten()
+        du_2 = du_2.flatten()
+        du_1_interface = (du_1+du_2*self.PDE_out.epsilon/self.PDE_in.epsilon)/2
+
+        phi = bempp.api.GridFunction(self.space, coefficients=u_interface)
+        dphi = bempp.api.GridFunction(self.space, coefficients=du_1_interface)
+
+        phi_q = self.slp_q * dphi - self.dlp_q * phi
+        
+        G_solv = 0.5*np.sum(self.qs * phi_q).real
+        G_solv *= self.to_V*self.qe*self.Na*(10**-3/4.184)   # kcal/mol
+        
+        return G_solv
+    
+
     def get_phi_ens(self,model,X_mesh,X_q):
         
         kT = self.kb*self.T
@@ -135,7 +136,26 @@ class PBE(PDE_utils):
             phi_ens_L.append(phi_ens_pred)
 
         return phi_ens_L    
+    
 
+    def get_loss_I(self,model,XI_data,loss_type=[True,True]):
+        
+        loss = 0
+        ((XI,N_v),flag) = XI_data
+        X = self.mesh.get_X(XI)
+
+        if loss_type[0]:
+            u = self.get_phi(XI,flag,model)
+            loss += tf.reduce_mean(tf.square(u[:,0]-u[:,1])) 
+
+        if loss_type[1]:
+            n_v = self.mesh.get_X(N_v)
+            du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
+            du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
+            loss += tf.reduce_mean(tf.square(du_1*self.PDE_in.epsilon - du_2*self.PDE_out.epsilon))
+            
+        return loss
+    
     def get_loss_experimental(self,model,X_exp):             
 
         loss = tf.constant(0.0, dtype=self.DTYPE)
@@ -151,7 +171,6 @@ class PBE(PDE_utils):
 
         return loss
     
-
     def get_loss_Gauss(self,model,XI_data):
         loss = 0
         ((XI,N_v,areas),flag) = XI_data
@@ -166,58 +185,49 @@ class PBE(PDE_utils):
 
         return loss
 
-    def get_phi(self,X,flag,model,value='phi'):
-        if flag=='molecule':
-            phi = model(X,flag)[:,0]
-        elif flag=='solvent':
-            phi = model(X,flag)[:,1]
-        elif flag=='interface':
-            phi = model(X,flag)
-        if value =='phi':
-            return phi
-        
-        elif value == 'react':
-            if flag != 'interface':
-                phi -= self.G(*self.mesh.get_X(X))
-            elif flag =='interface':
-                phi[:,0] -= self.G(*self.mesh.get_X(X))   
-                phi[:,1] -= self.G(*self.mesh.get_X(X)) 
-            return phi 
-        
+    def source(self,x,y,z):
+        sum = 0
+        for q_obj in self.q_list:
+            qk = q_obj.q
+            xk,yk,zk = q_obj.x_q
+            deltak = tf.exp((-1/(2*self.sigma**2))*((x-xk)**2+(y-yk)**2+(z-zk)**2))
+            sum += qk*deltak
+        normalizer = (1/((2*self.pi)**(3.0/2)*self.sigma**3))
+        sum *= normalizer
+        return (-1/self.epsilon_1)*sum
 
-    def get_phi_interface(self,model):      
-        verts = tf.constant(self.mesh.mol_verts)
-        u = self.get_phi(verts,'interface',model)
-        u_mean = (u[:,0]+u[:,1])/2
-        return u_mean.numpy(),u[:,0].numpy(),u[:,1].numpy()
+    def border_value(self,x,y,z):
+        sum = 0
+        for q_obj in self.q_list:
+            qk = q_obj.q
+            xk,yk,zk = q_obj.x_q
+            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            sum += qk*tf.exp(-self.kappa*r)/r
+        return (1/(4*self.pi*self.epsilon_2))*sum
+
+    def G(self,x,y,z):
+        sum = tf.constant(0, dtype=self.DTYPE)
+        for q_obj in self.q_list:
+            qk = q_obj.q
+            xk,yk,zk = q_obj.x_q
+            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            sum += qk/r
+        return (1/(self.epsilon_1*4*self.pi))*sum
     
-    def get_dphi_interface(self,model): 
-        verts = tf.constant(self.mesh.mol_verts)     
-        X = self.mesh.get_X(verts)
-        n_v = self.mesh.get_X(self.mesh.mol_normal)
-        du_1 = self.directional_gradient(self.mesh,model,X,n_v,'molecule')
-        du_2 = self.directional_gradient(self.mesh,model,X,n_v,'solvent')
-        du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
-        return du_prom.numpy(),du_1.numpy(),du_2.numpy()
-    
-    def get_solvation_energy(self,model):
-
-        u_interface,_,_ = self.get_phi_interface(model)
-        u_interface = u_interface.flatten()
-        _,du_1,du_2 = self.get_dphi_interface(model)
-        du_1 = du_1.flatten()
-        du_2 = du_2.flatten()
-        du_1_interface = (du_1+du_2*self.PDE_out.epsilon/self.PDE_in.epsilon)/2
-
-        phi = bempp.api.GridFunction(self.space, coefficients=u_interface)
-        dphi = bempp.api.GridFunction(self.space, coefficients=du_1_interface)
-
-        phi_q = self.slp_q * dphi - self.dlp_q * phi
-        
-        G_solv = 0.5*np.sum(self.qs * phi_q).real
-        G_solv *= self.to_V*self.qe*self.Na*(10**-3/4.184)   # kcal/mol
-        
-        return G_solv
+    def dG_n(self,x,y,z,n):
+        dx = 0
+        dy = 0
+        dz = 0
+        for q_obj in self.q_list:
+            qk = q_obj.q
+            xk,yk,zk = q_obj.x_q
+            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            dg_dr = qk/(r**3) * (-1/(self.epsilon_1*4*self.pi)) * (1/2)
+            dx += dg_dr * 2*(x-xk)
+            dy += dg_dr * 2*(y-yk)
+            dz += dg_dr * 2*(z-zk)
+        dg_dn = n[:,0]*dx[:,0] + n[:,1]*dy[:,0] + n[:,2]*dz[:,0]
+        return tf.reshape(dg_dn, (-1,1))
 
     def analytic_Born_Ion(self,r):
         rI = self.mesh.R_mol
@@ -247,14 +257,7 @@ class PBE(PDE_utils):
 
         return y
 
-    def G(self,x,y,z):
-        sum = tf.constant(0, dtype=self.DTYPE)
-        for q_obj in self.q_list:
-            qk = q_obj.q
-            xk,yk,zk = q_obj.x_q
-            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
-            sum += qk/r
-        return (1/(self.epsilon_1*4*self.pi))*sum[:,0]
+
 
 
 class Poisson():

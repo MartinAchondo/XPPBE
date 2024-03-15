@@ -40,7 +40,7 @@ class XPINN(XPINN_utils):
         if self.precondition:
             optimizer_P = self.create_optimizer(precond=True)
 
-        @tf.function
+        #@tf.function
         def train_step(X_batch, ws,precond=False):
             loss, L_loss, grad_theta = self.get_grad(X_batch, self.model, ws, precond)
             optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))

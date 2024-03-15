@@ -1,6 +1,9 @@
 import numpy as np
 import tensorflow as tf
+import bempp.api
+import os
 
+from Mesh.Charges_utils import get_charges_list
 
 class PDE_utils():
 
@@ -88,7 +91,6 @@ class PDE_utils():
         return Loss_d
     
 
-
     def get_loss_preconditioner(self, X_batches, model):
         L = self.create_L()
 
@@ -133,14 +135,14 @@ class PDE_utils():
 
     # Differential operators
 
-    def laplacian(self,mesh,model,X,flag):
+    def laplacian(self,mesh,model,X,flag,value='phi'):
         x,y,z = X
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(x)
             tape.watch(y)
             tape.watch(z)
             R = mesh.stack_X(x,y,z)
-            u = self.get_phi(R,flag,model)
+            u = self.get_phi(R,flag,model,value)
             u_x = tape.gradient(u,x)
             u_y = tape.gradient(u,y)
             u_z = tape.gradient(u,z)
@@ -150,25 +152,50 @@ class PDE_utils():
         del tape
         return u_xx + u_yy + u_zz
 
-    def gradient(self,mesh,model,X,flag):
+    def gradient(self,mesh,model,X,flag,value='phi'):
         x,y,z = X
         with tf.GradientTape(persistent=True,watch_accessed_variables=False) as tape:
             tape.watch(x)
             tape.watch(y)
             tape.watch(z)
             R = mesh.stack_X(x,y,z)
-            u = self.get_phi(R,flag,model)
+            u = self.get_phi(R,flag,model,value)
         u_x = tape.gradient(u,x)
         u_y = tape.gradient(u,y)
         u_z = tape.gradient(u,z)
         del tape
         return (u_x,u_y,u_z)
     
-    def directional_gradient(self,mesh,model,X,n_v,flag):
-        gradient = self.gradient(mesh,model,X,flag)
+    def directional_gradient(self,mesh,model,X,n_v,flag,value='phi'):
+        gradient = self.gradient(mesh,model,X,flag,value)
         dir_deriv = 0
         for j in range(3):
             dir_deriv += n_v[j]*gradient[j]
         return dir_deriv
     
+
+    ##############################################
+
+    def get_charges(self):
+        path_files = os.path.join(self.main_path,'Molecules')
+        self.q_list = get_charges_list(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
+        n = len(self.q_list)
+        self.qs = np.zeros(n)
+        self.x_qs = np.zeros((n,3))
+        for i,q in enumerate(self.q_list):
+            self.qs[i] = q.q
+            self.x_qs[i,:] = q.x_q
+        self.total_charge = np.sum(self.qs)
+
+
+    def get_integral_operators(self):
+        elements = self.mesh.mol_faces
+        vertices = self.mesh.mol_verts
+        self.grid = bempp.api.Grid(vertices.transpose(), elements.transpose())
+        self.space = bempp.api.function_space(self.grid, "P", 1)
+        self.dirichl_space = self.space
+        self.neumann_space = self.space
+
+        self.slp_q = bempp.api.operators.potential.laplace.single_layer(self.neumann_space, self.x_qs.transpose())
+        self.dlp_q = bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, self.x_qs.transpose())
     
