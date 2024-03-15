@@ -59,8 +59,10 @@ bash run_simulations.bash
 
 An explanation of a `Main.py` code is as follows:
 
-1. Define the molecule and the properties:
+1. Define the molecule, the properties and the equation to solve:
     ```py
+    equation = 'regularized_scheme_1'
+
     inputs = {'molecule': 'methanol',
               'epsilon_1':  1,
               'epsilon_2': 80,
@@ -68,59 +70,57 @@ An explanation of a `Main.py` code is as follows:
               'T' : 300 
               }
     ```     
-2. Define the number of collocation points:
+2. Define the number of collocation points (mesh properties):
     ```py
-    N_points = {'dx_interior': 0.2,
-                'dx_exterior': 0.5,
-                'N_border': 6,
-                'dR_exterior': 10,
-                'dx_experimental': 1,
-                'N_pq': 10,
+    N_points = {'vol_max_interior': 0.04,
+                'vol_max_exterior': 0.1,
+                'density_mol': 40,
+                'density_border': 4,
+                'dx_experimental': 2,
+                'N_pq': 100,
                 'G_sigma': 0.04,
-                'mesh_density': 3
+                'mesh_generator': 'msms',
+                'dR_exterior': 8
                 }
     ```
 
 3. Define the different loss terms (solute domain, solvent domain and combination of boths)
     ```py
-    meshes_in = dict()
-    meshes_in['1'] = {'type':'R', 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
-    meshes_in['2'] = {'type':'Q', 'fun':lambda x,y,z: PBE_model.source(x,y,z)}
-    meshes_in['3'] = {'type':'K', 'file':'data_known.dat'}
-    meshes_in['4'] = {'type':'P', 'file':'data_precond.dat'}
-
-    meshes_out = dict()
-    meshes_out['1'] = {'type':'R', 'value':0.0}
-    meshes_out['2'] = {'type':'D', 'fun':lambda x,y,z: PBE_model.border_value(x,y,z)}
-    meshes_out['3'] = {'type':'K', 'file':'data_known.dat'}
-    meshes_out['4'] = {'type':'P', 'file':'data_precond.dat'}
-
-    meshes_domain = dict()
-    meshes_domain['1'] = {'type':'I'}
-    meshes_domain['2'] = {'type':'E', 'file':'data_experimental.dat'}
-    meshes_domain['3'] = {'type':'G'}
+    self.meshes_domain = dict()   
+    self.meshes_domain['1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
+    self.meshes_domain['3'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known_reg.dat'}
+    self.meshes_domain['5'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
+    self.meshes_domain['6'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
+    self.meshes_domain['7'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known.dat'}
+    self.meshes_domain['9'] = {'domain': 'solvent', 'type': 'E2', 'file': 'data_experimental.dat'}
+    self.meshes_domain['10'] = {'domain':'interface', 'type':'I'}
+    self.meshes_domain['11'] = {'domain':'interface', 'type':'G'}
     ```
 4. Define the architectures:
     ```py
     hyperparameters_in = {
                     'input_shape': (None,3),
-                    'num_hidden_layers': 2,
+                    'num_hidden_layers': 4,
                     'num_neurons_per_layer': 20,
                     'output_dim': 1,
                     'activation': 'tanh',
+                    'adaptative_activation': True,
                     'architecture_Net': 'FCNN',
                     'fourier_features': True,
-                    'num_fourier_features': 128
+                    'num_fourier_features': 12,
+                    'scale': XPINN_solver.mesh.scale_1
             }
 
     hyperparameters_out = {
                     'input_shape': (None,3),
-                    'num_hidden_layers': 2,
+                    'num_hidden_layers': 4,
                     'num_neurons_per_layer': 20,
                     'output_dim': 1,
                     'activation': 'tanh',
+                    'adaptative_activation': True,
                     'architecture_Net': 'FCNN',
-                    'fourier_features': False
+                    'fourier_features': False,
+                    'scale': XPINN_solver.mesh.scale_2
             }
     ```
 
@@ -132,9 +132,7 @@ An explanation of a `Main.py` code is as follows:
                                 adapt_w_method = 'gradients',
                                 alpha = 0.7)             
 
-    XPINN_solver.set_points_methods(
-            sample_method='batches', 
-            N_batches=1)
+    XPINN_solver.set_points_methods(sample_method='random_sample')
 
     optimizer = 'Adam'
     lr = tf.keras.optimizers.schedules.ExponentialDecay(
@@ -142,7 +140,7 @@ An explanation of a `Main.py` code is as follows:
             decay_steps=2000,
             decay_rate=0.9,
             staircase=True)
-    XPINN_solver.adapt_optimizers(optimizer,[lr,lr])
+    XPINN_solver.adapt_optimizers(optimizer,lr)
     ```
 
 6. And solve the PDE:
