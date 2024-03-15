@@ -165,7 +165,7 @@ class Molecule_Mesh():
         gInfo.ishole = False   
 
         meshes = [self.mesh_molecule_pyg] 
-        self.int_tetmesh = pygamer.makeTetMesh(meshes, '-pq'+str(self.hmin_interior)+'aYAO2/3')  
+        self.int_tetmesh = pygamer.makeTetMesh(meshes, f'-pq1.2a{self.vol_max_interior}YAO2/3')  
         self.region_meshes['R1'] = Region_Mesh('tetmesh',self.int_tetmesh)
 
     def create_exterior_mesh(self):
@@ -191,7 +191,7 @@ class Molecule_Mesh():
             faceID.data().marker = 50
 
         meshes = [self.mesh_molecule_pyg_2,self.mesh_sphere_pyg] 
-        self.ext_tetmesh = pygamer.makeTetMesh(meshes, '-pq'+str(self.hmin_exterior)+'aYAO2/3') 
+        self.ext_tetmesh = pygamer.makeTetMesh(meshes, f'-pq1.2a{self.vol_max_exterior}YAO2/3') 
         self.region_meshes['R2'] = Region_Mesh('tetmesh',self.ext_tetmesh)
 
 

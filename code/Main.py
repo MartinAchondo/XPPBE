@@ -30,8 +30,10 @@ logger.info('================================================')
 # Inputs
 ###############################################
 equations = ['standard', 'regularized_scheme_1','regularized_scheme_2']
-equation = equations[2]
-network = 'xpinn'
+equation = equations[1]
+
+networks = ['pinn','xpinn']
+network = 'pinn'
 
 
 class PDE():
@@ -45,8 +47,8 @@ class PDE():
                                 'T' : 300 
                                 }
                 
-                self.N_points = {'hmin_interior': 0.01,
-                                'hmin_exterior': 0.5,
+                self.N_points = {'vol_max_interior': 0.04,
+                                'vol_max_exterior': 0.1,
                                 'density_mol': 40,
                                 'density_border': 4,
                                 'dx_experimental': 2,
@@ -93,7 +95,6 @@ class PDE():
                        
                 elif equation == 'regularized_scheme_1':
                         self.meshes_domain['1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
-                        #self.meshes_domain['2'] = {'domain': 'molecule', 'type':'Q1', 'value':0.0}
                         self.meshes_domain['3'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known_reg.dat'}
                         self.meshes_domain['5'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
                         self.meshes_domain['6'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)-self.PBE_model.G(x,y,z)}
@@ -101,14 +102,15 @@ class PDE():
 
                 elif equation == 'regularized_scheme_2':
                         self.meshes_domain['1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
-                        #self.meshes_domain['2'] = {'domain': 'molecule', 'type':'Q1', 'value':0.0}
                         self.meshes_domain['3'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known_reg.dat'}
                         self.meshes_domain['5'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
                         self.meshes_domain['6'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
                         self.meshes_domain['7'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known.dat'}
                 
                 self.meshes_domain['9'] = {'domain': 'solvent', 'type': 'E2', 'file': 'data_experimental.dat'}
-                self.meshes_domain['10'] = {'domain':'interface', 'type':'I'}
+
+                if network=='xpinn':
+                        self.meshes_domain['10'] = {'domain':'interface', 'type':'I'}
                 self.meshes_domain['11'] = {'domain':'interface', 'type':'G'}
 
 
@@ -130,7 +132,7 @@ def main():
         XPINN_solver.folder_path = folder_path
 
 
-        weights = {'E2': 100.5,
+        weights = {'E2': 10**-10,
                   }
 
         XPINN_solver.adapt_weights([weights,weights],
@@ -165,9 +167,11 @@ def main():
                 }
 
         if network == 'xpinn':
-            from NN.NeuralNet import XPINN_NeuralNet
+            from NN.NeuralNet import XPINN_NeuralNet as NeuralNet
+        elif network == 'pinn':
+            from NN.NeuralNet import PINN_NeuralNet as NeuralNet
 
-        XPINN_solver.create_NeuralNet(XPINN_NeuralNet,[hyperparameters_in,hyperparameters_out])
+        XPINN_solver.create_NeuralNet(NeuralNet,[hyperparameters_in,hyperparameters_out])
 
         XPINN_solver.set_points_methods(sample_method='random_sample')
 
@@ -204,27 +208,32 @@ def main():
         Post = Postprocessing(XPINN_solver, save=True, directory=folder_path)
 
         Post.plot_loss_history(domain=1);
-        Post.plot_loss_history(domain=1,loss='RIuD');
         Post.plot_loss_history(domain=2);
         Post.plot_loss_history(domain=1, plot_w=True);
         Post.plot_loss_history(domain=2, plot_w=True);
-        Post.plot_weights_history(domain=1);
-        Post.plot_weights_history(domain=2);
+
+        # Post.plot_loss_history(domain=1,loss='RIu');
+        # Post.plot_loss_history(domain=2,loss='RIuD');
+        
         Post.plot_loss_validation_history(domain=1,loss='TL')
         Post.plot_loss_validation_history(domain=2,loss='TL')
         Post.plot_loss_validation_history(domain=1,loss='R')
-        Post.plot_loss_validation_history(domain=1,loss='Q')
+        Post.plot_loss_validation_history(domain=2,loss='R')
 
-        Post.plot_G_solv_history();
+        Post.plot_weights_history(domain=1);
+        Post.plot_weights_history(domain=2);
+
         Post.plot_collocation_points_3D();
         Post.plot_vol_mesh_3D();
         Post.plot_surface_mesh_3D();
-        Post.plot_interface_3D(variable='phi');
-        Post.plot_interface_3D(variable='dphi');
+
+        Post.plot_G_solv_history();
         Post.plot_phi_line(); 
         Post.plot_phi_line(value='react'); 
         Post.plot_phi_contour(); 
         Post.plot_phi_contour(value='react'); 
+        Post.plot_interface_3D(variable='phi');
+        Post.plot_interface_3D(variable='dphi');
 
         if sim.inputs['molecule'] == 'born_ion':
             Post.plot_aprox_analytic(); 
@@ -232,14 +241,15 @@ def main():
             Post.plot_aprox_analytic(zoom=True); 
             Post.plot_aprox_analytic(zoom=True, value='react'); 
             Post.plot_line_interface(); 
-            Post.plot_line_interface(plot='du'); 
             Post.plot_line_interface(value='react'); 
+            Post.plot_line_interface(plot='du'); 
             Post.plot_line_interface(plot='du',value='react'); 
 
         Post.save_values_file();
         Post.save_model_summary();
         Post.plot_architecture(domain=1);
         Post.plot_architecture(domain=2);
+
 
 if __name__=='__main__':
         main()

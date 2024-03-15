@@ -26,6 +26,23 @@ class XPINN_NeuralNet(tf.keras.Model):
         self.NNs[1].build_Net()
 
 
+class PINN_NeuralNet(tf.keras.Model):
+
+    def __init__(self, hyperparameters, **kwargs):
+        super().__init__(name='PINN_NN', **kwargs)
+        param_1, param_2 = hyperparameters
+        self.NN = NeuralNet(**param_1, name='NN')
+        self.NNs = [self.NN,self.NN]
+
+    def call(self, X, flag):
+        output = self.NN(X)
+        outputs = tf.concat([output, output], axis=1)
+        return outputs
+    
+    def build_Net(self):
+        self.NN.build_Net()
+
+
 
 class NeuralNet(tf.keras.Model):
 
