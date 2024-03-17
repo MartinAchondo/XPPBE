@@ -7,12 +7,9 @@
 # Results and test directories
 code/*
 !code/*/
-!code/Main_BornIon.py
-!code/Main_BornIon_Reg.py
-!code/Main_Molecule.py
 !code/Main.py
-!code/run_simulations.bash
 !code/Allclean
+!code/Allrun
 
 code/results
 /.results

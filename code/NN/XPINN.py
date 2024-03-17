@@ -25,7 +25,7 @@ class XPINN(XPINN_utils):
             L = self.PDE.get_loss_preconditioner(X_batch, model)
             return L['P1']+L['P2'],L
 
-    def get_grad(self,X_batch, model, w, precond=False):
+    def get_grad_loss(self,X_batch, model, w, precond=False):
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(model.trainable_variables)
             loss,L = self.get_loss(X_batch, model, w, precond)
@@ -42,14 +42,14 @@ class XPINN(XPINN_utils):
 
         @tf.function
         def train_step(X_batch, ws,precond=False):
-            loss, L_loss, grad_theta = self.get_grad(X_batch, self.model, ws, precond)
+            loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, ws, precond)
             optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
             L = [loss,L_loss]
             return L
 
         @tf.function
         def train_step_precond(X_batch, ws, precond=True):
-            loss, L_loss, grad_theta = self.get_grad(X_batch, self.model, ws, precond)
+            loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, ws, precond)
             optimizer_P.apply_gradients(zip(grad_theta, self.model.trainable_variables))
             L = [loss,L_loss]
             return L
@@ -84,8 +84,8 @@ class XPINN(XPINN_utils):
                 L = train_step_precond(X_d, ws=self.w)
 
             self.iter+=1
-            self.calculate_G_solv(self.calc_Gsolv_now)
             L_v = caclulate_validation_loss(X_v, self.precondition)
+            self.calculate_G_solv(self.calc_Gsolv_now)
             self.callback(L,L_v)
             self.check_adapt_new_weights(self.adapt_w_now)
 
