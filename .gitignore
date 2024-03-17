@@ -8,6 +8,7 @@
 code/*
 !code/*/
 !code/Main.py
+!code/Simulation.py
 !code/Allclean
 !code/Allrun
 
@@ -41,8 +42,9 @@ pscp_post.bash
 
 
 # Simulation-related directories
-code/simulations_list/past_sims
-code/simulations_list/
+#code/simulations_list/*
+code/simulations_list/*/
+!code/simulations_list/Main.py
 code/pbj/
 code/pbj/*/
 .pbj/

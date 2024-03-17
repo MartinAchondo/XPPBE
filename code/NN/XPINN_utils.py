@@ -60,7 +60,7 @@ class XPINN_utils():
 
         self.w = dict()
 
-        w = weights[0]
+        w = weights
         for w_name in self.w_names:
             if not w_name in w:
                 self.w[w_name] = 1.0
