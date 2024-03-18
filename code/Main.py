@@ -1,4 +1,5 @@
-from Simulation import *
+from Simulation import Simulation
+import tensorflow as tf
 
 # Create simulation object
 simulation = Simulation(__file__)

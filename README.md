@@ -61,7 +61,7 @@ An explanation of a `Main.py` code is as follows:
 
 1. Import the simulation object and initialize it:
     ```py
-    from Simulation import *
+    from Simulation import Simulation
     simulation = Simulation(__file__)
     ```
 
