@@ -1,10 +1,9 @@
+import os
 import copy
 import logging
-import os
 import json
 import pandas as pd
 import tensorflow as tf
-
 
 logger = logging.getLogger(__name__)
 
@@ -41,22 +40,23 @@ class XPINN_utils():
         self.model = NN_class(hyperparameters, *args, **kwargs)
         self.model.build_Net()
 
-    def adapt_optimizer(self,optimizer,lr,lr_p=0.001):
+    def adapt_optimizer(self,optimizer,lr,lr_p=0.001,two_optimizers=False):
         self.optimizer_name = optimizer
         self.lr = lr
         self.lr_p = lr_p
+        self.two_optimizers = two_optimizers
 
-    def adapt_PDEs(self,PDE):
+    def adapt_PDE(self,PDE):
         self.PDE = PDE
         self.mesh = self.PDE.mesh
         self.adapt_datasets()
         print("PDEs and datasets ready")
 
-    def adapt_weights(self,weights,adapt_weights=False,adapt_w_iter=2000,adapt_w_method='gradients',alpha=0.3):
+    def adapt_weights(self,weights,adapt_weights=False,adapt_w_iter=2000,adapt_w_method='gradients',alpha_w=0.7):
         self.adapt_weights = adapt_weights
         self.adapt_w_iter = adapt_w_iter
         self.adapt_w_method = adapt_w_method
-        self.alpha_w = alpha
+        self.alpha_w = alpha_w
 
         self.w = dict()
 
@@ -71,12 +71,10 @@ class XPINN_utils():
         for t in self.w:
             self.w_hist[t] = list()
 
-
     def set_points_methods(self, sample_method='batches', N_batches=1, sample_size=1000):
         self.sample_method = sample_method
         self.N_batches = N_batches
         self.sample_size = sample_size
-
 
     def adapt_datasets(self):
         self.L_X_domain = dict()
@@ -87,7 +85,19 @@ class XPINN_utils():
                 self.L_X_domain[t] = self.mesh.domain_mesh_data[t]
 
 
-    ######################################################
+    ##############################################################################################
+                
+    def create_optimizer(self, precond=False):
+        if self.optimizer_name == 'Adam':
+            if not precond:
+                optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
+                if not self.two_optimizers:
+                    return optim
+                optim2 = tf.keras.optimizers.Adam(learning_rate=self.lr)
+                return optim,optim2
+            elif precond:           
+                optimP = tf.keras.optimizers.Adam(learning_rate=self.lr_p)
+                return optimP
 
     def get_batches(self, sample_method='random_sample', validation=False):
 
@@ -142,56 +152,50 @@ class XPINN_utils():
         if self.iter % 2 == 0:
             self.pbar.set_description("Loss: {:6.4e}".format(self.current_loss))                
 
+
     def callback(self, L_loss,Lv_loss):
 
         loss,L = L_loss
+        lossv,Lv = Lv_loss
+
         for t in self.losses_names:
             if not 'TL' in t:
                 self.losses[t].append(L[t])
+                if t in self.validation_names:
+                    self.validation_losses[t].append(Lv[t])
 
         self.losses['TL'].append(loss)
+        self.validation_losses['TL'].append(lossv)
         self.current_loss = loss.numpy()
 
         loss1 = 0.0
         loss1v = 0.0
+        loss1_vl = 0.0
         for t in self.losses_names_1:
             if t != 'TL1':
                 loss1 += L[t]
                 if t in self.validation_names:
                     loss1v += L[t]
+                    loss1_vl += Lv[t]
         self.losses['TL1'].append(loss1)
         self.losses['vTL1'].append(loss1v)
+        self.validation_losses['TL1'].append(loss1_vl)
 
         loss2 = 0.0
         loss2v = 0.0
+        loss2_vl = 0.0
         for t in self.losses_names_2:
             if t != 'TL2':
                 loss2 += L[t]
                 if t in self.validation_names:
                     loss2v += L[t]
+                    loss2_vl += Lv[t]
         self.losses['TL2'].append(loss2)
         self.losses['vTL2'].append(loss2v)
+        self.validation_losses['TL2'].append(loss2_vl)
         
         for t in self.w_names:
             self.w_hist[t].append(self.w[t])
-
-        loss,L = Lv_loss
-        for t in self.validation_names:
-            if not 'TL' in t:
-                self.validation_losses[t].append(L[t])
-        self.validation_losses['TL'].append(loss)
-
-        loss1 = 0.0
-        for t in self.validation_names:
-            if t!= 'TL1' and '1' in t:
-                loss1 += L[t]
-        self.validation_losses['TL1'].append(loss1)
-
-        loss2 = 0.0
-        for t in self.validation_names:
-            if t!= 'TL2' and '2' in t:
-                loss2 += L[t]
-        self.validation_losses['TL2'].append(loss2)
 
         if self.save_model_iter > 0:
             if (self.iter % self.save_model_iter == 0 and self.iter>1) or self.iter==self.N_iters:
@@ -199,7 +203,7 @@ class XPINN_utils():
                 self.save_model(dir_save)
 
 
-    #################################################
+    ##############################################################################################
 
     def load_NeuralNet(self,NN_class,dir_load,iter_path):   
 

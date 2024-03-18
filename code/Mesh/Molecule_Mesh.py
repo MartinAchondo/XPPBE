@@ -91,23 +91,18 @@ class Molecule_Mesh():
         
         self.region_meshes = dict()
         self.prior_data = dict()
-
-        self.read_create_meshes()
-
         self.domain_mesh_names = set()
         self.domain_mesh_data = dict()
-        self.domain_mesh_N = dict()
+
+        self.read_create_meshes()
         
     
     def read_create_meshes(self):
-
         self.create_molecule_mesh()
         self.create_sphere_mesh()
         self.create_interior_mesh()
         self.create_exterior_mesh()
-
         self.create_mesh_obj()
-
         print("Mesh initialization ready")
 
 
@@ -126,7 +121,7 @@ class Molecule_Mesh():
             vert = vert_f.read()
 
         self.mol_faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
-        self.mol_verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(float)
+        self.mol_verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(np.float32)
         self.mol_normal = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, 3:6].astype(np.float32)
         self.centroid = np.mean(self.mol_verts, axis=0)
 
@@ -261,7 +256,6 @@ class Molecule_Mesh():
                 self.domain_mesh_names.add('Iu')
                 self.domain_mesh_names.add('Id')
                 self.domain_mesh_data[type_b] = (X_I,flag)
-                self.domain_mesh_N[type_b] = len(X)
             
             elif type_b in ('G'):
                 self.domain_mesh_names.add(type_b)

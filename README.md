@@ -50,114 +50,108 @@ To install and run this project locally, follow these steps:
     ```
 
 ## Usage
-To use this project, start by following the [Tutorial.ipynb](./tutorials/tutorial.ipynb) notebook, or modifying the [Main_Molecule.py](./code/Main_Molecule.py) or the [Main_BornIon.py](./code/Main_BornIon.py) template codes. If you intend to run multiple simulations, add your customized `Main.py` files to the `code/simulations_list` folder. Finally, execute the following command:
+To use this project, start by following the [Tutorial.ipynb](./tutorials/tutorial.ipynb) notebook, or modifying the [Main.py](./code/Main.py) template code. If you intend to run multiple simulations, add your customized `Main.py` files to the `code/simulations_list` folder. Finally, execute the following command:
 
 
 ```bash
-bash run_simulations.bash
+bash Allrun
 ```
 
 An explanation of a `Main.py` code is as follows:
 
-1. Define the molecule, the properties and the equation to solve:
+1. Import the simulation object and initialize it:
     ```py
-    equation = 'regularized_scheme_1'
+    from Simulation import *
+    simulation = Simulation(__file__)
+    ```
 
-    inputs = {'molecule': 'methanol',
-              'epsilon_1':  1,
-              'epsilon_2': 80,
-              'kappa': 0.125,
-              'T' : 300 
-              }
+2. Define the molecule, the properties and the equation to solve:
+    ```py
+    simulation.equation = 'standard'
+    simulation.pbe_model = 'linear'
+
+    simulation.domain_properties = {
+            'molecule': 'born_ion',
+            'epsilon_1':  1,
+            'epsilon_2': 80,
+            'kappa': 0.125,
+            'T' : 300 
+            }
     ```     
-2. Define the number of collocation points (mesh properties):
+3. Define the number of collocation points (mesh properties):
     ```py
-    N_points = {'vol_max_interior': 0.04,
-                'vol_max_exterior': 0.1,
-                'density_mol': 40,
-                'density_border': 4,
-                'dx_experimental': 2,
-                'N_pq': 100,
-                'G_sigma': 0.04,
-                'mesh_generator': 'msms',
-                'dR_exterior': 8
-                }
-    ```
-
-3. Define the different loss terms (solute domain, solvent domain and combination of boths)
-    ```py
-    self.meshes_domain = dict()   
-    self.meshes_domain['1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
-    self.meshes_domain['3'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known_reg.dat'}
-    self.meshes_domain['5'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-    self.meshes_domain['6'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
-    self.meshes_domain['7'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known.dat'}
-    self.meshes_domain['9'] = {'domain': 'solvent', 'type': 'E2', 'file': 'data_experimental.dat'}
-    self.meshes_domain['10'] = {'domain':'interface', 'type':'I'}
-    self.meshes_domain['11'] = {'domain':'interface', 'type':'G'}
-    ```
-4. Define the architectures:
-    ```py
-    hyperparameters_in = {
-                    'input_shape': (None,3),
-                    'num_hidden_layers': 4,
-                    'num_neurons_per_layer': 20,
-                    'output_dim': 1,
-                    'activation': 'tanh',
-                    'adaptative_activation': True,
-                    'architecture_Net': 'FCNN',
-                    'fourier_features': True,
-                    'num_fourier_features': 12,
-                    'scale': XPINN_solver.mesh.scale_1
-            }
-
-    hyperparameters_out = {
-                    'input_shape': (None,3),
-                    'num_hidden_layers': 4,
-                    'num_neurons_per_layer': 20,
-                    'output_dim': 1,
-                    'activation': 'tanh',
-                    'adaptative_activation': True,
-                    'architecture_Net': 'FCNN',
-                    'fourier_features': False,
-                    'scale': XPINN_solver.mesh.scale_2
+    simulation.mesh_properties = {
+            'vol_max_interior': 0.04,
+            'vol_max_exterior': 0.1,
+            'density_mol': 40,
+            'density_border': 4,
+            'dx_experimental': 2,
+            'N_pq': 100,
+            'G_sigma': 0.04,
+            'mesh_generator': 'msms',
+            'dR_exterior': 8
             }
     ```
 
-5. Finally, specify the optimization algorithm, the weights algorithm and the batches/samples approach.
+4. Define the different loss terms (solute domain, solvent domain and combination of boths)
     ```py
-    XPINN_solver.adapt_weights([weights,weights],
-                                adapt_weights = True,
-                                adapt_w_iter = 20,
-                                adapt_w_method = 'gradients',
-                                alpha = 0.7)             
+    simulation.losses = ['R1','R2','D2','I','K1','K2']
+    ```
+5. Define the architectures:
+    ```py
 
-    XPINN_solver.set_points_methods(sample_method='random_sample')
-
-    optimizer = 'Adam'
-    lr = tf.keras.optimizers.schedules.ExponentialDecay(
-            initial_learning_rate=0.001,
-            decay_steps=2000,
-            decay_rate=0.9,
-            staircase=True)
-    XPINN_solver.adapt_optimizers(optimizer,lr)
+    simulation.network = 'xpinn'
+    simulation.hyperparameters_in = {
+            'input_shape': (None,3),
+            'num_hidden_layers': 4,
+            'num_neurons_per_layer': 200,
+            'output_dim': 1,
+            'activation': 'tanh',
+            'adaptative_activation': True,
+            'architecture_Net': 'FCNN',
+            'fourier_features': True,
+            'num_fourier_features': 256
+            }
+    simulation.hyperparameters_out = {
+            'input_shape': (None,3),
+            'num_hidden_layers': 4,
+            'num_neurons_per_layer': 200,
+            'output_dim': 1,
+            'activation': 'tanh',
+            'adaptative_activation': True,
+            'architecture_Net': 'FCNN',
+            'fourier_features': False
+            }
     ```
 
-6. And solve the PDE:
+6. Finally, specify the optimization algorithm, the weights algorithm, the batches/samples approach and the number of iterations.
     ```py
-    N_iters = 10000
+    simulation.adapt_weights = True,
+    simulation.adapt_w_iter = 1000
+    simulation.adapt_w_method = 'gradients'
+    simulation.alpha_w = 0.7           
 
-    XPINN_solver.solve(N=N_iters, 
-                    precond = False, 
-                    save_model = 0, 
-                    G_solve_iter=100)
+    simulation.sample_method='random_sample'
+
+    simulation.optimizer = 'Adam'
+    simulation.lr = tf.keras.optimizers.schedules.ExponentialDecay(
+                    initial_learning_rate=0.001,
+                    decay_steps=2000,
+                    decay_rate=0.9,
+                    staircase=True)
+
+    simulation.N_iters = 2
     ```
 
-7. For quick postprocessing, use the Postprocessing class:
+7. Run the simulation:
     ```py
-    Post = Postprocessing(XPINN_solver, save=True, directory=folder_path)
+    simulation.create_simulation()
+    simulation.adapt_simulation()
+    simulation.solve_model()
+    simulation.postprocessing()
     ```
-    Or the [Postprocessing Jupyter Notebook](./code/Post/post.ipynb).
+
+8. For quick postprocessing, use the [Postprocessing Jupyter Notebook](./code/Post/post.ipynb).
 
 ## Citing
 

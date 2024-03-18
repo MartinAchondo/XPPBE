@@ -1,7 +1,7 @@
 import tensorflow as tf
 from time import time
-from tqdm import tqdm as log_progress
 import logging
+from tqdm import tqdm as log_progress
 
 from NN.XPINN_utils import XPINN_utils
 
@@ -13,7 +13,6 @@ class XPINN(XPINN_utils):
     def __init__(self):
         super().__init__()       
     
-
     def get_loss(self, X_batch, model, w, precond=False, validation=False):
         loss = 0.0
         if not precond:
@@ -25,31 +24,42 @@ class XPINN(XPINN_utils):
             L = self.PDE.get_loss_preconditioner(X_batch, model)
             return L['P1']+L['P2'],L
 
-    def get_grad_loss(self,X_batch, model, w, precond=False):
+    def get_grad_loss(self,X_batch, model, trainable_variables, w, precond=False):
         with tf.GradientTape(persistent=True) as tape:
-            tape.watch(model.trainable_variables)
+            tape.watch(trainable_variables)
             loss,L = self.get_loss(X_batch, model, w, precond)
-        g = tape.gradient(loss, model.trainable_variables)
+        g = tape.gradient(loss, trainable_variables)
         del tape
         return loss, L, g
     
-    
     def main_loop(self, N=1000, N_precond=10):
         
-        optimizer = self.create_optimizer()
+        if not self.two_optimizers:
+            optimizer = self.create_optimizer()
+        else: 
+            optimizer_1,optimizer_2 = self.create_optimizer()
         if self.precondition:
             optimizer_P = self.create_optimizer(precond=True)
 
         @tf.function
         def train_step(X_batch, ws,precond=False):
-            loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, ws, precond)
+            loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, ws, precond)
             optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
             L = [loss,L_loss]
+            return L
+        
+        @tf.function
+        def train_step_2opt(X_batch, ws,precond=False):
+            loss_1, L_loss_1, grad_theta_1 = self.get_grad_loss(X_batch, self.model, self.model.NNs[0].trainable_variables, ws, precond)
+            loss_2, L_loss_2, grad_theta_2 = self.get_grad_loss(X_batch, self.model, self.model.NNs[1].trainable_variables, ws, precond)
+            optimizer_1.apply_gradients(zip(grad_theta_1, self.model.NNs[0].trainable_variables))
+            optimizer_2.apply_gradients(zip(grad_theta_2, self.model.NNs[1].trainable_variables))
+            L = [loss_1,L_loss_1]
             return L
 
         @tf.function
         def train_step_precond(X_batch, ws, precond=True):
-            loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, ws, precond)
+            loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, ws, precond)
             optimizer_P.apply_gradients(zip(grad_theta, self.model.trainable_variables))
             L = [loss,L_loss]
             return L
@@ -62,7 +72,6 @@ class XPINN(XPINN_utils):
 
         self.N_iters = N
         self.N_precond = N_precond
-        self.N_steps = 0
         self.current_loss = 100
 
         X_v = self.get_batches('full_batch', validation=True)
@@ -77,11 +86,14 @@ class XPINN(XPINN_utils):
                 
             self.checkers_iterations()
             
-            if not self.precondition:
-                L = train_step(X_d, ws=self.w)   
-
-            elif self.precondition:        
+            if self.precondition:
                 L = train_step_precond(X_d, ws=self.w)
+
+            elif not self.two_optimizers:
+                L = train_step(X_d, ws=self.w)   
+            
+            elif self.two_optimizers:
+                L = train_step_2opt(X_d, ws=self.w)
 
             self.iter+=1
             L_v = caclulate_validation_loss(X_v, self.precondition)
@@ -96,7 +108,6 @@ class XPINN(XPINN_utils):
             X_d = self.get_batches(self.sample_method)
             self.modify_weights_by(self.model,X_d) 
             
-
     def modify_weights_by(self,model,X_domain):
         
         L = dict()
@@ -127,15 +138,6 @@ class XPINN(XPINN_utils):
             G_solv = self.PDE.get_solvation_energy(self.model)
             self.G_solv_hist[str(self.iter)] = G_solv   
 
-    def create_optimizer(self, precond=False):
-        if self.optimizer_name == 'Adam':
-            if not precond:
-                optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
-                return optim
-            elif precond:           
-                optimP = tf.keras.optimizers.Adam(learning_rate=self.lr_p)
-                return optimP
-
 
     def solve(self,N=1000, precond=False, N_precond=10, save_model=0, G_solve_iter=100):
 
@@ -149,7 +151,6 @@ class XPINN(XPINN_utils):
         self.main_loop(N, N_precond)
 
         logger.info(f' Iterations: {self.N_iters}')
-        logger.info(f' Total steps: {self.N_steps}')
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
 

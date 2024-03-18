@@ -1,18 +1,21 @@
-import tensorflow as tf
+import os
 import numpy as np
 import bempp.api
+import tensorflow as tf
 
-from Model.PDE_utils import PDE_utils
+from Mesh.Charges_utils import get_charges_list
 
-
-class PBE(PDE_utils):
+class PBE():
 
     qe = 1.60217663e-19
     eps0 = 8.8541878128e-12     
     kb = 1.380649e-23              
     Na = 6.02214076e23
     ang_to_m = 1e-10
-    to_V = qe/(eps0 * ang_to_m)   
+    to_V = qe/(eps0 * ang_to_m)  
+
+    DTYPE = 'float32'
+    pi = tf.constant(np.pi, dtype=DTYPE)
 
     def __init__(self, inputs, mesh, model, path):      
 
@@ -24,12 +27,6 @@ class PBE(PDE_utils):
         self.inputs = inputs
         for key, value in inputs.items():
             setattr(self, key, value)
-        
-        self.PDE_in = Poisson(self,inputs)
-        if self.eq=='linear':
-            self.PDE_out = Helmholtz(self,inputs)
-        elif self.eq=='nonlinear':
-            self.PDE_out = Non_Linear(self,inputs)
 
         self.get_charges()
         self.get_integral_operators()
@@ -40,37 +37,7 @@ class PBE(PDE_utils):
     def get_PDEs(self):
         PDEs = [self.PDE_in,self.PDE_out]
         return PDEs
-    
-
-    def get_phi(self,X,flag,model,value='phi'):
-        if flag=='molecule':
-            phi = tf.reshape(model(X,flag)[:,0], (-1,1))
-        elif flag=='solvent':
-            phi = tf.reshape(model(X,flag)[:,1], (-1,1))
-        elif flag=='interface':
-            phi = model(X,flag)
-
-        if value=='phi':
-            return phi 
-
-        if value == 'react':
-            if flag != 'interface':
-                phi_r = phi - self.G(*self.mesh.get_X(X))
-            elif flag =='interface':
-                G_val = self.G(*self.mesh.get_X(X))
-                phi_r = tf.stack([tf.reshape(phi[:,0],(-1,1))-G_val,tf.reshape(phi[:,1],(-1,1))-G_val], axis=1)
-        return phi_r
-
-    def get_dphi(self,X,Nv,flag,model,value='phi'):
-        x = self.mesh.get_X(X)
-        nv = self.mesh.get_X(Nv)
-        du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='phi')
-        du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='phi')
-        if value=='react':
-            du_1 -= self.dG_n(*x,Nv)
-            du_2 -= self.dG_n(*x,Nv)
-        return du_1,du_2
-        
+            
     def get_phi_interface(self,model,**kwargs):      
         verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)
         u = self.get_phi(verts,'interface',model,**kwargs)
@@ -103,7 +70,6 @@ class PBE(PDE_utils):
         
         return G_solv
     
-
     def get_phi_ens(self,model,X_mesh,X_q):
         
         kT = self.kb*self.T
@@ -133,6 +99,65 @@ class PBE(PDE_utils):
 
         return phi_ens_L    
     
+    ####################################################################################################################################################
+
+    # Losses
+
+    def get_loss(self, X_batches, model, validation=False):
+        L = self.create_L()
+
+        #residual
+        if 'R1' in X_batches: 
+            ((X,SU),flag) = X_batches['R1']
+            loss_r = self.PDE_in.residual_loss(self.mesh,model,self.mesh.get_X(X),SU,flag)
+            L['R1'] += loss_r   
+
+        if 'R2' in X_batches: 
+            ((X,SU),flag) = X_batches['R2']
+            loss_r = self.PDE_out.residual_loss(self.mesh,model,self.mesh.get_X(X),SU,flag)
+            L['R2'] += loss_r   
+
+        if 'Q1' in X_batches: 
+            ((X,SU),flag) = X_batches['Q1']
+            loss_q = self.PDE_in.residual_loss(self.mesh,model,self.mesh.get_X(X),SU,flag)
+            L['Q1'] += loss_q 
+
+        #dirichlet 
+        if 'D2' in X_batches:
+            ((X,U),flag) = X_batches['D2']
+            loss_d = self.dirichlet_loss(self.mesh,model,X,U,flag)
+            L['D2'] += loss_d
+
+        # data known
+        if 'K1' in X_batches and not validation:
+            ((X,U),flag) = X_batches['K1']
+            loss_k = self.dirichlet_loss(self.mesh,model,X,U,flag)
+            L['K1'] += loss_k   
+
+        if 'K2' in X_batches and not validation:
+            ((X,U),flag) = X_batches['K2']
+            loss_k = self.dirichlet_loss(self.mesh,model,X,U,flag)
+            L['K2'] += loss_k 
+
+        if 'I' in X_batches:
+            L['Iu'] += self.get_loss_I(model,X_batches['I'], [True,False])
+            L['Id'] += self.get_loss_I(model,X_batches['I'], [False,True])
+
+        if 'E2' in X_batches and not validation:
+            L['E2'] += self.get_loss_experimental(model,X_batches['E2'])
+
+        if 'G' in X_batches and not validation:
+            L['G'] += self.get_loss_Gauss(model,X_batches['G'])
+
+        return L
+
+
+    def dirichlet_loss(self,mesh,model,XD,UD,flag):
+        Loss_d = 0
+        u_pred = self.get_phi(XD,flag,model)
+        loss = tf.reduce_mean(tf.square(UD - u_pred)) 
+        Loss_d += loss
+        return Loss_d
 
     def get_loss_I(self,model,XI_data,loss_type=[True,True]):
         
@@ -175,6 +200,24 @@ class PBE(PDE_utils):
         loss += tf.reduce_mean(tf.square(integral - self.total_charge))
 
         return loss
+    
+    def get_loss_preconditioner(self, X_batches, model):
+        L = self.create_L()
+
+        #residual
+        if 'P1' in X_batches:
+            ((X,U),flag) = X_batches['P1']
+            loss_p = self.dirichlet_loss(self.mesh,model,X,U,flag)
+            L['P1'] += loss_p  
+
+        if 'P2' in X_batches:
+            ((X,U),flag) = X_batches['P2']
+            loss_p = self.dirichlet_loss(self.mesh,model,X,U,flag)
+            L['P2'] += loss_p  
+            
+        return L
+
+    ####################################################################################################################################################
 
     def source(self,x,y,z):
         sum = 0
@@ -247,61 +290,88 @@ class PBE(PDE_utils):
         y = np.piecewise(r, [r<=rI, r>rI], [f_IN, f_OUT])
 
         return y
-
-
-
-
-class Poisson():
-
-    def __init__(self, PBE, inputs):
-        
-        self.PBE = PBE
-        for key, value in inputs.items():
-            setattr(self, key, value)
-        self.epsilon = self.epsilon_1
-        super().__init__()
-
-    def residual_loss(self,mesh,model,X,SU,flag):
-        x,y,z = X
-        r = self.PBE.laplacian(mesh,model,X,flag) - SU       
-        Loss_r = tf.reduce_mean(tf.square(r))
-        return Loss_r
-
-
-class Helmholtz():
-
-    def __init__(self, PBE, inputs):
-
-        self.PBE = PBE
-        for key, value in inputs.items():
-            setattr(self, key, value)
-        self.epsilon = self.epsilon_2
-        super().__init__()
-
-    def residual_loss(self,mesh,model,X,SU,flag):
-        x,y,z = X
-        R = mesh.stack_X(x,y,z)
-        u = self.PBE.get_phi(R,flag,model)
-        r = self.PBE.laplacian(mesh,model,X,flag) - self.kappa**2*u      
-        Loss_r = tf.reduce_mean(tf.square(r))
-        return Loss_r  
-
-
-class Non_Linear():
-
-    def __init__(self, PBE, inputs):
-
-        self.PBE = PBE
-        for key, value in inputs.items():
-            setattr(self, key, value)
-        self.epsilon = self.epsilon_2
-        super().__init__()
-
-    def residual_loss(self,mesh,model,X,SU,flag):
-        x,y,z = X
-        R = mesh.stack_X(x,y,z)
-        u = self.PBE.get_phi(R,flag,model)
-        r = self.PBE.laplacian(mesh,model,X,flag) - self.kappa**2*tf.math.sinh(u)     
-        Loss_r = tf.reduce_mean(tf.square(r))
-        return Loss_r
     
+
+    ####################################################################################################################################################
+
+    def aprox_exp(self,x):
+        aprox = 1.0 + x + x**2/2.0 + x**3/6.0 + x**4/24.0
+        return aprox
+
+
+    # Differential operators
+
+    def laplacian(self,mesh,model,X,flag,value='phi'):
+        x,y,z = X
+        with tf.GradientTape(persistent=True) as tape:
+            tape.watch(x)
+            tape.watch(y)
+            tape.watch(z)
+            R = mesh.stack_X(x,y,z)
+            u = self.get_phi(R,flag,model,value)
+            u_x = tape.gradient(u,x)
+            u_y = tape.gradient(u,y)
+            u_z = tape.gradient(u,z)
+        u_xx = tape.gradient(u_x,x)
+        u_yy = tape.gradient(u_y,y)
+        u_zz = tape.gradient(u_z,z)
+        del tape
+        return u_xx + u_yy + u_zz
+
+    def gradient(self,mesh,model,X,flag,value='phi'):
+        x,y,z = X
+        with tf.GradientTape(persistent=True,watch_accessed_variables=False) as tape:
+            tape.watch(x)
+            tape.watch(y)
+            tape.watch(z)
+            R = mesh.stack_X(x,y,z)
+            u = self.get_phi(R,flag,model,value)
+        u_x = tape.gradient(u,x)
+        u_y = tape.gradient(u,y)
+        u_z = tape.gradient(u,z)
+        del tape
+        return (u_x,u_y,u_z)
+    
+    def directional_gradient(self,mesh,model,X,n_v,flag,value='phi'):
+        gradient = self.gradient(mesh,model,X,flag,value)
+        dir_deriv = 0
+        for j in range(3):
+            dir_deriv += n_v[j]*gradient[j]
+        return dir_deriv
+    
+
+    ####################################################################################################################################################
+
+    def get_charges(self):
+        path_files = os.path.join(self.main_path,'Molecules')
+        self.q_list = get_charges_list(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
+        n = len(self.q_list)
+        self.qs = np.zeros(n)
+        self.x_qs = np.zeros((n,3))
+        for i,q in enumerate(self.q_list):
+            self.qs[i] = q.q
+            self.x_qs[i,:] = q.x_q
+        self.total_charge = np.sum(self.qs)
+
+
+    def get_integral_operators(self):
+        elements = self.mesh.mol_faces
+        vertices = self.mesh.mol_verts
+        self.grid = bempp.api.Grid(vertices.transpose(), elements.transpose())
+        self.space = bempp.api.function_space(self.grid, "P", 1)
+        self.dirichl_space = self.space
+        self.neumann_space = self.space
+
+        self.slp_q = bempp.api.operators.potential.laplace.single_layer(self.neumann_space, self.x_qs.transpose())
+        self.dlp_q = bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, self.x_qs.transpose())
+    
+    @classmethod
+    def create_L(cls):
+        cls.names = ['R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','E2','P1','P2']
+        L = dict()
+        for t in cls.names:
+            L[t] = tf.constant(0.0, dtype=cls.DTYPE)
+        return L
+
+
+

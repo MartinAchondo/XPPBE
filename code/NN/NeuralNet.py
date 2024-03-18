@@ -43,7 +43,6 @@ class PINN_NeuralNet(tf.keras.Model):
         self.NN.build_Net()
 
 
-
 class NeuralNet(tf.keras.Model):
 
     def __init__(self, 
