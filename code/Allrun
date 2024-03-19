@@ -1,32 +1,58 @@
 #!/bin/bash
 
 current_directory="$(pwd)"
-sims_folder="simulations_list"
-num_simulations=$(ls "$current_directory/$sims_folder"/*.py | wc -l) 
 
-if [ "$num_simulations" -eq 0 ]; then
-  echo "No Python scripts found in $sims_folder. Exiting."
-  exit 1
+if [ "$#" -eq 0 ]; then
+    echo "No argument provided. Exiting."
+    exit 1
 fi
 
 bash Allclean
 
-cd "$current_directory/$sims_folder"
+if [ "$1" = "Main" ]; then
+    if [ -f "$current_directory/Main.py" ]; then
+        echo "Running Main.py"
+        mkdir "$current_directory/results/Main"
+        python "$current_directory/Main.py"
+        cp "$current_directory/Main.py" "$current_directory/results/Main/Main.py"
+        cp "$current_directory/Post/Post_Template.ipynb" "$current_directory/results/Main/Post_Template.ipynb"
+        echo "Ending Simulation $script_name"
+    else
+        echo "Main.py not found in current directory. Exiting."
+        exit 1
+    fi
 
-sims_count=0
+elif [ "$1" = "Sims" ]; then
+  
+    num_simulations=$(ls "$current_directory/$sims_folder"/*.py | wc -l)
+    
+    if [ "$num_simulations" -eq 0 ]; then
+        echo "No Python scripts found in $sims_folder. Exiting."
+        exit 1
+    fi
+    
+    sims_folder="simulations_list"
+    cd "$current_directory/$sims_folder"
 
-for script_name in *.py
-do
-    ((sims_count++))
-    echo "########"
-    echo ""
-    base_name="${script_name%.py}"
-    echo "Running Simulation $sims_count : $script_name"
-    cp "$current_directory/$sims_folder/$script_name" "$current_directory/$script_name"
-    mkdir "$current_directory/results/$base_name"
-    python "$current_directory/$script_name"
-    mv "$current_directory/$script_name" "$current_directory/results/$base_name/$script_name"
-    echo "Ending Simulation $sims_count : $script_name"
-    echo ""
-    echo "########"
-done
+    sims_count=0
+    
+    for script_name in *.py
+    do
+        ((sims_count++))
+        echo "########"
+        echo ""
+        base_name="${script_name%.py}"
+        echo "Running Simulation $sims_count : $script_name"
+        cp "$current_directory/$sims_folder/$script_name" "$current_directory/$script_name"
+        mkdir "$current_directory/results/$base_name"
+        python "$current_directory/$script_name"
+        mv "$current_directory/$script_name" "$current_directory/results/$base_name/$script_name"
+        cp "$current_directory/Post/Post_Template.ipynb" "$current_directory/results/$base_name/Post_Template.ipynb"
+        echo "Ending Simulation $sims_count : $script_name"
+        echo ""
+        echo "########"
+    done
+else
+    echo "Invalid argument. Available options: Main, Sims."
+    exit 1
+fi

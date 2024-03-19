@@ -9,6 +9,9 @@ import os
 import pandas as pd
 import json
 
+matplotlib_logger = logging.getLogger('matplotlib')
+matplotlib_logger.setLevel(logging.WARNING)
+
 plt.rcParams['figure.max_open_warning'] = 50
 
 class Postprocessing():
@@ -423,7 +426,6 @@ class Postprocessing():
         text_x0 = r'$x_0$'
         ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters};  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_n}=[{np.format_float_positional(n[0], unique=False, precision=2)},{np.format_float_positional(n[1], unique=False, precision=2)},{np.format_float_positional(n[2], unique=False, precision=2)}])')
         ax.grid()
-        ax.legend()
 
         if self.save:
             path = f'contour_{value}.png'

@@ -42,7 +42,7 @@ pscp_post.bash
 
 
 # Simulation-related directories
-#code/simulations_list/*
+code/simulations_list/*
 code/simulations_list/*/
 !code/simulations_list/Main.py
 code/pbj/

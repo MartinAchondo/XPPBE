@@ -50,14 +50,26 @@ To install and run this project locally, follow these steps:
     ```
 
 ## Usage
-To use this project, start by following the [Tutorial.ipynb](./tutorials/tutorial.ipynb) notebook, or modifying the [Main.py](./code/Main.py) template code. If you intend to run multiple simulations, add your customized `Main.py` files to the `code/simulations_list` folder. Finally, execute the following command:
+To use this project, start by following the [Tutorial.ipynb](./tutorials/tutorial.ipynb) notebook.
 
+Alternatively, you can modify the [Main.py](./code/Main.py) template code. Then, execute the following command in your terminal to run the `Main.py` script:
 
 ```bash
-bash Allrun
+bash Allrun Main 
 ```
 
-An explanation of a `Main.py` code is as follows:
+If you intend to run multiple simulations, add your customized `Main.py` files to the `code/simulations_list` folder. Finally, execute the following command:
+
+```bash
+bash Allrun Sims
+```
+
+This command will execute all Python scripts (*.py) found in the `code/simulations_list` folder, allowing you to run multiple simulations at once.
+
+All the results after executing `bash Allrun` will be added to the `code/results` folder.
+
+
+### Explanation of the `Main.py` Template Code
 
 1. Import the simulation object and initialize it:
     ```py
@@ -151,7 +163,7 @@ An explanation of a `Main.py` code is as follows:
     simulation.postprocessing()
     ```
 
-8. For quick postprocessing, use the [Postprocessing Jupyter Notebook](./code/Post/post.ipynb).
+8. For quick postprocessing, use the [Postprocessing Jupyter Notebook](./code/Post/Post_Template.ipynb) that will be added to the results directory after executing the `bash Allrun` command.
 
 ## Citing
 

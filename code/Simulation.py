@@ -26,14 +26,14 @@ def get_simulation_name(file):
     logger = logging.getLogger(__name__)
     logger.info('================================================')
     
-    return simulation_name,folder_path,main_path
+    return simulation_name,folder_path,main_path,logger
 
 
 class Simulation():
        
     def __init__(self,simulation_file):
 
-        self.simulation_name, self.folder_path, self.main_path = get_simulation_name(simulation_file)
+        self.simulation_name, self.folder_path, self.main_path,self.logger = get_simulation_name(simulation_file)
             
         self.equation = 'standard'
         self.pbe_model = 'linear'
@@ -115,6 +115,8 @@ class Simulation():
 
 
     def create_simulation(self):
+
+        self.logger.info(f"Solving PBE {self.equation}, in {self.pbe_model} form")
 
         self.Mol_mesh = Molecule_Mesh(self.domain_properties['molecule'], 
                         N_points=self.mesh_properties, 
@@ -208,57 +210,60 @@ class Simulation():
             )
         
 
-    def postprocessing(self):
+    def postprocessing(self, jupyter=False):
           
         if self.domain_properties['molecule'] == 'born_ion':
             from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
         else:
             from Post.Postcode import Postprocessing
 
-        Post = Postprocessing(self.XPINN_solver, save=True, directory=self.folder_path)
-
-        Post.plot_loss_history(domain=1);
-        Post.plot_loss_history(domain=2);
-        Post.plot_loss_history(domain=1, plot_w=True);
-        Post.plot_loss_history(domain=2, plot_w=True);
-
-        # Post.plot_loss_history(domain=1,loss='RIu');
-        # Post.plot_loss_history(domain=2,loss='RIuD');
+        self.Post = Postprocessing(self.XPINN_solver, save=True, directory=self.folder_path)
         
-        Post.plot_loss_validation_history(domain=1,loss='TL')
-        Post.plot_loss_validation_history(domain=2,loss='TL')
-        Post.plot_loss_validation_history(domain=1,loss='R')
-        Post.plot_loss_validation_history(domain=2,loss='R')
+        if jupyter:
+             return self.Post
+        
+        self.Post.plot_loss_history(domain=1);
+        self.Post.plot_loss_history(domain=2);
+        self.Post.plot_loss_history(domain=1, plot_w=True);
+        self.Post.plot_loss_history(domain=2, plot_w=True);
 
-        Post.plot_weights_history(domain=1);
-        Post.plot_weights_history(domain=2);
+        # self.Post.plot_loss_history(domain=1,loss='RIu');
+        # self.Post.plot_loss_history(domain=2,loss='RIuD');
+        
+        self.Post.plot_loss_validation_history(domain=1,loss='TL')
+        self.Post.plot_loss_validation_history(domain=2,loss='TL')
+        self.Post.plot_loss_validation_history(domain=1,loss='R')
+        self.Post.plot_loss_validation_history(domain=2,loss='R')
 
-        Post.plot_collocation_points_3D();
-        Post.plot_vol_mesh_3D();
-        Post.plot_surface_mesh_3D();
+        self.Post.plot_weights_history(domain=1);
+        self.Post.plot_weights_history(domain=2);
 
-        Post.plot_G_solv_history();
-        Post.plot_phi_line(); 
-        Post.plot_phi_line(value='react'); 
-        Post.plot_phi_contour(); 
-        Post.plot_phi_contour(value='react'); 
-        Post.plot_interface_3D(variable='phi');
-        Post.plot_interface_3D(variable='dphi');
+        self.Post.plot_collocation_points_3D();
+        self.Post.plot_vol_mesh_3D();
+        self.Post.plot_surface_mesh_3D();
+
+        self.Post.plot_G_solv_history();
+        self.Post.plot_phi_line(); 
+        self.Post.plot_phi_line(value='react'); 
+        self.Post.plot_phi_contour(); 
+        self.Post.plot_phi_contour(value='react'); 
+        self.Post.plot_interface_3D(variable='phi');
+        self.Post.plot_interface_3D(variable='dphi');
 
         if self.domain_properties['molecule'] == 'born_ion':
-            Post.plot_aprox_analytic(); 
-            Post.plot_aprox_analytic(value='react'); 
-            Post.plot_aprox_analytic(zoom=True); 
-            Post.plot_aprox_analytic(zoom=True, value='react'); 
-            Post.plot_line_interface(); 
-            Post.plot_line_interface(value='react'); 
-            Post.plot_line_interface(plot='du'); 
-            Post.plot_line_interface(plot='du',value='react'); 
+            self.Post.plot_aprox_analytic(); 
+            self.Post.plot_aprox_analytic(value='react'); 
+            self.Post.plot_aprox_analytic(zoom=True); 
+            self.Post.plot_aprox_analytic(zoom=True, value='react'); 
+            self.Post.plot_line_interface(); 
+            self.Post.plot_line_interface(value='react'); 
+            self.Post.plot_line_interface(plot='du'); 
+            self.Post.plot_line_interface(plot='du',value='react'); 
 
-        Post.save_values_file();
-        Post.save_model_summary();
-        Post.plot_architecture(domain=1);
-        Post.plot_architecture(domain=2);
+        self.Post.save_values_file();
+        self.Post.save_model_summary();
+        self.Post.plot_architecture(domain=1);
+        self.Post.plot_architecture(domain=2);
 
 
     def load_model(self,folder_path,results_path,Iter,save=False):
