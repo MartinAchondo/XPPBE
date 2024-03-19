@@ -140,7 +140,7 @@ An explanation of a `Main.py` code is as follows:
                     decay_rate=0.9,
                     staircase=True)
 
-    simulation.N_iters = 2
+    simulation.N_iters = 10000
     ```
 
 7. Run the simulation:
