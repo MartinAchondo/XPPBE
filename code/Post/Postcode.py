@@ -11,8 +11,6 @@ import json
 
 plt.rcParams['figure.max_open_warning'] = 50
 
-logger = logging.getLogger(__name__)
-
 class Postprocessing():
 
     def __init__(self,XPINN, save=False, directory=''):
@@ -66,7 +64,6 @@ class Postprocessing():
             path = f'loss_history_{domain}_loss{loss}.png' if not plot_w  else f'loss_history_{domain}_w.png' 
             path_save = os.path.join(self.directory,self.path_plots_losses,path)
             fig.savefig(path_save)
-            logger.info(f'Loss history Plot saved: {path}')
 
     def plot_loss_validation_history(self, domain=1, loss='TL'):
         fig,ax = plt.subplots()
@@ -90,7 +87,6 @@ class Postprocessing():
             path = f'loss_val_history_{domain}_loss{loss}.png' 
             path_save = os.path.join(self.directory,self.path_plots_losses,path)
             fig.savefig(path_save)
-            logger.info(f'Loss history Plot saved: {path}')
 
 
     def plot_weights_history(self, domain=1):
@@ -114,7 +110,6 @@ class Postprocessing():
             path = f'weights_history_{domain}.png'
             path_save = os.path.join(self.directory,self.path_plots_weights,path)
             fig.savefig(path_save)
-            logger.info(f'Loss history Plot saved: {path}')
 
 
     def plot_G_solv_history(self):

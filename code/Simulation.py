@@ -260,6 +260,25 @@ class Simulation():
         Post.plot_architecture(domain=1);
         Post.plot_architecture(domain=2);
 
+
+    def load_model(self,folder_path,results_path,Iter,save=False):
+
+        if self.network == 'xpinn':
+            from NN.NeuralNet import XPINN_NeuralNet as NeuralNet
+        elif self.network == 'pinn':
+            from NN.NeuralNet import PINN_NeuralNet as NeuralNet
+
+        self.XPINN_solver.folder_path = folder_path
+        self.XPINN_solver.load_NeuralNet(NeuralNet,results_path,f'iter_{Iter}')
+        self.XPINN_solver.N_iters = self.XPINN_solver.iter
+         
+        if self.domain_properties['molecule'] == 'born_ion':
+            from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
+        else:
+            from Post.Postcode import Postprocessing
+
+        self.Post = Postprocessing(self.XPINN_solver, save=save, directory=self.folder_path)
+
   
 def main():
     sim = Simulation()
