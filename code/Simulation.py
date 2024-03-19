@@ -10,23 +10,24 @@ from Mesh.Molecule_Mesh import Molecule_Mesh
 from NN.XPINN import XPINN
 
 def get_simulation_name(file):
-
+  
     main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)))
     simulation_name =  os.path.basename(os.path.abspath(file)).replace('.py','')
 
     folder_name = simulation_name
-    folder_path = os.path.join(main_path,'results',folder_name)
-    if os.path.exists(folder_path):
-            shutil.rmtree(folder_path)
-    os.makedirs(folder_path)
+    folder_path = os.path.join(os.path.dirname(os.path.abspath(file)))
+    results_path = os.path.join(folder_path,'results',folder_name)
+    if os.path.exists(results_path):
+            shutil.rmtree(results_path)
+    os.makedirs(results_path)
 
-    filename = os.path.join(folder_path,'logfile.log')
+    filename = os.path.join(results_path,'logfile.log')
     LOG_format = '%(levelname)s - %(name)s: %(message)s'
     logging.basicConfig(filename=filename, filemode='w', level=logging.INFO, format=LOG_format)
     logger = logging.getLogger(__name__)
     logger.info('================================================')
     
-    return simulation_name,folder_path,main_path,logger
+    return simulation_name,results_path,main_path,logger
 
 
 class Simulation():
