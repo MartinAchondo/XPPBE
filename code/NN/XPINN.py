@@ -2,11 +2,9 @@ import tensorflow as tf
 from time import time
 import logging
 from tqdm import tqdm as log_progress
-
-from NN.XPINN_utils import XPINN_utils
-
 logger = logging.getLogger(__name__)
 
+from NN.XPINN_utils import XPINN_utils
 
 class XPINN(XPINN_utils):
     

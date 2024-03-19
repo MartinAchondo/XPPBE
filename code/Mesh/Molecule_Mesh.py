@@ -3,6 +3,8 @@ import numpy as np
 import tensorflow as tf
 import trimesh
 import pygamer
+import logging
+logger = logging.getLogger(__name__)
 
 from Mesh.Charges_utils import import_charges_from_pqr, convert_pqr2xyzr
 from Mesh.Mesh_utils  import generate_msms_mesh,generate_nanoshaper_mesh
@@ -398,6 +400,7 @@ class Molecule_Mesh():
         for subset_name, subset_data in X_plot.items():
             file_name = os.path.join(path_files,f'{subset_name}.csv')
             np.savetxt(file_name, subset_data, delimiter=',', header='X,Y,Z', comments='')
+            logger.info(f'Subset {subset_name}: Vertices {len(subset_data)}')
 
 
 

@@ -20,9 +20,9 @@ simulation.domain_properties = {
 # Mesh properties
 simulation.mesh_properties = {
         'vol_max_interior': 0.04,
-        'vol_max_exterior': 0.1,
+        'vol_max_exterior': 0.4,
         'density_mol': 40,
-        'density_border': 4,
+        'density_border': 3,
         'dx_experimental': 2,
         'N_pq': 100,
         'G_sigma': 0.04,
@@ -51,23 +51,23 @@ simulation.network = 'xpinn'
 simulation.hyperparameters_in = {
         'input_shape': (None,3),
         'num_hidden_layers': 4,
-        'num_neurons_per_layer': 20,
+        'num_neurons_per_layer': 200,
         'output_dim': 1,
         'activation': 'tanh',
         'adaptative_activation': True,
         'architecture_Net': 'FCNN',
         'fourier_features': True,
-        'num_fourier_features': 12
+        'num_fourier_features': 256
         }
 simulation.hyperparameters_out = {
         'input_shape': (None,3),
         'num_hidden_layers': 4,
-        'num_neurons_per_layer': 20,
+        'num_neurons_per_layer': 200,
         'output_dim': 1,
         'activation': 'tanh',
         'adaptative_activation': True,
         'architecture_Net': 'FCNN',
-        'fourier_features': False
+        'fourier_features': True
         }
 
 # Optimizer properties
@@ -80,11 +80,11 @@ simulation.lr = tf.keras.optimizers.schedules.ExponentialDecay(
 simulation.lr_p = 0.001
 
 # Solve parameters
-simulation.N_iters = 2
+simulation.N_iters = 10
 
 simulation.precondition = False
 simulation.N_precond = 3
-simulation.iters_save_model = 6
+simulation.iters_save_model = 5000
 
 
 if __name__=='__main__':
