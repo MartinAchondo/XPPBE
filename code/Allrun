@@ -15,7 +15,7 @@ if [ "$1" = "Main" ]; then
         mkdir "$current_directory/results/Main"
         python "$current_directory/Main.py"
         cp "$current_directory/Main.py" "$current_directory/results/Main/Main.py"
-        cp "$current_directory/Post/Post_Template.ipynb" "$current_directory/results/Main/Post_Template.ipynb"
+        cp "$current_directory/Post/Post_Template.ipynb" "$current_directory/results/Main/Post.ipynb"
         echo "Ending Simulation $script_name"
     else
         echo "Main.py not found in current directory. Exiting."
@@ -47,7 +47,7 @@ elif [ "$1" = "Sims" ]; then
         mkdir "$current_directory/results/$base_name"
         python "$current_directory/$script_name"
         mv "$current_directory/$script_name" "$current_directory/results/$base_name/$script_name"
-        cp "$current_directory/Post/Post_Template.ipynb" "$current_directory/results/$base_name/Post_Template.ipynb"
+        cp "$current_directory/Post/Post_Template.ipynb" "$current_directory/results/$base_name/Post.ipynb"
         echo "Ending Simulation $sims_count : $script_name"
         echo ""
         echo "########"
