@@ -166,44 +166,53 @@ class Postprocessing():
         fig.write_html(os.path.join(self.directory,self.path_plots_meshes, 'collocation_points_plot_3d.html'))
 
 
-    def plot_surface_mesh_3D(self):
+    def plot_surface_mesh_3D(self, jupyter=False):
 
-        vertices = self.mesh.mol_verts
-        elements = self.mesh.mol_faces
+        if jupyter:
+            ctx = threevis.Context(width=640, height=480)
+            ext_surfmesh = self.mesh.int_tetmesh.extractSurface()
+            ext_surfmesh.correctNormals()
+            v_in, e_in, f_in = ext_surfmesh.to_ndarray()
+            ctx.draw_faces(v_in, f_in)
+            ctx.draw_edges(v_in, e_in)
+            ctx.display()
 
-        element_trace = go.Mesh3d(
-            x=vertices[:, 0],
-            y=vertices[:, 1],
-            z=vertices[:, 2],
-            i=elements[:, 0],
-            j=elements[:, 1],
-            k=elements[:, 2],
-            facecolor=['grey'] * len(elements), 
-            opacity=0.97
-        )
-        edge_x = []
-        edge_y = []
-        edge_z = []
+        else:
+            vertices = self.mesh.mol_verts
+            elements = self.mesh.mol_faces
 
-        for element in elements:
-            for i in range(3):
-                edge_x.extend([vertices[element[i % 3], 0], vertices[element[(i + 1) % 3], 0], None])
-                edge_y.extend([vertices[element[i % 3], 1], vertices[element[(i + 1) % 3], 1], None])
-                edge_z.extend([vertices[element[i % 3], 2], vertices[element[(i + 1) % 3], 2], None])
+            element_trace = go.Mesh3d(
+                x=vertices[:, 0],
+                y=vertices[:, 1],
+                z=vertices[:, 2],
+                i=elements[:, 0],
+                j=elements[:, 1],
+                k=elements[:, 2],
+                facecolor=['grey'] * len(elements), 
+                opacity=0.97
+            )
+            edge_x = []
+            edge_y = []
+            edge_z = []
 
-        edge_trace = go.Scatter3d(
-            x=edge_x,
-            y=edge_y,
-            z=edge_z,
-            mode='lines',
-            line=dict(color='blue', width=2),
-        )
+            for element in elements:
+                for i in range(3):
+                    edge_x.extend([vertices[element[i % 3], 0], vertices[element[(i + 1) % 3], 0], None])
+                    edge_y.extend([vertices[element[i % 3], 1], vertices[element[(i + 1) % 3], 1], None])
+                    edge_z.extend([vertices[element[i % 3], 2], vertices[element[(i + 1) % 3], 2], None])
 
-        fig = go.Figure(data=[element_trace,edge_trace])
-        fig.update_layout(scene=dict(aspectmode='data'))
+            edge_trace = go.Scatter3d(
+                x=edge_x,
+                y=edge_y,
+                z=edge_z,
+                mode='lines',
+                line=dict(color='blue', width=2),
+            )
 
-        fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surf_3D.html'))
+            fig = go.Figure(data=[element_trace,edge_trace])
+            fig.update_layout(scene=dict(aspectmode='data'))
 
+            fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surf_3D.html'))
 
     def plot_vol_mesh_3D(self, jupyter=False):
         toRemove = []
@@ -229,7 +238,6 @@ class Postprocessing():
         v_in, e_in, f_in = int_surfmesh.to_ndarray()
 
         if jupyter:
-            ctx = threevis.Context(width=640, height=480)
             rgb = np.ones((len(f_in), 3))
             for i, face in enumerate(int_surfmesh.faceIDs):
                 rgb[i,0] = 194
