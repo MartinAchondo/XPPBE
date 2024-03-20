@@ -1,4 +1,6 @@
 import tensorflow as tf
+import bempp.api
+import numpy as np
 
 from Model.PDE_Model import PBE
 
@@ -44,6 +46,25 @@ class PBE_Std(PBE):
             du_2 -= self.dG_n(*x,Nv)
         return du_1,du_2
 
+    def get_solvation_energy(self,model):
+
+        u_interface,_,_ = self.get_phi_interface(model)
+        u_interface = u_interface.flatten()
+        _,du_1,du_2 = self.get_dphi_interface(model)
+        du_1 = du_1.flatten()
+        du_2 = du_2.flatten()
+        du_1_interface = (du_1+du_2*self.PDE_out.epsilon/self.PDE_in.epsilon)/2
+
+        phi = bempp.api.GridFunction(self.space, coefficients=u_interface)
+        dphi = bempp.api.GridFunction(self.space, coefficients=du_1_interface)
+
+        phi_q = self.slp_q * dphi - self.dlp_q * phi
+        
+        G_solv = 0.5*np.sum(self.qs * phi_q).real
+        G_solv *= self.to_V*self.qe*self.Na*(10**-3/4.184)   # kcal/mol
+        
+        return G_solv
+
 
 class PBE_Reg_1(PBE):
 
@@ -84,6 +105,13 @@ class PBE_Reg_1(PBE):
             du_1 += self.dG_n(*x,Nv)
             du_2 += self.dG_n(*x,Nv)
         return du_1,du_2
+
+    def get_solvation_energy(self,model):
+        X = self.x_qs
+        phi_q = self.get_phi(X,'molecule',model,'react')
+        G_solv = 0.5*np.sum(self.qs * phi_q)
+        G_solv *= self.to_V*self.qe*self.Na*(10**-3/4.184)   # kcal/mol
+        return G_solv
 
 
 class PBE_Reg_2(PBE):
@@ -128,6 +156,13 @@ class PBE_Reg_2(PBE):
         elif value =='react':
             du_2 -= self.dG_n(*x,Nv)
         return du_1,du_2
+    
+    def get_solvation_energy(self,model):
+        X = self.x_qs
+        phi_q = self.get_phi(X,'molecule',model,'react')
+        G_solv = 0.5*np.sum(self.qs * phi_q)
+        G_solv *= self.to_V*self.qe*self.Na*(10**-3/4.184)   # kcal/mol
+        return G_solv
     
 
 # Residuals

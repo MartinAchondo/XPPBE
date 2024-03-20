@@ -21,12 +21,12 @@ def analytic(r):
     return y
 
 
-num_points1 = 6000
+num_points1 = 500
 x1 = np.random.uniform(-rI, rI, num_points1)
 y1 = np.random.uniform(-rI, rI, num_points1)
 z1 = np.random.uniform(-rI, rI, num_points1)
 
-num_points2 = 6000
+num_points2 = 500
 x2 = np.random.uniform(-R, R, num_points2)
 y2 = np.random.uniform(-R, R, num_points2)
 z2 = np.random.uniform(-R, R, num_points2)

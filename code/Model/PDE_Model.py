@@ -51,24 +51,6 @@ class PBE():
         du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
         return du_prom.numpy(),du_1.numpy(),du_2.numpy()
     
-    def get_solvation_energy(self,model):
-
-        u_interface,_,_ = self.get_phi_interface(model)
-        u_interface = u_interface.flatten()
-        _,du_1,du_2 = self.get_dphi_interface(model)
-        du_1 = du_1.flatten()
-        du_2 = du_2.flatten()
-        du_1_interface = (du_1+du_2*self.PDE_out.epsilon/self.PDE_in.epsilon)/2
-
-        phi = bempp.api.GridFunction(self.space, coefficients=u_interface)
-        dphi = bempp.api.GridFunction(self.space, coefficients=du_1_interface)
-
-        phi_q = self.slp_q * dphi - self.dlp_q * phi
-        
-        G_solv = 0.5*np.sum(self.qs * phi_q).real
-        G_solv *= self.to_V*self.qe*self.Na*(10**-3/4.184)   # kcal/mol
-        
-        return G_solv
     
     def get_phi_ens(self,model,X_mesh,X_q):
         
