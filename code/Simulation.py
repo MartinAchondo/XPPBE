@@ -5,6 +5,7 @@ import shutil
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+logging.getLogger('bempp').setLevel(logging.WARNING)
 
 from Mesh.Molecule_Mesh import Molecule_Mesh
 from NN.XPINN import XPINN

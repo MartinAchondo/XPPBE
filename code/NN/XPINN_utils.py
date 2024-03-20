@@ -1,11 +1,8 @@
 import os
 import copy
-import logging
 import json
 import pandas as pd
 import tensorflow as tf
-
-logger = logging.getLogger(__name__)
 
 class XPINN_utils():
 

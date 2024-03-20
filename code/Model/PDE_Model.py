@@ -2,8 +2,6 @@ import os
 import numpy as np
 import bempp.api
 import tensorflow as tf
-import logging
-logging.getLogger('bempp').setLevel(logging.WARNING)
 
 from Mesh.Charges_utils import get_charges_list
 

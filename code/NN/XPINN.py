@@ -2,7 +2,6 @@ import tensorflow as tf
 from time import time
 import logging
 from tqdm import tqdm as log_progress
-logger = logging.getLogger(__name__)
 
 from NN.XPINN_utils import XPINN_utils
 
@@ -148,6 +147,7 @@ class XPINN(XPINN_utils):
 
         self.main_loop(N, N_precond)
 
+        logger = logging.getLogger(__name__)
         logger.info(f' Iterations: {self.iter}')
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))

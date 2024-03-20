@@ -4,7 +4,6 @@ import tensorflow as tf
 import trimesh
 import pygamer
 import logging
-logger = logging.getLogger(__name__)
 
 from Mesh.Charges_utils import import_charges_from_pqr, convert_pqr2xyzr
 from Mesh.Mesh_utils  import generate_msms_mesh,generate_nanoshaper_mesh
@@ -396,6 +395,7 @@ class Molecule_Mesh():
     def save_data_plot(self,X_plot):
         path_files = os.path.join(self.result_path,'results',self.simulation_name,'mesh')
         os.makedirs(path_files, exist_ok=True)
+        logger = logging.getLogger(__name__)
 
         for subset_name, subset_data in X_plot.items():
             file_name = os.path.join(path_files,f'{subset_name}.csv')
