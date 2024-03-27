@@ -5,16 +5,8 @@ from scipy import special as sp
 
 class Solution_utils():
 
-    qe = 1.60217663e-19
-    eps0 = 8.8541878128e-12     
-    kb = 1.380649e-23              
-    Na = 6.02214076e23
-    ang_to_m = 1e-10
-    to_V = qe/(eps0 * ang_to_m)  
-
     def __init__(self):  
         pass    
-
 
     def G_Yukawa(self,x,y,z):
         sum = 0
@@ -78,10 +70,11 @@ class Solution_utils():
         return y
 
 
-    def Harmonic_sphers(self, x, R, flag, N=20):
+    def Harmonic_spheres(self, x, flag, N=20):
 
         q = self.qs
         xq = self.x_qs
+        R = self.mesh.R_mol
         a = R
         E_1 = self.epsilon_1
         E_2 = self.epsilon_2

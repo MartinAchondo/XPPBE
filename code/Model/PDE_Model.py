@@ -8,6 +8,13 @@ from Model.Solutions_utils import Solution_utils
 
 class PBE(Solution_utils):
 
+    qe = 1.60217663e-19
+    eps0 = 8.8541878128e-12     
+    kb = 1.380649e-23              
+    Na = 6.02214076e23
+    ang_to_m = 1e-10
+    to_V = qe/(eps0 * ang_to_m)  
+
     DTYPE = 'float32'
     pi = tf.constant(np.pi, dtype=DTYPE)
 
@@ -202,7 +209,6 @@ class PBE(Solution_utils):
         normalizer = (1/((2*self.pi)**(3.0/2)*self.sigma**3))
         sum *= normalizer
         return (-1/self.epsilon_1)*sum
-
 
     def aprox_exp(self,x):
         aprox = 1.0 + x + x**2/2.0 + x**3/6.0 + x**4/24.0

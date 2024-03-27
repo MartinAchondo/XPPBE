@@ -5,7 +5,7 @@ import tensorflow as tf
 simulation = Simulation(__file__)
 
 # Equation to solve
-simulation.equation = 'standard'
+simulation.equation = 'regularized_scheme_1'
 simulation.pbe_model = 'linear'
 
 # Domain properties
@@ -19,15 +19,15 @@ simulation.domain_properties = {
 
 # Mesh properties
 simulation.mesh_properties = {
-        'vol_max_interior': 0.04,
-        'vol_max_exterior': 0.4,
-        'density_mol': 40,
+        'vol_max_interior': 0.08,
+        'vol_max_exterior': 0.6,
+        'density_mol': 10,
         'density_border': 3,
         'dx_experimental': 2,
         'N_pq': 100,
         'G_sigma': 0.04,
         'mesh_generator': 'msms',
-        'dR_exterior': 8
+        'dR_exterior': 12
         }
 simulation.sample_method='random_sample'
 
@@ -51,7 +51,7 @@ simulation.network = 'xpinn'
 simulation.hyperparameters_in = {
         'input_shape': (None,3),
         'num_hidden_layers': 4,
-        'num_neurons_per_layer': 200,
+        'num_neurons_per_layer': 20,
         'output_dim': 1,
         'activation': 'tanh',
         'adaptative_activation': True,
@@ -62,7 +62,7 @@ simulation.hyperparameters_in = {
 simulation.hyperparameters_out = {
         'input_shape': (None,3),
         'num_hidden_layers': 4,
-        'num_neurons_per_layer': 200,
+        'num_neurons_per_layer': 20,
         'output_dim': 1,
         'activation': 'tanh',
         'adaptative_activation': True,
@@ -80,7 +80,7 @@ simulation.lr = tf.keras.optimizers.schedules.ExponentialDecay(
 simulation.lr_p = 0.001
 
 # Solve parameters
-simulation.N_iters = 10
+simulation.N_iters = 2
 
 simulation.precondition = False
 simulation.N_precond = 3

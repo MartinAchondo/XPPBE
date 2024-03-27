@@ -21,12 +21,12 @@ def analytic(r):
     return y
 
 
-num_points1 = 500
+num_points1 = 100
 x1 = np.random.uniform(-rI, rI, num_points1)
 y1 = np.random.uniform(-rI, rI, num_points1)
 z1 = np.random.uniform(-rI, rI, num_points1)
 
-num_points2 = 500
+num_points2 = 100
 x2 = np.random.uniform(-R, R, num_points2)
 y2 = np.random.uniform(-R, R, num_points2)
 z2 = np.random.uniform(-R, R, num_points2)
@@ -43,7 +43,7 @@ analytic_values = analytic(r)
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 
-with open(os.path.join(file_path,'data_precond.dat'), 'w') as file:
+with open(os.path.join(file_path,'data_known.dat'), 'w') as file:
     for i in range(num_points1+num_points2):
         condition = 1 if r[i] <= 1 else 2
         file.write(f"{condition} {x[i]} {y[i]} {z[i]} {analytic_values[i]}\n")
