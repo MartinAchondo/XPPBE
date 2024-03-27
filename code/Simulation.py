@@ -146,17 +146,17 @@ class Simulation():
             meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
             meshes_domain['Q1'] = {'domain': 'molecule', 'type':'Q1', 'fun':lambda x,y,z: self.PBE_model.source(x,y,z)}
             meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
+            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.G_Yukawa(x,y,z)}
                 
         elif self.equation == 'regularized_scheme_1':
             meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
             meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)-self.PBE_model.G(x,y,z)}
+            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.G_Yukawa(x,y,z)-self.PBE_model.G(x,y,z)}
 
         elif self.equation == 'regularized_scheme_2':
             meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
             meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.border_value(x,y,z)}
+            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda x,y,z: self.PBE_model.G_Yukawa(x,y,z)}
 
         meshes_domain['K1'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known.dat'}
         meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known.dat'}

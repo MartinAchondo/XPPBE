@@ -4,15 +4,9 @@ import bempp.api
 import tensorflow as tf
 
 from Mesh.Charges_utils import get_charges_list
+from Model.Solutions_utils import Solution_utils
 
-class PBE():
-
-    qe = 1.60217663e-19
-    eps0 = 8.8541878128e-12     
-    kb = 1.380649e-23              
-    Na = 6.02214076e23
-    ang_to_m = 1e-10
-    to_V = qe/(eps0 * ang_to_m)  
+class PBE(Solution_utils):
 
     DTYPE = 'float32'
     pi = tf.constant(np.pi, dtype=DTYPE)
@@ -81,7 +75,6 @@ class PBE():
 
         return phi_ens_L    
     
-    ####################################################################################################################################################
 
     # Losses
 
@@ -199,8 +192,6 @@ class PBE():
             
         return L
 
-    ####################################################################################################################################################
-
     def source(self,x,y,z):
         sum = 0
         for q_obj in self.q_list:
@@ -212,69 +203,6 @@ class PBE():
         sum *= normalizer
         return (-1/self.epsilon_1)*sum
 
-    def border_value(self,x,y,z):
-        sum = 0
-        for q_obj in self.q_list:
-            qk = q_obj.q
-            xk,yk,zk = q_obj.x_q
-            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
-            sum += qk*tf.exp(-self.kappa*r)/r
-        return (1/(4*self.pi*self.epsilon_2))*sum
-
-    def G(self,x,y,z):
-        sum = tf.constant(0, dtype=self.DTYPE)
-        for q_obj in self.q_list:
-            qk = q_obj.q
-            xk,yk,zk = q_obj.x_q
-            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
-            sum += qk/r
-        return (1/(self.epsilon_1*4*self.pi))*sum
-    
-    def dG_n(self,x,y,z,n):
-        dx = 0
-        dy = 0
-        dz = 0
-        for q_obj in self.q_list:
-            qk = q_obj.q
-            xk,yk,zk = q_obj.x_q
-            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
-            dg_dr = qk/(r**3) * (-1/(self.epsilon_1*4*self.pi)) * (1/2)
-            dx += dg_dr * 2*(x-xk)
-            dy += dg_dr * 2*(y-yk)
-            dz += dg_dr * 2*(z-zk)
-        dg_dn = n[:,0]*dx[:,0] + n[:,1]*dy[:,0] + n[:,2]*dz[:,0]
-        return tf.reshape(dg_dn, (-1,1))
-
-    def analytic_Born_Ion(self,r):
-        rI = self.mesh.R_mol
-        epsilon_1 = self.epsilon_1
-        epsilon_2 = self.epsilon_2
-        kappa = self.kappa
-        q = self.q_list[0].q
-
-        f_IN = lambda r: (q/(4*self.pi)) * ( 1/(epsilon_1*r) - 1/(epsilon_1*rI) + 1/(epsilon_2*(1+kappa*rI)*rI) )
-        f_OUT = lambda r: (q/(4*self.pi)) * (np.exp(-kappa*(r-rI))/(epsilon_2*(1+kappa*rI)*r))
-
-        y = np.piecewise(r, [r<=rI, r>rI], [f_IN, f_OUT])
-
-        return y
-
-    def analytic_Born_Ion_du(self,r):
-        rI = self.mesh.R_mol
-        epsilon_1 = self.epsilon_1
-        epsilon_2 = self.epsilon_2
-        kappa = self.kappa
-        q = self.q_list[0].q
-
-        f_IN = lambda r: (q/(4*self.pi)) * ( -1/(epsilon_1*r**2) )
-        f_OUT = lambda r: (q/(4*self.pi)) * (np.exp(-kappa*(r-rI))/(epsilon_2*(1+kappa*rI))) * (-kappa/r - 1/r**2)
-
-        y = np.piecewise(r, [r<=rI, r>rI], [f_IN, f_OUT])
-
-        return y
-    
-
-    ####################################################################################################################################################
 
     def aprox_exp(self,x):
         aprox = 1.0 + x + x**2/2.0 + x**3/6.0 + x**4/24.0
@@ -321,8 +249,7 @@ class PBE():
             dir_deriv += n_v[j]*gradient[j]
         return dir_deriv
     
-
-    ####################################################################################################################################################
+    # utils
 
     def get_charges(self):
         path_files = os.path.join(self.main_path,'Molecules')

@@ -166,26 +166,7 @@ class PBE_Reg_2(PBE):
     
 
 # Residuals
-
-class Laplace():
-
-    def __init__(self, PBE, inputs,field):
-        
-        self.PBE = PBE
-        self.field = field
-        for key, value in inputs.items():
-            setattr(self, key, value)
-        self.epsilon = self.epsilon_1
-        super().__init__()
-
-    def residual_loss(self,mesh,model,X,SU,flag):
-        x,y,z = X
-        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field)     
-        Loss_r = tf.reduce_mean(tf.square(r))
-        return Loss_r
-
-
-class Poisson():
+class Equations_utils():
 
     def __init__(self, PBE, inputs, field):
         
@@ -193,52 +174,60 @@ class Poisson():
         self.field = field
         for key, value in inputs.items():
             setattr(self, key, value)
-        self.epsilon = self.epsilon_1
-        super().__init__()
 
     def residual_loss(self,mesh,model,X,SU,flag):
+        r = self.get_r(mesh,model,X,SU,flag)     
+        Loss_r = tf.reduce_mean(tf.square(r))
+        return Loss_r
+
+
+class Laplace(Equations_utils):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args,**kwargs)
+        self.epsilon = self.epsilon_1
+
+    def get_r(self,mesh,model,X,SU,flag):
+        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field)     
+        return r
+
+
+class Poisson(Equations_utils):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args,**kwargs)
+        self.epsilon = self.epsilon_1
+
+    def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
         r = self.PBE.laplacian(mesh,model,X,flag, value=self.field) - SU       
-        Loss_r = tf.reduce_mean(tf.square(r))
-        return Loss_r
+        return r
 
 
-class Helmholtz():
+class Helmholtz(Equations_utils):
 
-    def __init__(self, PBE, inputs, field):
-
-        self.PBE = PBE
-        self.field = field
-        for key, value in inputs.items():
-            setattr(self, key, value)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args,**kwargs)
         self.epsilon = self.epsilon_2
-        super().__init__()
 
-    def residual_loss(self,mesh,model,X,SU,flag):
+    def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         u = self.PBE.get_phi(R,flag,model,value=self.field)
         r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*u      
-        Loss_r = tf.reduce_mean(tf.square(r))
-        return Loss_r  
+        return r  
 
 
-class Non_Linear():
+class Non_Linear(Equations_utils):
 
-    def __init__(self, PBE, inputs, field):
-
-        self.PBE = PBE
-        self.field = field
-        for key, value in inputs.items():
-            setattr(self, key, value)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args,**kwargs)
         self.epsilon = self.epsilon_2
-        super().__init__()
 
-    def residual_loss(self,mesh,model,X,SU,flag):
+    def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         u = self.PBE.get_phi(R,flag,model,value=self.field)
         r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*tf.math.sinh(u)     
-        Loss_r = tf.reduce_mean(tf.square(r))
-        return Loss_r
+        return r
     
