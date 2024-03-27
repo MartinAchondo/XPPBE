@@ -200,7 +200,8 @@ class Poisson(Equations_utils):
 
     def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
-        r = self.PBE.laplacian(mesh,model,X,flag, value=self.field) - SU       
+        source = self.source(x,y,z) if SU==None else SU
+        r = self.PBE.laplacian(mesh,model,X,flag, value=self.field) - source   
         return r
 
 

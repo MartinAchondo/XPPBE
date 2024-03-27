@@ -5,7 +5,7 @@ import tensorflow as tf
 simulation = Simulation(__file__)
 
 # Equation to solve
-simulation.equation = 'regularized_scheme_1'
+simulation.equation = 'standard'
 simulation.pbe_model = 'linear'
 
 # Domain properties

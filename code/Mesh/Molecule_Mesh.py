@@ -248,7 +248,6 @@ class Molecule_Mesh():
                 X,U = self.get_XU(X,bl)
                 self.domain_mesh_data[type_b] = ((X,U),flag)
                 self.domain_mesh_names.add(type_b)
-                #del self.prior_data
 
             elif type_b in ('I'):
                 N = self.mol_normal

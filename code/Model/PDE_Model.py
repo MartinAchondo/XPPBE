@@ -156,6 +156,18 @@ class PBE(Solution_utils):
             loss += tf.reduce_mean(tf.square(du_1*self.PDE_in.epsilon - du_2*self.PDE_out.epsilon))
             
         return loss
+
+    def get_loss_I_residual(self,model,XI_data):
+        
+        loss = 0
+        ((XI,N_v),flag) = XI_data
+        X = self.mesh.get_X(XI)
+
+        r1 = self.PDE_in.get_r(self.mesh,model,X,None,'molecule')
+        r2 = self.PDE_out.get_r(self.mesh,model,X,None,'solvent')
+        loss += tf.reduce_mean(tf.square(r1-r2)) 
+            
+        return loss
     
     def get_loss_experimental(self,model,X_exp):             
 
@@ -213,7 +225,6 @@ class PBE(Solution_utils):
     def aprox_exp(self,x):
         aprox = 1.0 + x + x**2/2.0 + x**3/6.0 + x**4/24.0
         return aprox
-
 
     # Differential operators
 

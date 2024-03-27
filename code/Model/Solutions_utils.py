@@ -81,16 +81,15 @@ class Solution_utils():
         E_0 = self.eps0
         kappa = self.kappa
 
-        PHI_solute = np.zeros(len(x))
-        PHI_solvent = np.zeros(len(x))
+        PHI = np.zeros(len(x))
 
         for K in range(len(x)):
             rho = np.sqrt(np.sum(x[K,:] ** 2))
             zenit = np.arccos(x[K, 2] / rho)
             azim = np.arctan2(x[K, 1], x[K, 0])
 
-            phi_solute = 0.0 + 0.0 * 1j
-            phi_solvent = 0.0 + 0.0 * 1j
+            phi = 0.0 + 0.0 * 1j
+
             for n in range(N):
                 for m in range(-n, n + 1):
                     P1 = sp.lpmv(np.abs(m), n, np.cos(zenit))
@@ -152,16 +151,14 @@ class Solution_utils():
 
                     Anm = (Enm/(E_1*E_0)+a**(2*n+1)*Bnm)/(np.exp(-kappa*a)*self.get_K(kappa*a,n))
                 
-                    phi_solute += Bnm * rho**n * sp.sph_harm(m, n, azim, zenit)
-                    phi_solvent += Anm * rho**(-n-1)* np.exp(-kappa*rho) * self.get_K(kappa*rho,n) * sp.sph_harm(m, n, azim, zenit)
+                    if flag=='molecule':
+                        phi += Bnm * rho**n * sp.sph_harm(m, n, azim, zenit)
+                    if flag=='solvent':
+                        phi += Anm * rho**(-n-1)* np.exp(-kappa*rho) * self.get_K(kappa*rho,n) * sp.sph_harm(m, n, azim, zenit)
 
-            PHI_solute[K] = np.real(phi_solute) / (4 * self.pi) * E_0
-            PHI_solvent[K] = np.real(phi_solvent) / (4 * self.pi) * E_0 
+            PHI[K] = np.real(phi) / (4 * self.pi) * E_0
         
-        if flag=='molecule':
-            return PHI_solute
-        elif flag=='solvent':
-            return PHI_solvent
+        return PHI
 
 
     def get_K(self, x, n):
