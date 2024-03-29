@@ -242,20 +242,19 @@ class Molecule_Mesh():
 
             type_b = bl['type']
             flag = bl['domain'] 
-            X = self.prior_data[type_b] if type_b in self.prior_data else None
 
-            if type_b[0] in ('R','D','K','N','P','Q'):  
+            if type_b[0] in ('R','D','K','N','P','Q'): 
+                X = self.prior_data[type_b] if type_b in self.prior_data else None 
                 X,U = self.get_XU(X,bl)
                 self.domain_mesh_data[type_b] = ((X,U),flag)
                 self.domain_mesh_names.add(type_b)
 
-            elif type_b in ('I'):
+            elif type_b in ('Iu','Id','Ir'):
                 N = self.mol_normal
                 X = tf.constant(self.mol_verts, dtype=self.DTYPE)
                 X_I = (X, N)
-                self.domain_mesh_names.add('Iu')
-                self.domain_mesh_names.add('Id')
-                self.domain_mesh_data[type_b] = (X_I,flag)
+                self.domain_mesh_names.add(type_b)
+                self.domain_mesh_data['I'] = (X_I,flag)
             
             elif type_b in ('G'):
                 self.domain_mesh_names.add(type_b)
@@ -325,7 +324,7 @@ class Molecule_Mesh():
                     self.save_data_plot(X_plot)
 
 
-    def get_XU(self,X,bl):  #QUE FLAG VENGA AQUI !!!!
+    def get_XU(self,X,bl):  
 
         value = bl['value'] if 'value' in bl else None
         fun = bl['fun'] if 'fun' in bl else None
@@ -352,7 +351,10 @@ class Molecule_Mesh():
         return s
 
     def read_file_data(self,file,domain):
-        name = 1 if domain=='molecule' else 2
+        if domain=='molecule':
+            name = 1
+        elif domain=='solvent':
+            name = 2
         x_b, y_b, z_b, phi_b = list(), list(), list(), list()
         path_files = os.path.join(self.main_path,'Molecules')
         with open(os.path.join(path_files,self.molecule,file),'r') as f:

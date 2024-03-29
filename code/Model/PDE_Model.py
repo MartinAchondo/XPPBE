@@ -122,8 +122,12 @@ class PBE(Solution_utils):
             L['K2'] += loss_k 
 
         if 'I' in X_batches:
-            L['Iu'] += self.get_loss_I(model,X_batches['I'], [True,False])
-            L['Id'] += self.get_loss_I(model,X_batches['I'], [False,True])
+            if 'Iu' in self.mesh.domain_names:
+                L['Iu'] += self.get_loss_I(model,X_batches['I'], 'Iu')
+            if 'Id' in self.mesh.domain_names:
+                L['Id'] += self.get_loss_I(model,X_batches['I'], 'Id')
+            if 'Ir' in self.mesh.domain_names:
+                L['Ir'] += self.get_loss_I(model,X_batches['I'], 'Ir')    
 
         if 'E2' in X_batches and not validation:
             L['E2'] += self.get_loss_experimental(model,X_batches['E2'])
@@ -141,34 +145,27 @@ class PBE(Solution_utils):
         Loss_d += loss
         return Loss_d
 
-    def get_loss_I(self,model,XI_data,loss_type=[True,True]):
+    def get_loss_I(self,model,XI_data,loss_type='Iu'):
         
         loss = 0
         ((XI,N_v),flag) = XI_data
         X = self.mesh.get_X(XI)
 
-        if loss_type[0]:
+        if loss_type=='Iu':
             u = self.get_phi(XI,flag,model)
             loss += tf.reduce_mean(tf.square(u[:,0]-u[:,1])) 
 
-        if loss_type[1]:
+        elif loss_type=='Id':
             du_1,du_2 = self.get_dphi(XI,N_v,flag,model,value='phi')
             loss += tf.reduce_mean(tf.square(du_1*self.PDE_in.epsilon - du_2*self.PDE_out.epsilon))
-            
-        return loss
-
-    def get_loss_I_residual(self,model,XI_data):
         
-        loss = 0
-        ((XI,N_v),flag) = XI_data
-        X = self.mesh.get_X(XI)
-
-        r1 = self.PDE_in.get_r(self.mesh,model,X,None,'molecule')
-        r2 = self.PDE_out.get_r(self.mesh,model,X,None,'solvent')
-        loss += tf.reduce_mean(tf.square(r1-r2)) 
+        elif loss_type=='Ir':
+            r1 = self.PDE_in.get_r(self.mesh,model,X,None,'molecule')
+            r2 = self.PDE_out.get_r(self.mesh,model,X,None,'solvent')
+            loss += tf.reduce_mean(tf.square(r1-r2)) 
             
         return loss
-    
+
     def get_loss_experimental(self,model,X_exp):             
 
         loss = tf.constant(0.0, dtype=self.DTYPE)
@@ -293,7 +290,7 @@ class PBE(Solution_utils):
     
     @classmethod
     def create_L(cls):
-        cls.names = ['R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','E2','P1','P2']
+        cls.names = ['R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','Ir','E2','P1','P2']
         L = dict()
         for t in cls.names:
             L[t] = tf.constant(0.0, dtype=cls.DTYPE)
