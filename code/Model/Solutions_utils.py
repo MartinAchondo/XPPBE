@@ -75,10 +75,8 @@ class Solution_utils():
         q = self.qs
         xq = self.x_qs
         R = self.mesh.R_mol
-        a = R
         E_1 = self.epsilon_1
         E_2 = self.epsilon_2
-        E_0 = self.eps0
         kappa = self.kappa
 
         PHI = np.zeros(len(x))
@@ -92,71 +90,30 @@ class Solution_utils():
 
             for n in range(N):
                 for m in range(-n, n + 1):
-                    P1 = sp.lpmv(np.abs(m), n, np.cos(zenit))
 
                     Enm = 0.0
                     for k in range(len(q)):
                         rho_k = np.sqrt(np.sum(xq[k,:] ** 2))
                         zenit_k = np.arccos(xq[k, 2] / rho_k)
                         azim_k = np.arctan2(xq[k, 1], xq[k, 0])
-                        P2 = sp.lpmv(np.abs(m), n, np.cos(zenit_k))
 
                         Enm += (
                             q[k]
                             * rho_k**n
-                            * sp.factorial(n - np.abs(m))
-                            / sp.factorial(n + np.abs(m))
-                            * P2
-                            * np.exp(-1j * m * azim_k)
-                        )
-                    C_harm = np.sqrt(((2*n+1)*sp.factorial(n-m))/(4*self.pi*sp.factorial(n+m)))
-                    Enm /= C_harm
-
-                    C2 = (
-                        (kappa * a) ** 2
-                        * self.get_K(kappa * a, n - 1)
-                        / (
-                            self.get_K(kappa * a, n + 1)
-                            + n
-                            * (E_2 - E_1)
-                            / ((n + 1) * E_2 + n * E_1)
-                            * (R / a) ** (2 * n + 1)
-                            * (kappa * a) ** 2
-                            * self.get_K(kappa * a, n - 1)
-                            / ((2 * n - 1) * (2 * n + 1))
-                        )
-                    )
-                    C1 = (
-                        Enm
-                        / (E_2 * E_0 * a ** (2 * n + 1))
-                        * (2 * n + 1)
-                        / (2 * n - 1)
-                        * (E_2 / ((n + 1) * E_2 + n * E_1)) ** 2
-                    )
-
-                    if n == 0 and m == 0:
-                        Bnm = Enm / (E_0 * R) * (1 / E_2 - 1 / E_1) - Enm * kappa * a / (
-                            E_0 * E_2 * a * (1 + kappa * a)
-                        )
-                    else:
-                        Bnm = (
-                            1.0
-                            / (E_1 * E_0 * R ** (2 * n + 1))
-                            * (E_1 - E_2)
-                            * (n + 1)
-                            / (E_1 * n + E_2 * (n + 1))
-                            * Enm
-                            - C1 * C2
+                            *4*np.pi/(2*n+1)
+                            * sp.sph_harm(m, n, -azim_k, zenit_k)
                         )
 
-                    Anm = (Enm/(E_1*E_0)+a**(2*n+1)*Bnm)/(np.exp(-kappa*a)*self.get_K(kappa*a,n))
-                
+                    Anm = Enm * (1/(4*np.pi)) * ((2*n+1)) / (np.exp(-kappa*R)* ((E_1-E_2)*n*self.get_K(kappa*R,n)+E_2*(2*n+1)*self.get_K(kappa*R,n+1)))
+
+                    Bnm = 1/(R**(2*n+1))*(np.exp(-kappa*R)*self.get_K(kappa*R,n)*Anm - 1/(4*np.pi*E_1)*Enm)
+                    
                     if flag=='molecule':
                         phi += Bnm * rho**n * sp.sph_harm(m, n, azim, zenit)
                     if flag=='solvent':
                         phi += Anm * rho**(-n-1)* np.exp(-kappa*rho) * self.get_K(kappa*rho,n) * sp.sph_harm(m, n, azim, zenit)
 
-            PHI[K] = np.real(phi) / (4 * self.pi) * E_0
+            PHI[K] = np.real(phi)
         
         return PHI
 
