@@ -165,7 +165,9 @@ class Simulation():
         meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': 'data_experimental.dat'}
 
         if self.network=='xpinn':
-                meshes_domain['I'] = {'domain':'interface', 'type':'I'}
+                meshes_domain['Iu'] = {'domain':'interface', 'type':'Iu'}
+                meshes_domain['Id'] = {'domain':'interface', 'type':'Id'}
+                meshes_domain['Ir'] = {'domain':'interface', 'type':'Ir'}
         meshes_domain['G'] = {'domain':'interface', 'type':'G'}
 
         self.meshes_domain = dict()

@@ -204,12 +204,13 @@ class XPINN_utils():
 
     def load_NeuralNet(self,NN_class,dir_load,iter_path):   
 
-        with open(os.path.join(dir_load,'plots_model','hyperparameters.json'), "r") as json_file:
+        path = os.path.join(dir_load,'iterations',iter_path)
+
+        with open(os.path.join(path,'hyperparameters.json'), "r") as json_file:
             hyper = json.load(json_file)
         hyperparameters = [hyper['Molecule_NN'],hyper['Solvent_NN']]
         self.create_NeuralNet(NN_class, hyperparameters)
 
-        path = os.path.join(dir_load,'iterations',iter_path)
         self.model.load_weights(os.path.join(path,'weights'))
         
         path_load = os.path.join(path,'w_hist.csv')
@@ -264,4 +265,8 @@ class XPINN_utils():
         df_2 = pd.DataFrame(self.G_solv_hist.items())
         df_2.columns = ['iter','G_solv']
         path_save = os.path.join(dir_save,'G_solv.csv')
-        df_2.to_csv(path_save)       
+        df_2.to_csv(path_save)  
+
+        path_save = os.path.join(dir_save,'hyperparameters.json')
+        with open(path_save, "w") as json_file:
+            json.dump({'Molecule_NN': self.hyperparameters[0], 'Solvent_NN': self.hyperparameters[1]}, json_file, indent=4)     

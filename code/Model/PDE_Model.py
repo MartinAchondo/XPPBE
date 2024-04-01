@@ -122,11 +122,11 @@ class PBE(Solution_utils):
             L['K2'] += loss_k 
 
         if 'I' in X_batches:
-            if 'Iu' in self.mesh.domain_names:
+            if 'Iu' in self.mesh.domain_mesh_names:
                 L['Iu'] += self.get_loss_I(model,X_batches['I'], 'Iu')
-            if 'Id' in self.mesh.domain_names:
+            if 'Id' in self.mesh.domain_mesh_names:
                 L['Id'] += self.get_loss_I(model,X_batches['I'], 'Id')
-            if 'Ir' in self.mesh.domain_names:
+            if 'Ir' in self.mesh.domain_mesh_names:
                 L['Ir'] += self.get_loss_I(model,X_batches['I'], 'Ir')    
 
         if 'E2' in X_batches and not validation:

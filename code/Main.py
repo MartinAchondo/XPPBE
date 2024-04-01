@@ -5,7 +5,7 @@ import tensorflow as tf
 simulation = Simulation(__file__)
 
 # Equation to solve
-simulation.equation = 'standard'
+simulation.equation = 'regularized_scheme_2'
 simulation.pbe_model = 'linear'
 
 # Domain properties
@@ -35,7 +35,7 @@ simulation.sample_method='random_sample'
 simulation.G_solve_iter=1000
 
 # Losses to add, and initial weights
-simulation.losses = ['R1','R2','D2','Iu','Id','K1','K2']
+simulation.losses = ['R1','R2','D2','Iu','Id','Ir','K2']
 simulation.weights = {
         'E2': 10**-10,
         }
@@ -51,7 +51,7 @@ simulation.network = 'xpinn'
 simulation.hyperparameters_in = {
         'input_shape': (None,3),
         'num_hidden_layers': 4,
-        'num_neurons_per_layer': 20,
+        'num_neurons_per_layer': 150,
         'output_dim': 1,
         'activation': 'tanh',
         'adaptative_activation': True,
@@ -62,7 +62,7 @@ simulation.hyperparameters_in = {
 simulation.hyperparameters_out = {
         'input_shape': (None,3),
         'num_hidden_layers': 4,
-        'num_neurons_per_layer': 20,
+        'num_neurons_per_layer': 150,
         'output_dim': 1,
         'activation': 'tanh',
         'adaptative_activation': True,
@@ -80,7 +80,7 @@ simulation.lr = tf.keras.optimizers.schedules.ExponentialDecay(
 simulation.lr_p = 0.001
 
 # Solve parameters
-simulation.N_iters = 2
+simulation.N_iters = 10
 
 simulation.precondition = False
 simulation.N_precond = 3
