@@ -97,17 +97,17 @@ All the results after executing `bash Allrun` will be added to the `code/results
             'vol_max_exterior': 0.1,
             'density_mol': 40,
             'density_border': 4,
-            'dx_experimental': 2,
+            'dx_experimental': 1,
             'N_pq': 100,
             'G_sigma': 0.04,
             'mesh_generator': 'msms',
-            'dR_exterior': 8
+            'dR_exterior': 6
             }
     ```
 
 4. Define the different loss terms (solute domain, solvent domain and combination of boths)
     ```py
-    simulation.losses = ['R1','R2','D2','I','K1','K2']
+    simulation.losses = ['R1','R2','D2','Iu','Id','K2']
     ```
 5. Define the architectures:
     ```py
