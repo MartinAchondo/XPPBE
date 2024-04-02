@@ -123,7 +123,7 @@ class Simulation():
 
         self.Mol_mesh = Molecule_Mesh(self.domain_properties['molecule'], 
                         N_points=self.mesh_properties, 
-                        plot='batch',
+                        save_points=True,
                         path=self.main_path,
                         simulation=self.simulation_name
                         )

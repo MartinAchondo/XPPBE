@@ -141,8 +141,13 @@ class Postprocessing():
             'Interface': 'purple',
             'Outer Domain': 'lightblue',
             'Outer Border': 'orange',
+            'Inner Domain Sample': 'lightgreen',
+            'Interface Sample': 'purple',
+            'Outer Domain Sample': 'lightblue',
+            'Outer Border Sample': 'orange',
             'Experimental': 'cyan',
-            'test': 'red'
+            'test': 'red',
+
         }
 
         subsets_directory = os.path.join(self.directory,'mesh')
@@ -288,7 +293,7 @@ class Postprocessing():
                 i=f_ex[:, 0],
                 j=f_ex[:, 1],
                 k=f_ex[:, 2],
-                facecolor=['blue'] * len(e_ex), 
+                facecolor=['lightblue'] * len(e_ex), 
                 opacity=0.98,
                 name='faces_ex'
             )

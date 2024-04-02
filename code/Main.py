@@ -10,7 +10,7 @@ simulation.pbe_model = 'linear'
 
 # Domain properties
 simulation.domain_properties = {
-        'molecule': 'born_ion',
+        'molecule': 'arg',
         'epsilon_1':  1,
         'epsilon_2': 80,
         'kappa': 0.125,
@@ -32,7 +32,7 @@ simulation.mesh_properties = {
 simulation.sample_method='random_sample'
 
 # Frecuency of solvation energy calculation
-simulation.G_solve_iter=1000
+simulation.G_solve_iter=6
 
 # Losses to add, and initial weights
 simulation.losses = ['R1','R2','D2','Iu','Id','Ir','K2']

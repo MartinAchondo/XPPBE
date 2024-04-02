@@ -75,13 +75,13 @@ class Molecule_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, N_points, simulation='Main', path='', plot=False, result_path=''):
+    def __init__(self, molecule, N_points, simulation='Main', path='', save_points=False, result_path=''):
 
         for key, value in N_points.items():
             setattr(self, key, value)
 
         self.molecule = molecule
-        self.plot = plot
+        self.save_points = save_points
         self.main_path = path
         self.simulation_name = simulation
         self.result_path = self.main_path if result_path=='' else result_path
@@ -133,6 +133,7 @@ class Molecule_Mesh():
         self.mol_areas = mol_areas.reshape(-1,1)
         r = np.sqrt((self.mol_verts[:,0]-self.centroid[0])**2 + (self.mol_verts[:,1]-self.centroid[1])**2 + (self.mol_verts[:,2]-self.centroid[2])**2)
         self.R_mol = np.max(r)
+        self.R_max_dist = np.max(np.sqrt((self.mol_verts[:,0])**2 + (self.mol_verts[:,1])**2 + (self.mol_verts[:,2])**2))
         element_vertices = self.mol_verts[self.mol_faces]
         self.mol_faces_centroid = np.mean(element_vertices, axis=1).astype(np.float32)
     
@@ -144,7 +145,7 @@ class Molecule_Mesh():
         self.region_meshes['I'].areas = self.mol_areas
 
     def create_sphere_mesh(self):
-        r = self.R_mol + self.dR_exterior
+        r = self.R_max_dist + self.dR_exterior
         self.sphere_mesh = trimesh.creation.icosphere(radius=r, subdivisions=self.density_border)
         self.sphere_mesh.export(os.path.join(self.path_files,'mesh_sphere'+f'_d{self.density_border}'+'.off'),file_type='off')
         self.region_meshes['D2'] = Region_Mesh('trimesh',self.sphere_mesh)
@@ -193,7 +194,7 @@ class Molecule_Mesh():
 
     def create_mesh_obj(self):
 
-        self.R_exterior =  self.R_mol+self.dR_exterior
+        self.R_exterior =  self.R_max_dist+self.dR_exterior
 
         mol_min, mol_max = np.min(self.mol_verts, axis=0), np.max(self.mol_verts, axis=0)
         self.scale_1 = [mol_min.tolist(), mol_max.tolist()]
@@ -216,23 +217,18 @@ class Molecule_Mesh():
 
         #############################################################################
 
-        if self.plot == 'batch':
+        if self.save_points:
             X_plot = dict()
             X_plot['Inner Domain'] = self.region_meshes['R1'].vertices
             X_plot['Charges'] = self.prior_data['Q1'].numpy()
             X_plot['Interface'] = self.region_meshes['I'].vertices
             X_plot['Outer Domain'] = self.region_meshes['R2'].vertices
             X_plot['Outer Border'] = self.region_meshes['D2'].vertices
+            X_plot['Inner Domain Sample'] = self.region_meshes['R1'].get_dataset().numpy()
+            X_plot['Interface Sample'] = self.region_meshes['I'].get_dataset().numpy()
+            X_plot['Outer Domain Sample'] = self.region_meshes['R2'].get_dataset().numpy()
+            X_plot['Outer Border Sample'] = self.region_meshes['D2'].get_dataset().numpy()
             self.save_data_plot(X_plot)
-        elif self.plot == 'sample':
-            X_plot = dict()
-            X_plot['Inner Domain'] = self.region_meshes['R1'].get_dataset().numpy()
-            X_plot['Charges'] = self.region_meshes['Q1'].get_dataset().numpy()
-            X_plot['Interface'] = self.region_meshes['I'].get_dataset().numpy()
-            X_plot['Outer Domain'] = self.region_meshes['R2'].get_dataset().numpy()
-            X_plot['Outer Border'] = self.region_meshes['D2'].get_dataset().numpy()
-            self.save_data_plot(X_plot)
-    
 
     def adapt_meshes_domain(self,data,q_list):
 
@@ -318,7 +314,7 @@ class Molecule_Mesh():
                 self.domain_mesh_names.add(type_b)
                 self.domain_mesh_data[type_b] = (X_exp,flag)
 
-                if self.plot:
+                if self.save_points:
                     X_plot = dict()
                     X_plot['Experimental'] = explode_points[np.linalg.norm(explode_points-self.centroid, axis=1) <= self.R_exterior]
                     self.save_data_plot(X_plot)
@@ -401,8 +397,8 @@ class Molecule_Mesh():
         for subset_name, subset_data in X_plot.items():
             file_name = os.path.join(path_files,f'{subset_name}.csv')
             np.savetxt(file_name, subset_data, delimiter=',', header='X,Y,Z', comments='')
-            logger.info(f'Subset {subset_name}: Vertices {len(subset_data)}')
-
+            data_ind = 'Elements' if 'Sample' in subset_name else 'Vertices' 
+            logger.info(f'Subset {subset_name}: {data_ind} {len(subset_data)}')
 
 
 if __name__=='__main__':
