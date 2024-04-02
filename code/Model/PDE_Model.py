@@ -14,6 +14,7 @@ class PBE(Solution_utils):
     Na = 6.02214076e23
     ang_to_m = 1e-10
     to_V = qe/(eps0 * ang_to_m)  
+    cal2j = 4.184
 
     DTYPE = 'float32'
     pi = tf.constant(np.pi, dtype=DTYPE)

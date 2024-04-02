@@ -61,7 +61,7 @@ class PBE_Std(PBE):
         phi_q = self.slp_q * dphi - self.dlp_q * phi
         
         G_solv = 0.5*np.sum(self.qs * phi_q).real
-        G_solv *= self.to_V*self.qe*self.Na*(10**-3/4.184)   # kcal/mol
+        G_solv *= self.to_V*self.qe*self.Na*(10**-3/self.cal2j)   
         
         return G_solv
 
@@ -110,7 +110,7 @@ class PBE_Reg_1(PBE):
         X = self.x_qs
         phi_q = self.get_phi(X,'molecule',model,'react')
         G_solv = 0.5*np.sum(self.qs * phi_q)
-        G_solv *= self.to_V*self.qe*self.Na*(10**-3/4.184)   # kcal/mol
+        G_solv *= self.to_V*self.qe*self.Na*(10**-3/self.cal2j)   
         return G_solv
 
 
@@ -161,7 +161,7 @@ class PBE_Reg_2(PBE):
         X = self.x_qs
         phi_q = self.get_phi(X,'molecule',model,'react')
         G_solv = 0.5*np.sum(self.qs * phi_q)
-        G_solv *= self.to_V*self.qe*self.Na*(10**-3/4.184)   # kcal/mol
+        G_solv *= self.to_V*self.qe*self.Na*(10**-3/self.cal2j)   
         return G_solv
     
 
