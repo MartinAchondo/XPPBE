@@ -49,6 +49,7 @@ code/pbj/
 code/pbj/*/
 .pbj/
 tutorials/results/
+code/Molecules/mesh_files/
 
 # Files related to notes
 /.notes
