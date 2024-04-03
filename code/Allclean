@@ -1,9 +1,13 @@
 #!/bin/sh
 
-filepath="results"
-
-if [ -d "${filepath}" ]; then
-    rm -r "${filepath}"
+filepath_results="results"
+if [ -d "${filepath_results}" ]; then
+    rm -r "${filepath_results}"
 fi
+mkdir "${filepath_results}"
 
-mkdir "${filepath}"
+filepath_temp_meshes="Molecules/Temp"
+if [ -d "${filepath_temp_meshes}" ]; then
+    rm -r "${filepath_temp_meshes}"
+fi
+mkdir "${filepath_temp_meshes}"

@@ -19,15 +19,15 @@ simulation.domain_properties = {
 
 # Mesh properties
 simulation.mesh_properties = {
-        'vol_max_interior': 0.08,
-        'vol_max_exterior': 0.6,
-        'density_mol': 10,
+        'vol_max_interior': 1.1,
+        'vol_max_exterior': 2.5,
+        'density_mol': 1.5,
         'density_border': 3,
         'dx_experimental': 2,
         'N_pq': 100,
         'G_sigma': 0.04,
         'mesh_generator': 'nanoshaper',
-        'dR_exterior': 8
+        'dR_exterior': 6
         }
 simulation.sample_method='random_sample'
 

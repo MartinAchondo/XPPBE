@@ -86,7 +86,7 @@ class Molecule_Mesh():
         self.simulation_name = simulation
         self.result_path = self.main_path if result_path=='' else result_path
 
-        self.path_files = os.path.join(self.main_path,'Molecules','Saved_meshes','Temp')
+        self.path_files = os.path.join(self.main_path,'Molecules','Temp')
         self.path_pqr = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.pqr')
         self.path_xyzr = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.xyzr')
         
@@ -121,9 +121,16 @@ class Molecule_Mesh():
         with open(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.vert'),'r') as vert_f:
             vert = vert_f.read()
 
-        self.mol_faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
-        self.mol_verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(np.float32)
+        mol_faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
+        mol_verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(np.float32)
         self.mol_normal = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, 3:6].astype(np.float32)
+
+        self.mol_mesh = trimesh.Trimesh(vertices=mol_verts, faces=mol_faces)
+        self.mol_mesh.export(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'), file_type='off')
+
+        self.mol_faces = self.mol_mesh.faces
+        self.mol_verts = self.mol_mesh.vertices
+
         self.centroid = np.mean(self.mol_verts, axis=0)
 
         vertx = self.mol_verts[self.mol_faces]
@@ -136,9 +143,6 @@ class Molecule_Mesh():
         self.R_max_dist = np.max(np.sqrt((self.mol_verts[:,0])**2 + (self.mol_verts[:,1])**2 + (self.mol_verts[:,2])**2))
         element_vertices = self.mol_verts[self.mol_faces]
         self.mol_faces_centroid = np.mean(element_vertices, axis=1).astype(np.float32)
-    
-        self.mol_mesh = trimesh.Trimesh(vertices=self.mol_verts, faces=self.mol_faces)
-        self.mol_mesh.export(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'), file_type='off')
 
         self.region_meshes['I'] = Region_Mesh('trimesh',self.mol_mesh,self.mol_verts,self.mol_faces)
         self.region_meshes['I'].normals = self.mol_faces_normal 

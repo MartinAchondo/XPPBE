@@ -35,9 +35,9 @@ def generate_nanoshaper_mesh(
     output_name,
     density,
     probe_radius=1.4,
-    save_mesh_build_files=True,
+    save_mesh_build_files=False,
 ):
-
+    path = os.path.join(output_dir, f'{output_name}_d{density}')
     nanoshaper_dir = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),'Mesh_softwares', "NanoShaper", ""
     )
@@ -93,10 +93,10 @@ def generate_nanoshaper_mesh(
         face = face_file.readlines()
         face_file.close()
 
-        vert_file = open(output_name + ".vert", "w")
+        vert_file = open(path + ".vert", "w")
         vert_file.write("".join(vert[3:]))
         vert_file.close()
-        face_file = open(output_name + ".face", "w")
+        face_file = open(path + ".face", "w")
         face_file.write("".join(face[3:]))
         face_file.close()
 

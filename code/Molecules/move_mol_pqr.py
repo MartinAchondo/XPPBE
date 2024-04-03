@@ -31,7 +31,7 @@ def write_pqr_file(file_path, q_list):
 
 if __name__ == "__main__":
 
-    molecule = '1ubq'
+    molecule = 'methanol'
     pqr_file = os.path.join(os.path.dirname(__file__),f'{molecule}',f"{molecule}.pqr")
 
     q_list = get_charges_list(pqr_file)
