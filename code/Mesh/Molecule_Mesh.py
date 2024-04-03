@@ -399,25 +399,4 @@ class Molecule_Mesh():
             np.savetxt(file_name, subset_data, delimiter=',', header='X,Y,Z', comments='')
             data_ind = 'Elements' if 'Sample' in subset_name else 'Vertices' 
             logger.info(f'Subset {subset_name}: {data_ind} {len(subset_data)}')
-
-
-if __name__=='__main__':
-
-    N_points = {'dx_interior': 1.2,
-                'dx_exterior': 2.5,
-                'N_border': 15,
-                'dR_exterior': 4,
-                'dx_experimental': 4,
-                'N_pq': 10,
-                'G_sigma': 0.04,
-                'density_mol': 2,
-                'density_2': 2,
-                'mesh_generator': 'msms'
-                }
-    Mol_mesh = Molecule_Mesh('methanol', 
-                                N_points=N_points, 
-                                plot=True,
-                                path=os.path.join(os.getcwd(),'code'),
-                                simulation='test'
-                                )
-        
+     

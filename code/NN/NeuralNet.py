@@ -176,21 +176,3 @@ class NeuralNet(tf.keras.Model):
         Z = self.last(Z)
         return self.out(Z)
     
-
-if __name__=='__main__':
-    hyperparameters = {
-                'input_shape': (None,3),
-                'num_hidden_layers': 2,
-                'num_neurons_per_layer': 50,
-                'output_dim': 1,
-                'activation': 'tanh',
-                'adaptative_activation': True,
-                'architecture_Net': 'FCNN',
-                'fourier_features': True,
-                'scale': ([-1.,-1.,-1.],[1.,1.,1.])
-        }
-    model = XPINN_NeuralNet([hyperparameters,hyperparameters])
-    model.build_Net()
-    model.NNs[0].summary()
-    model.NNs[1].summary()
-

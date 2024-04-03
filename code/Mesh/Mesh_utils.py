@@ -34,8 +34,8 @@ def generate_nanoshaper_mesh(
     output_dir,
     output_name,
     density,
-    probe_radius,
-    save_mesh_build_files,
+    probe_radius=1.4,
+    save_mesh_build_files=True,
 ):
 
     nanoshaper_dir = os.path.join(
@@ -107,11 +107,4 @@ def generate_nanoshaper_mesh(
 
     except (OSError, FileNotFoundError):
         print("The file doesn't exist or it wasn't created by NanoShaper")
-
-
-if __name__=='__main__':
-    mol = 'born_ion'
-    path = os.path.join(os.getcwd(),'code','Model','Molecules',f'{mol}',f'{mol}.xyzr')
-    path_output = os.path.join(os.getcwd(),'code','Model','Mesh','Saved_meshes','temp')
-    generate_msms_mesh(path,path_output,mol,3,1.4)
 

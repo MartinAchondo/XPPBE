@@ -81,10 +81,3 @@ def convert_pqr2xyzr(mesh_pqr_path, mesh_xyzr_path,for_mesh=False):
         
         if for_mesh and cont==1:
             xyzr_file.write(f'{x} {float(y)+0.001} {float(z)*1.001} {float(r)*0.01}\n')
-
-
-
-if __name__=='__main__':
-    path_files = os.path.join(os.getcwd(),'code','Model','Molecules')
-    ch = get_charges_list(os.path.join(path_files,'1ubq','1ubq'+'.pqr'))
-    print(ch)

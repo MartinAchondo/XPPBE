@@ -151,8 +151,3 @@ class XPINN(XPINN_utils):
         logger.info(f' Iterations: {self.iter}')
         logger.info(" Loss: {:6.4e}".format(self.current_loss))
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
-
-
-if __name__=='__main__':
-    pass
-

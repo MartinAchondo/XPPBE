@@ -716,7 +716,3 @@ class Born_Ion_Postprocessing(Postprocessing):
         path_save = os.path.join(self.directory,'results_values.json')
         with open(path_save, 'w') as json_file:
             json.dump(df_dict, json_file, indent=4)
-
-
-if __name__=='__main__':
-    pass 
