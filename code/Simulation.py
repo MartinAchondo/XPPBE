@@ -246,6 +246,10 @@ class Simulation():
         self.Post.plot_collocation_points_3D();
         self.Post.plot_vol_mesh_3D();
         self.Post.plot_surface_mesh_3D();
+        self.Post.plot_mesh_3D('R1');
+        self.Post.plot_mesh_3D('R2');
+        self.Post.plot_mesh_3D('I');
+        self.Post.plot_mesh_3D('D2');
 
         self.Post.plot_G_solv_history();
         self.Post.plot_phi_line(); 

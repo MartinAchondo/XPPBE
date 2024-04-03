@@ -214,7 +214,9 @@ class Molecule_Mesh():
 
         mol_min, mol_max = np.min(self.mol_verts, axis=0), np.max(self.mol_verts, axis=0)
         self.scale_1 = [mol_min.tolist(), mol_max.tolist()]
-        self.scale_2 = [(self.centroid - self.R_exterior).tolist(), (self.centroid + self.R_exterior).tolist()]
+
+        sphere_min, sphere_max = np.min(self.sphere_mesh.vertices, axis=0), np.max(self.sphere_mesh.vertices, axis=0)
+        self.scale_2 = [sphere_min.tolist(), sphere_max.tolist()]
 
         #########################################################################
 

@@ -3,7 +3,6 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import threevis
 import logging
 import os
 import pandas as pd
@@ -133,7 +132,7 @@ class Postprocessing():
             fig.savefig(path_save)
 
 
-    def plot_collocation_points_3D(self):
+    def plot_collocation_points_3D(self, jupyter=False):
 
         color_dict = {
             'Charges': 'red',
@@ -168,56 +167,52 @@ class Postprocessing():
             fig.add_trace(trace)
 
         fig.update_layout(title='Dominio 3D', scene=dict(xaxis_title='X', yaxis_title='Y', zaxis_title='Z'))
-        fig.write_html(os.path.join(self.directory,self.path_plots_meshes, 'collocation_points_plot_3d.html'))
-
+        
+        if not jupyter:
+            fig.write_html(os.path.join(self.directory,self.path_plots_meshes, 'collocation_points_plot_3d.html'))
+        elif jupyter:
+            fig.show()
 
     def plot_surface_mesh_3D(self, jupyter=False):
 
-        if jupyter:
-            ctx = threevis.Context(width=640, height=480)
-            ext_surfmesh = self.mesh.int_tetmesh.extractSurface()
-            ext_surfmesh.correctNormals()
-            v_in, e_in, f_in = ext_surfmesh.to_ndarray()
-            ctx.draw_faces(v_in, f_in)
-            ctx.draw_edges(v_in, e_in)
-            ctx.display()
+        vertices = self.mesh.mol_verts
+        elements = self.mesh.mol_faces
 
-        else:
-            vertices = self.mesh.mol_verts
-            elements = self.mesh.mol_faces
+        element_trace = go.Mesh3d(
+            x=vertices[:, 0],
+            y=vertices[:, 1],
+            z=vertices[:, 2],
+            i=elements[:, 0],
+            j=elements[:, 1],
+            k=elements[:, 2],
+            facecolor=['grey'] * len(elements), 
+            opacity=0.97
+        )
+        edge_x = []
+        edge_y = []
+        edge_z = []
 
-            element_trace = go.Mesh3d(
-                x=vertices[:, 0],
-                y=vertices[:, 1],
-                z=vertices[:, 2],
-                i=elements[:, 0],
-                j=elements[:, 1],
-                k=elements[:, 2],
-                facecolor=['grey'] * len(elements), 
-                opacity=0.97
-            )
-            edge_x = []
-            edge_y = []
-            edge_z = []
+        for element in elements:
+            for i in range(3):
+                edge_x.extend([vertices[element[i % 3], 0], vertices[element[(i + 1) % 3], 0], None])
+                edge_y.extend([vertices[element[i % 3], 1], vertices[element[(i + 1) % 3], 1], None])
+                edge_z.extend([vertices[element[i % 3], 2], vertices[element[(i + 1) % 3], 2], None])
 
-            for element in elements:
-                for i in range(3):
-                    edge_x.extend([vertices[element[i % 3], 0], vertices[element[(i + 1) % 3], 0], None])
-                    edge_y.extend([vertices[element[i % 3], 1], vertices[element[(i + 1) % 3], 1], None])
-                    edge_z.extend([vertices[element[i % 3], 2], vertices[element[(i + 1) % 3], 2], None])
+        edge_trace = go.Scatter3d(
+            x=edge_x,
+            y=edge_y,
+            z=edge_z,
+            mode='lines',
+            line=dict(color='blue', width=2),
+        )
 
-            edge_trace = go.Scatter3d(
-                x=edge_x,
-                y=edge_y,
-                z=edge_z,
-                mode='lines',
-                line=dict(color='blue', width=2),
-            )
+        fig = go.Figure(data=[element_trace,edge_trace])
+        fig.update_layout(scene=dict(aspectmode='data'))
 
-            fig = go.Figure(data=[element_trace,edge_trace])
-            fig.update_layout(scene=dict(aspectmode='data'))
-
+        if not jupyter:
             fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surf_3D.html'))
+        elif jupyter:
+            fig.show()
 
     def plot_vol_mesh_3D(self, jupyter=False):
         toRemove = []
@@ -242,85 +237,174 @@ class Postprocessing():
         int_surfmesh.correctNormals()
         v_in, e_in, f_in = int_surfmesh.to_ndarray()
 
-        if jupyter:
-            rgb = np.ones((len(f_in), 3))
-            for i, face in enumerate(int_surfmesh.faceIDs):
-                rgb[i,0] = 194
-                rgb[i,1] = 194
-                rgb[i,2] = 194
-            colors = threevis.FaceAttribute(rgb)
-
-            ctx = threevis.Context(width=640, height=480)
-            ctx.draw_faces(v_in, f_in, colors=colors)
-            ctx.draw_edges(v_in, e_in)
-            ctx.draw_faces(v_ex, f_ex)
-            ctx.draw_edges(v_ex, e_ex)
-            ctx.display()
-        
-        else:
-            element_trace_in = go.Mesh3d(
-                    x=v_in[:, 0],
-                    y=v_in[:, 1],
-                    z=v_in[:, 2],
-                    i=f_in[:, 0],
-                    j=f_in[:, 1],
-                    k=f_in[:, 2],
-                    facecolor=['red'] * len(e_in),
-                    opacity=0.98,
-                    name='faces_in'
-                )
-            edge_x = []
-            edge_y = []
-            edge_z = []
-            for element in f_in:
-                for i in range(3):
-                    edge_x.extend([v_in[element[i % 3], 0], v_in[element[(i + 1) % 3], 0], None])
-                    edge_y.extend([v_in[element[i % 3], 1], v_in[element[(i + 1) % 3], 1], None])
-                    edge_z.extend([v_in[element[i % 3], 2], v_in[element[(i + 1) % 3], 2], None])
-            edge_trace_in = go.Scatter3d(
-                x=edge_x,
-                y=edge_y,
-                z=edge_z,
-                mode='lines',
-                line=dict(color='black', width=3.6),
-                name='edges_in'
-            )
-
-            element_trace_ex = go.Mesh3d(
-                x=v_ex[:, 0],
-                y=v_ex[:, 1],
-                z=v_ex[:, 2],
-                i=f_ex[:, 0],
-                j=f_ex[:, 1],
-                k=f_ex[:, 2],
-                facecolor=['lightblue'] * len(e_ex), 
+        element_trace_in = go.Mesh3d(
+                x=v_in[:, 0],
+                y=v_in[:, 1],
+                z=v_in[:, 2],
+                i=f_in[:, 0],
+                j=f_in[:, 1],
+                k=f_in[:, 2],
+                facecolor=['red'] * len(e_in),
                 opacity=0.98,
-                name='faces_ex'
+                name='faces_in'
             )
-            edge_x = []
-            edge_y = []
-            edge_z = []
-            for element in f_ex:
-                for i in range(3):
-                    edge_x.extend([v_ex[element[i % 3], 0], v_ex[element[(i + 1) % 3], 0], None])
-                    edge_y.extend([v_ex[element[i % 3], 1], v_ex[element[(i + 1) % 3], 1], None])
-                    edge_z.extend([v_ex[element[i % 3], 2], v_ex[element[(i + 1) % 3], 2], None])
-            edge_trace_ex = go.Scatter3d(
-                x=edge_x,
-                y=edge_y,
-                z=edge_z,
-                mode='lines',
-                line=dict(color='black', width=3.6),
-                name='edges_ex'
-            )
+        edge_x = []
+        edge_y = []
+        edge_z = []
+        for element in f_in:
+            for i in range(3):
+                edge_x.extend([v_in[element[i % 3], 0], v_in[element[(i + 1) % 3], 0], None])
+                edge_y.extend([v_in[element[i % 3], 1], v_in[element[(i + 1) % 3], 1], None])
+                edge_z.extend([v_in[element[i % 3], 2], v_in[element[(i + 1) % 3], 2], None])
+        edge_trace_in = go.Scatter3d(
+            x=edge_x,
+            y=edge_y,
+            z=edge_z,
+            mode='lines',
+            line=dict(color='black', width=3.6),
+            name='edges_in'
+        )
 
-            fig = go.Figure(data=[element_trace_ex,edge_trace_ex, element_trace_in, edge_trace_in])
-            fig.update_layout(
-            scene=dict(
-                aspectmode="data",
-            )    )
+        element_trace_ex = go.Mesh3d(
+            x=v_ex[:, 0],
+            y=v_ex[:, 1],
+            z=v_ex[:, 2],
+            i=f_ex[:, 0],
+            j=f_ex[:, 1],
+            k=f_ex[:, 2],
+            facecolor=['lightblue'] * len(e_ex), 
+            opacity=0.98,
+            name='faces_ex'
+        )
+        edge_x = []
+        edge_y = []
+        edge_z = []
+        for element in f_ex:
+            for i in range(3):
+                edge_x.extend([v_ex[element[i % 3], 0], v_ex[element[(i + 1) % 3], 0], None])
+                edge_y.extend([v_ex[element[i % 3], 1], v_ex[element[(i + 1) % 3], 1], None])
+                edge_z.extend([v_ex[element[i % 3], 2], v_ex[element[(i + 1) % 3], 2], None])
+        edge_trace_ex = go.Scatter3d(
+            x=edge_x,
+            y=edge_y,
+            z=edge_z,
+            mode='lines',
+            line=dict(color='black', width=3.6),
+            name='edges_ex'
+        )
+
+        fig = go.Figure(data=[element_trace_ex,edge_trace_ex, element_trace_in, edge_trace_in])
+        fig.update_layout(
+        scene=dict(
+            aspectmode="data",
+        )    )
+
+        if not jupyter:
             fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_vol_3D.html'))
+        elif jupyter:
+            fig.show()
 
+
+    def plot_mesh_3D(self,domain,element_indices=None, jupyter=False):
+
+        element_indices_input = element_indices
+
+        vertices = self.mesh.region_meshes[domain].vertices
+        elements = self.mesh.region_meshes[domain].elements
+
+        x = vertices[:, 0]
+        y = vertices[:, 1]
+        z = vertices[:, 2]
+
+        trace_vertices = go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            mode='markers',
+            marker=dict(
+                size=1,
+                color='rgb(255,0,0)',
+                opacity=1
+            )
+        )
+
+        edge_x = []
+        edge_y = []
+        edge_z = []
+        if element_indices is None or len(element_indices) == 0:  
+            element_indices = range(len(elements))
+
+        for element_idx in element_indices:
+            edges = set()
+            if elements.shape[1] == 4: 
+                for i in range(4):
+                    for j in range(i+1, 4):
+                        edge = tuple(sorted([elements[element_idx, i], elements[element_idx, j]]))
+                        edges.add(edge)
+            elif elements.shape[1] == 3:  
+                for i in range(3):
+                    for j in range(i+1, 3):
+                        edge = tuple(sorted([elements[element_idx, i], elements[element_idx, j]]))
+                        edges.add(edge)
+
+            for edge in edges:
+                edge_x += [x[edge[0]], x[edge[1]], None]
+                edge_y += [y[edge[0]], y[edge[1]], None]
+                edge_z += [z[edge[0]], z[edge[1]], None]
+
+        trace_edges = go.Scatter3d(
+            x=edge_x,
+            y=edge_y,
+            z=edge_z,
+            mode='lines',
+            line=dict(
+                color='rgb(0,0,0)',  
+                width=2
+            )
+        )
+
+        if element_indices_input is None or len(element_indices_input) == 0:
+            fig = go.Figure(data=[trace_vertices, trace_edges])
+
+        else:
+            element_x = []
+            element_y = []
+            element_z = []
+            for element_idx in element_indices:
+                x = vertices[elements[element_idx], 0]
+                y = vertices[elements[element_idx], 1]
+                z = vertices[elements[element_idx], 2]
+                element_x += list(x)
+                element_y += list(y)
+                element_z += list(z)
+
+            trace_elements = go.Scatter3d(
+                x=element_x,
+                y=element_y,
+                z=element_z,
+                mode='markers',
+                marker=dict(
+                    size=3,
+                    color='rgb(0,222,0)',  
+                    opacity=1
+                )
+            )
+
+
+            fig = go.Figure(data=[trace_vertices, trace_edges, trace_elements])
+
+        fig.update_layout(
+            scene=dict(
+                xaxis=dict(title='X'),
+                yaxis=dict(title='Y'),
+                zaxis=dict(title='Z'),
+            )
+        )
+
+        if not jupyter:
+            fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_3D_{domain}.html'))
+        elif jupyter:
+            fig.show()
 
 
     def plot_interface_3D(self,variable='phi', value='phi', domain='interface'):
