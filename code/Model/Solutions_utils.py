@@ -78,7 +78,7 @@ class Solution_utils():
         E_2 = self.epsilon_2
         kappa = self.kappa
         if R is None:
-            R = self.mesh.R_mol
+            R = self.mesh.R_max_dist
 
         PHI = np.zeros(len(x))
 
