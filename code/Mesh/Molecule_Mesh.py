@@ -20,8 +20,20 @@ class Region_Mesh():
             self.vertices = obj.vertices if vertices is None else vertices
             self.elements = obj.faces if elements is None else elements
         if self.type_m=='tetmesh':
-            self.vertices = np.array([list(vID.data().position) for vID in obj.vertexIDs]) if vertices is None else vertices
-            self.elements = np.array([list(i.indices()) for i in obj.cellIDs]) if elements is None else elements
+            if vertices is None:
+                n_verts = obj.nVertices
+                n_cells = obj.nCells
+                self.vertices = np.zeros((n_verts,3), dtype='float32')
+                self.elements = np.zeros((n_cells,4), dtype='int')
+                for num,i in enumerate(obj.cellIDs):
+                    indices = i.indices()
+                    verts = [list(obj.getVertex([idx]).data().position) for idx in list(indices)]
+                    self.elements[num,:] = indices
+                    for j in range(4):
+                        self.vertices[indices[j],:] = verts[j]
+            else:
+                self.vertices = vertices
+                self.elements = elements
         if self.type_m=='points':
             self.vertices = None
             self.elements = None
