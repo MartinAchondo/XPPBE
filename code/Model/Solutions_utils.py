@@ -70,14 +70,15 @@ class Solution_utils():
         return y
 
 
-    def Harmonic_spheres(self, x, flag, N=20):
+    def Harmonic_spheres(self, x, flag, R=None, N=20):
 
         q = self.qs
         xq = self.x_qs
-        R = self.mesh.R_mol
         E_1 = self.epsilon_1
         E_2 = self.epsilon_2
         kappa = self.kappa
+        if R is None:
+            R = self.mesh.R_mol
 
         PHI = np.zeros(len(x))
 
@@ -105,7 +106,6 @@ class Solution_utils():
                         )
 
                     Anm = Enm * (1/(4*np.pi)) * ((2*n+1)) / (np.exp(-kappa*R)* ((E_1-E_2)*n*self.get_K(kappa*R,n)+E_2*(2*n+1)*self.get_K(kappa*R,n+1)))
-
                     Bnm = 1/(R**(2*n+1))*(np.exp(-kappa*R)*self.get_K(kappa*R,n)*Anm - 1/(4*np.pi*E_1)*Enm)
                     
                     if flag=='molecule':
