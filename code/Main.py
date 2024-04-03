@@ -26,8 +26,8 @@ simulation.mesh_properties = {
         'dx_experimental': 2,
         'N_pq': 100,
         'G_sigma': 0.04,
-        'mesh_generator': 'msms',
-        'dR_exterior': 12
+        'mesh_generator': 'nanoshaper',
+        'dR_exterior': 8
         }
 simulation.sample_method='random_sample'
 
@@ -35,7 +35,7 @@ simulation.sample_method='random_sample'
 simulation.G_solve_iter=6
 
 # Losses to add, and initial weights
-simulation.losses = ['R1','R2','D2','Iu','Id','Ir','K2']
+simulation.losses = ['R1','R2','D2','Iu','Id']
 simulation.weights = {
         'E2': 10**-10,
         }

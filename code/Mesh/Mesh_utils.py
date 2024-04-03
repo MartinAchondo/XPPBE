@@ -39,7 +39,7 @@ def generate_nanoshaper_mesh(
 ):
 
     nanoshaper_dir = os.path.join(
-        'code','Model','Mesh','Mesh_softwares', "NanoShaper", ""
+        os.path.dirname(os.path.abspath(__file__)),'Mesh_softwares', "NanoShaper", ""
     )
     nanoshaper_temp_dir = os.path.join(output_dir, "nanotemp", "")
 
