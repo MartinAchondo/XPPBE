@@ -48,7 +48,7 @@ class PBE(Solution_utils):
     
     def get_dphi_interface(self,model, value='phi'): 
         verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)     
-        N_v = self.mesh.mol_normal
+        N_v = self.mesh.mol_verts_normal
         du_1,du_2 = self.get_dphi(verts,N_v,'',model,value)
         du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
         return du_prom.numpy(),du_1.numpy(),du_2.numpy()

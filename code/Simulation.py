@@ -233,7 +233,6 @@ class Simulation():
         self.Post.plot_loss_history(domain=2);
         self.Post.plot_loss_history(domain=1, plot_w=True);
         self.Post.plot_loss_history(domain=2, plot_w=True);
-
         # self.Post.plot_loss_history(domain=1,loss='RIu');
         # self.Post.plot_loss_history(domain=2,loss='RIuD');
         
@@ -252,6 +251,8 @@ class Simulation():
         self.Post.plot_mesh_3D('R2');
         self.Post.plot_mesh_3D('I');
         self.Post.plot_mesh_3D('D2');
+        self.Post.plot_surface_mesh_normals(plot='vertices')
+        self.Post.plot_surface_mesh_normals(plot='faces')
 
         self.Post.plot_G_solv_history();
         self.Post.plot_phi_line(); 

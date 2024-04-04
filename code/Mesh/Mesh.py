@@ -161,7 +161,7 @@ class Domain_Mesh():
 
         self.region_meshes['I'] = Region_Mesh('trimesh',self.mol_mesh,self.mol_verts,self.mol_faces)
         self.region_meshes['I'].normals = self.mol_faces_normal 
-        self.region_meshes['I'].areas = self.mol_areas
+        self.region_meshes['I'].areas = self.mol_faces_areas
 
     def create_calculate_mesh_data(self):
 
@@ -170,19 +170,18 @@ class Domain_Mesh():
 
         self.centroid = np.mean(self.mol_verts, axis=0)
         
+        self.mol_faces_normal = self.mol_mesh.face_normals.astype(np.float32)
+        self.mol_verts_normal = self.mol_mesh.vertex_normals.astype(np.float32)
+
         vertx = self.mol_verts[self.mol_faces]
         mol_areas = 0.5*np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1).astype(np.float32)
-        self.mol_areas = mol_areas.reshape(-1,1)
+        self.mol_faces_areas = mol_areas.reshape(-1,1)
         
         r = np.sqrt((self.mol_verts[:,0]-self.centroid[0])**2 + (self.mol_verts[:,1]-self.centroid[1])**2 + (self.mol_verts[:,2]-self.centroid[2])**2)
         self.R_mol = np.max(r)
         self.R_max_dist = np.max(np.sqrt((self.mol_verts[:,0])**2 + (self.mol_verts[:,1])**2 + (self.mol_verts[:,2])**2))
         
         self.mol_faces_centroid = np.mean(self.mol_verts[self.mol_faces], axis=1).astype(np.float32)
-
-        self.mol_faces_normal = self.mol_mesh.face_normals
-        self.mol_normal = self.mol_mesh.vertex_normals
-
 
     def create_sphere_mesh(self):
         r = self.R_max_dist + self.dR_exterior
@@ -194,7 +193,6 @@ class Domain_Mesh():
 
         mesh_molecule = pygamer.readOFF(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'))
         mesh_split = mesh_molecule.splitSurfaces() 
-        print("Found %i meshes in 1"%len(mesh_split))
         
         self.mesh_molecule_pyg = mesh_split[0]  
         self.mesh_molecule_pyg.correctNormals() 
@@ -208,7 +206,6 @@ class Domain_Mesh():
     def create_exterior_mesh(self):
         mesh_molecule = pygamer.readOFF(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'))
         mesh_split = mesh_molecule.splitSurfaces() 
-        print("Found %i meshes in 1"%len(mesh_split))
         
         self.mesh_molecule_pyg_2 = mesh_split[0]  
         self.mesh_molecule_pyg_2.correctNormals() 
@@ -288,7 +285,7 @@ class Domain_Mesh():
                 self.domain_mesh_names.add(type_b)
 
             elif type_b in ('Iu','Id','Ir'):
-                N = self.mol_normal
+                N = self.mol_verts_normal
                 X = tf.constant(self.mol_verts, dtype=self.DTYPE)
                 X_I = (X, N)
                 self.domain_mesh_names.add(type_b)
@@ -298,7 +295,7 @@ class Domain_Mesh():
                 self.domain_mesh_names.add(type_b)
                 self.domain_mesh_data[type_b] = ((tf.constant(self.mol_faces_centroid, dtype=self.DTYPE),
                                                   tf.constant(self.mol_faces_normal, dtype=self.DTYPE),
-                                                  tf.constant(self.mol_areas, dtype=self.DTYPE)
+                                                  tf.constant(self.mol_faces_areas, dtype=self.DTYPE)
                                                   ),flag)
 
             elif type_b[0] in ('E'):

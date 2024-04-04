@@ -406,8 +406,70 @@ class Postprocessing():
         elif jupyter:
             fig.show()
 
+    def plot_surface_mesh_normals(self,plot='vertices',jupyter=False):
 
-    def plot_interface_3D(self,variable='phi', value='phi', domain='interface'):
+        mesh_obj = self.mesh
+        
+        if plot=='vertices':
+            vertices = mesh_obj.mol_verts
+            normals = mesh_obj.mol_verts_normal
+        elif plot=='faces':
+            vertices = mesh_obj.mol_faces_centroid
+            normals = mesh_obj.mol_faces_normal
+
+        mesh_trace = go.Mesh3d(x=mesh_obj.mol_verts[:, 0], 
+                       y=mesh_obj.mol_verts[:, 1], 
+                       z=mesh_obj.mol_verts[:, 2], 
+                       i=mesh_obj.mol_faces[:, 0], 
+                       j=mesh_obj.mol_faces[:, 1], 
+                       k=mesh_obj.mol_faces[:, 2],
+                       color='lightblue', 
+                       opacity=0.5)
+
+        # Create a trace for the vertex normals
+        vertex_normals_trace = go.Cone(x=vertices[:, 0],
+                                        y=vertices[:, 1],
+                                        z=vertices[:, 2],
+                                        u=normals[:, 0],
+                                        v=normals[:, 1],
+                                        w=normals[:, 2],
+                                        sizemode="absolute",
+                                        showscale=False,
+                                        colorscale=[[0, 'red'], [1, 'red']],
+                                        hoverinfo='none')
+
+        edge_x = []
+        edge_y = []
+        edge_z = []
+
+        for element in mesh_obj.mol_faces:
+            for i in range(3):
+                edge_x.extend([mesh_obj.mol_verts[element[i % 3], 0], mesh_obj.mol_verts[element[(i + 1) % 3], 0], None])
+                edge_y.extend([mesh_obj.mol_verts[element[i % 3], 1], mesh_obj.mol_verts[element[(i + 1) % 3], 1], None])
+                edge_z.extend([mesh_obj.mol_verts[element[i % 3], 2], mesh_obj.mol_verts[element[(i + 1) % 3], 2], None])
+
+        edge_trace = go.Scatter3d(
+            x=edge_x,
+            y=edge_y,
+            z=edge_z,
+            mode='lines',
+            line=dict(color='black', width=2),
+        )
+
+        # Create the layout
+        layout = go.Layout(scene=dict(aspectmode="cube",
+                                    aspectratio=dict(x=1, y=1, z=1)))
+
+        # Create the figure
+        fig = go.Figure(data=[mesh_trace, vertex_normals_trace, edge_trace], layout=layout)
+
+        if not jupyter:
+            fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surface_normals_{plot}.html'))
+        elif jupyter:
+            fig.show()
+
+
+    def plot_interface_3D(self,variable='phi', value='phi', domain='interface', jupyter=False):
         
         vertices = self.mesh.mol_verts.astype(np.float32)
         elements = self.mesh.mol_faces.astype(np.float32)
@@ -431,10 +493,12 @@ class Postprocessing():
 
         fig.update_layout(scene=dict(aspectmode='data'))
 
-        fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.html'))
+        if not jupyter:
+            fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.html'))
+        elif jupyter:
+            fig.show()
 
-
-    def plot_phi_line(self, N=100, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, value ='phi'):
+    def plot_phi_line(self, N=8000, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, value ='phi'):
         fig, ax = plt.subplots()
         
         r = np.linspace(-self.mesh.R_exterior,self.mesh.R_exterior,N)
@@ -447,13 +511,11 @@ class Postprocessing():
         u_in = self.PDE.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model,  value)[:,0]
         u_out = self.PDE.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model,  value)[:,0]
 
-        X_in -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
         r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
         n = np.argmin(r_in)
         r_in[:n] = -r_in[:n]
 
-        X_out -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
         r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
         n = np.argmin(r_out)
@@ -543,9 +605,9 @@ class Postprocessing():
         interior_points = points[interior_points_bool]
         exterior_points_bool = ~interior_points_bool  
         exterior_points = points[exterior_points_bool]
-        exterior_distances = np.linalg.norm(exterior_points-self.mesh.centroid, axis=1)
+        exterior_distances = np.linalg.norm(exterior_points, axis=1)
         exterior_points = exterior_points[exterior_distances <= R_exterior]
-        bool_2 = np.linalg.norm(points-self.mesh.centroid, axis=1) <= R_exterior*exterior_points_bool
+        bool_2 = np.linalg.norm(points, axis=1) <= R_exterior*exterior_points_bool
         bools = (interior_points_bool,bool_2)
         return interior_points,exterior_points, bools
     
@@ -628,13 +690,11 @@ class Born_Ion_Postprocessing(Postprocessing):
         u_in = self.PDE.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model, value)[:,0]
         u_out = self.PDE.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model, value)[:,0]
 
-        X_in -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
         r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
         n = np.argmin(r_in)
         r_in[:n] = -r_in[:n]
 
-        X_out -= self.mesh.centroid
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
         r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
         n = np.argmin(r_out)
@@ -645,7 +705,6 @@ class Born_Ion_Postprocessing(Postprocessing):
         ax.plot(r_out_1,u_out[:n], c='b')
         ax.plot(r_out_2,u_out[n:], c='b')
 
-        points -= self.mesh.centroid
         r = np.sqrt(points[:,0]**2 + points[:,1]**2 + points[:,2]**2)
         r = r[r <= self.XPINN.mesh.R_exterior*0.7]
         r = r[r > 0.04]

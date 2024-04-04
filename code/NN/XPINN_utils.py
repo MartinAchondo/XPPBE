@@ -157,12 +157,12 @@ class XPINN_utils():
 
         for t in self.losses_names:
             if not 'TL' in t:
-                self.losses[t].append(L[t])
+                self.losses[t].append(L[t].numpy())
                 if t in self.validation_names:
-                    self.validation_losses[t].append(Lv[t])
+                    self.validation_losses[t].append(Lv[t].numpy())
 
-        self.losses['TL'].append(loss)
-        self.validation_losses['TL'].append(lossv)
+        self.losses['TL'].append(loss.numpy())
+        self.validation_losses['TL'].append(lossv.numpy())
         self.current_loss = loss.numpy()
 
         loss1 = 0.0
@@ -174,9 +174,9 @@ class XPINN_utils():
                 if t in self.validation_names:
                     loss1v += L[t]
                     loss1_vl += Lv[t]
-        self.losses['TL1'].append(loss1)
-        self.losses['vTL1'].append(loss1v)
-        self.validation_losses['TL1'].append(loss1_vl)
+        self.losses['TL1'].append(loss1.numpy())
+        self.losses['vTL1'].append(loss1v.numpy())
+        self.validation_losses['TL1'].append(loss1_vl.numpy())
 
         loss2 = 0.0
         loss2v = 0.0
@@ -187,9 +187,9 @@ class XPINN_utils():
                 if t in self.validation_names:
                     loss2v += L[t]
                     loss2_vl += Lv[t]
-        self.losses['TL2'].append(loss2)
-        self.losses['vTL2'].append(loss2v)
-        self.validation_losses['TL2'].append(loss2_vl)
+        self.losses['TL2'].append(loss2.numpy())
+        self.losses['vTL2'].append(loss2v.numpy())
+        self.validation_losses['TL2'].append(loss2_vl.numpy())
         
         for t in self.w_names:
             self.w_hist[t].append(self.w[t])
@@ -250,18 +250,18 @@ class XPINN_utils():
 
         df_dict = dict()
         for t in self.losses_names:
-            df_dict[t] = list(map(lambda tensor: tensor.numpy(),self.losses[t]))
+            df_dict[t] = list(self.losses[t])
         df = pd.DataFrame.from_dict(df_dict)
         path_save = os.path.join(dir_save,'loss.csv')
         df.to_csv(path_save)
 
         df_dict = dict()
         for t in self.validation_names:
-            df_dict[t] = list(map(lambda tensor: tensor.numpy(),self.validation_losses[t]))
+            df_dict[t] = list(self.validation_losses[t])
         df = pd.DataFrame.from_dict(df_dict)
         path_save = os.path.join(dir_save,'loss_validation.csv')
         df.to_csv(path_save)
-
+        
         df_2 = pd.DataFrame(self.G_solv_hist.items())
         df_2.columns = ['iter','G_solv']
         path_save = os.path.join(dir_save,'G_solv.csv')
