@@ -59,24 +59,15 @@ class PBE(Solution_utils):
         kT = self.kb*self.T
         C = self.qe/kT                
 
-        ((X_in,X_out),flag) = X_mesh
+        (X_out,flag) = X_mesh
         phi_ens_L = list()
 
         for x_q in X_q:
 
-            if X_in != None:
-                C_phi1 = self.get_phi(X_in,flag, model) * self.to_V * C 
-                r1 = tf.sqrt(tf.reduce_sum(tf.square(x_q - X_in), axis=1, keepdims=True))
-                G2_p_1 =  tf.math.reduce_sum(self.aprox_exp(-C_phi1)/r1**6)
-                G2_m_1 = tf.math.reduce_sum(self.aprox_exp(C_phi1)/r1**6)
-            else:
-                G2_p_1 = 0.0
-                G2_m_1 = 0.0
-
             C_phi2 = self.get_phi(X_out,flag, model) * self.to_V * C
             r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
-            G2_p = G2_p_1 + tf.math.reduce_sum(self.aprox_exp(-C_phi2)/r2**6)
-            G2_m = G2_m_1 + tf.math.reduce_sum(self.aprox_exp(C_phi2)/r2**6)
+            G2_p = tf.math.reduce_sum(self.aprox_exp(-C_phi2)/r2**6)
+            G2_m = tf.math.reduce_sum(self.aprox_exp(C_phi2)/r2**6)
 
             phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000  # to_mV
             phi_ens_L.append(phi_ens_pred)

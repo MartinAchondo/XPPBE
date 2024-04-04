@@ -149,35 +149,40 @@ class Domain_Mesh():
             
         with open(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.face'),'r') as face_f:
             face = face_f.read()
+            mol_faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
         with open(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.vert'),'r') as vert_f:
             vert = vert_f.read()
-
-        mol_faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
-        mol_verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(np.float32)
-        self.mol_normal = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, 3:6].astype(np.float32)
+            mol_verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(np.float32)
 
         self.mol_mesh = trimesh.Trimesh(vertices=mol_verts, faces=mol_faces)
         self.mol_mesh.export(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'), file_type='off')
+
+        self.create_calculate_mesh_data()
+
+        self.region_meshes['I'] = Region_Mesh('trimesh',self.mol_mesh,self.mol_verts,self.mol_faces)
+        self.region_meshes['I'].normals = self.mol_faces_normal 
+        self.region_meshes['I'].areas = self.mol_areas
+
+    def create_calculate_mesh_data(self):
 
         self.mol_faces = self.mol_mesh.faces
         self.mol_verts = self.mol_mesh.vertices
 
         self.centroid = np.mean(self.mol_verts, axis=0)
-
+        
         vertx = self.mol_verts[self.mol_faces]
-        mol_faces_normal = np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]).astype(np.float32)
-        self.mol_faces_normal = mol_faces_normal/np.linalg.norm(mol_faces_normal)
         mol_areas = 0.5*np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1).astype(np.float32)
         self.mol_areas = mol_areas.reshape(-1,1)
+        
         r = np.sqrt((self.mol_verts[:,0]-self.centroid[0])**2 + (self.mol_verts[:,1]-self.centroid[1])**2 + (self.mol_verts[:,2]-self.centroid[2])**2)
         self.R_mol = np.max(r)
         self.R_max_dist = np.max(np.sqrt((self.mol_verts[:,0])**2 + (self.mol_verts[:,1])**2 + (self.mol_verts[:,2])**2))
-        element_vertices = self.mol_verts[self.mol_faces]
-        self.mol_faces_centroid = np.mean(element_vertices, axis=1).astype(np.float32)
+        
+        self.mol_faces_centroid = np.mean(self.mol_verts[self.mol_faces], axis=1).astype(np.float32)
 
-        self.region_meshes['I'] = Region_Mesh('trimesh',self.mol_mesh,self.mol_verts,self.mol_faces)
-        self.region_meshes['I'].normals = self.mol_faces_normal 
-        self.region_meshes['I'].areas = self.mol_areas
+        self.mol_faces_normal = self.mol_mesh.face_normals
+        self.mol_normal = self.mol_mesh.vertex_normals
+
 
     def create_sphere_mesh(self):
         r = self.R_max_dist + self.dR_exterior
@@ -328,18 +333,14 @@ class Domain_Mesh():
 
                 explode_points = pos_mesh.transpose()
                 interior_points_bool = self.mol_mesh.contains(explode_points)
-                #interior_points = explode_points[interior_points_bool]
-                
                 exterior_points_bool = ~interior_points_bool  
                 exterior_points = explode_points[exterior_points_bool]
 
                 exterior_distances = np.linalg.norm(exterior_points, axis=1)
                 exterior_points = exterior_points[exterior_distances <= self.R_exterior]
 
-                #X_in = tf.constant(interior_points, dtype=self.DTYPE)
                 X_out = tf.constant(exterior_points, dtype=self.DTYPE)
-
-                X_exp.append((None,X_out))
+                X_exp.append(X_out)
                 
                 for q in q_list:
                     if q.atom_name == 'H' and str(q.res_num) in L_phi:
@@ -353,7 +354,7 @@ class Domain_Mesh():
 
                 if self.save_points:
                     X_plot = dict()
-                    X_plot['Experimental'] = explode_points[np.linalg.norm(explode_points, axis=1) <= self.R_exterior]
+                    X_plot['Experimental'] = exterior_points
                     self.save_data_plot(X_plot)
 
 

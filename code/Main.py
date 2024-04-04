@@ -35,7 +35,7 @@ simulation.sample_method='random_sample'
 simulation.G_solve_iter=6
 
 # Losses to add, and initial weights
-simulation.losses = ['R1','R2','D2','Iu','Id']
+simulation.losses = ['R1','R2','D2','Iu','Id', 'E2']
 simulation.weights = {
         'E2': 10**-10,
         }
