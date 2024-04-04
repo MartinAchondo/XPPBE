@@ -89,3 +89,7 @@ def convert_pdb2pqr(mesh_pdb_path, mesh_pqr_path, force_field, str_flag=""):
         os.system(f"pdb2pqr {str_flag} --ff={force_field} {mesh_pdb_path} {mesh_pqr_path}")
     else:
          os.system(f"pdb2pqr --ff={force_field} {mesh_pdb_path} {mesh_pqr_path}")
+
+    base_path, _ = os.path.splitext(mesh_pdb_path)
+    if os.path.exists(base_path+'.log'):
+        os.remove(base_path+'.log')

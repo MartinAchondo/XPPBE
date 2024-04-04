@@ -5,7 +5,7 @@ import trimesh
 import pygamer
 import logging
 
-from Mesh.Charges_utils import import_charges_from_pqr, convert_pqr2xyzr
+from Mesh.Charges_utils import import_charges_from_pqr, convert_pqr2xyzr, convert_pdb2pqr
 from Mesh.Mesh_utils  import generate_msms_mesh,generate_nanoshaper_mesh
 
 class Region_Mesh():
@@ -82,7 +82,7 @@ class Region_Mesh():
         return X_in
 
 
-class Molecule_Mesh():
+class Domain_Mesh():
 
     DTYPE = 'float32'
     pi = np.pi
@@ -98,10 +98,11 @@ class Molecule_Mesh():
         self.simulation_name = simulation
         self.result_path = self.main_path if result_path=='' else result_path
 
-        self.path_files = os.path.join(self.main_path,'Molecules','Temp')
+        self.path_files = os.path.join(self.main_path,'Mesh','Temp')
         self.path_pqr = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.pqr')
         self.path_xyzr = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.xyzr')
-        
+        self.path_pdb = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.xyzr')
+
         self.region_meshes = dict()
         self.prior_data = dict()
         self.domain_mesh_names = set()
@@ -120,6 +121,9 @@ class Molecule_Mesh():
 
 
     def create_molecule_mesh(self):
+
+        if not os.path.exists(self.path_pqr):
+            convert_pdb2pqr(self.path_pdb,self.path_pqr,'AMBER')
 
         convert_pqr2xyzr(self.path_pqr,self.path_xyzr,for_mesh=True)
 

@@ -7,7 +7,7 @@ import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 logging.getLogger('bempp').setLevel(logging.WARNING)
 
-from Mesh.Molecule_Mesh import Molecule_Mesh
+from Mesh.Mesh import Domain_Mesh
 from NN.XPINN import XPINN
 
 def get_simulation_name(file):
@@ -122,7 +122,7 @@ class Simulation():
         self.logger.info(f"Solving PBE {self.equation}, in {self.pbe_model} form")
         self.logger.info(f"Molecule: {self.domain_properties['molecule']}")
 
-        self.Mol_mesh = Molecule_Mesh(self.domain_properties['molecule'], 
+        self.Mol_mesh = Domain_Mesh(self.domain_properties['molecule'], 
                         N_points=self.mesh_properties, 
                         save_points=True,
                         path=self.main_path,

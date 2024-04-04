@@ -1,5 +1,5 @@
 
-from Mesh.Molecule_Mesh import Molecule_Mesh
+from Mesh.Mesh import Domain_Mesh
 from Post.Postcode import Postprocessing
 
 from Simulation import get_simulation_name
@@ -25,7 +25,7 @@ mesh_properties = {
 
 
 
-Mol_mesh = Molecule_Mesh(domain_properties['molecule'], 
+Mol_mesh = Domain_Mesh(domain_properties['molecule'], 
                 N_points=mesh_properties, 
                 save_points=True,
                 path=main_path,
