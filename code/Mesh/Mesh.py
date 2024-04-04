@@ -87,10 +87,25 @@ class Domain_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, N_points, simulation='Main', path='', save_points=False, result_path=''):
+    def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, result_path=''):
 
-        for key, value in N_points.items():
-            setattr(self, key, value)
+        self.mesh_properties = {
+            'vol_max_interior': 0.04,
+            'vol_max_exterior': 0.1,
+            'density_mol': 10,
+            'density_border': 4,
+            'dx_experimental': 1.0,
+            'N_pq': 100,
+            'G_sigma': 0.04,
+            'mesh_generator': 'msms',
+            'dR_exterior': 6,
+            'force_field': 'AMBER'
+            }
+        
+        for key in self.mesh_properties:
+            if key in mesh_properties:
+                self.mesh_properties[key] = mesh_properties[key]
+            setattr(self, key, self.mesh_properties[key])
 
         self.molecule = molecule
         self.save_points = save_points
@@ -101,7 +116,7 @@ class Domain_Mesh():
         self.path_files = os.path.join(self.main_path,'Mesh','Temp')
         self.path_pqr = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.pqr')
         self.path_xyzr = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.xyzr')
-        self.path_pdb = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.xyzr')
+        self.path_pdb = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.pdb')
 
         self.region_meshes = dict()
         self.prior_data = dict()
@@ -123,7 +138,7 @@ class Domain_Mesh():
     def create_molecule_mesh(self):
 
         if not os.path.exists(self.path_pqr):
-            convert_pdb2pqr(self.path_pdb,self.path_pqr,'AMBER')
+            convert_pdb2pqr(self.path_pdb,self.path_pqr,self.force_field)
 
         convert_pqr2xyzr(self.path_pqr,self.path_xyzr,for_mesh=True)
 
@@ -313,18 +328,18 @@ class Domain_Mesh():
 
                 explode_points = pos_mesh.transpose()
                 interior_points_bool = self.mol_mesh.contains(explode_points)
-                interior_points = explode_points[interior_points_bool]
+                #interior_points = explode_points[interior_points_bool]
                 
                 exterior_points_bool = ~interior_points_bool  
                 exterior_points = explode_points[exterior_points_bool]
 
-                exterior_distances = np.linalg.norm(exterior_points-self.centroid, axis=1)
+                exterior_distances = np.linalg.norm(exterior_points, axis=1)
                 exterior_points = exterior_points[exterior_distances <= self.R_exterior]
 
-                X_in = tf.constant(interior_points, dtype=self.DTYPE)
+                #X_in = tf.constant(interior_points, dtype=self.DTYPE)
                 X_out = tf.constant(exterior_points, dtype=self.DTYPE)
 
-                X_exp.append((X_in,X_out))
+                X_exp.append((None,X_out))
                 
                 for q in q_list:
                     if q.atom_name == 'H' and str(q.res_num) in L_phi:
@@ -338,7 +353,7 @@ class Domain_Mesh():
 
                 if self.save_points:
                     X_plot = dict()
-                    X_plot['Experimental'] = explode_points[np.linalg.norm(explode_points-self.centroid, axis=1) <= self.R_exterior]
+                    X_plot['Experimental'] = explode_points[np.linalg.norm(explode_points, axis=1) <= self.R_exterior]
                     self.save_data_plot(X_plot)
 
 

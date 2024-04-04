@@ -26,7 +26,7 @@ mesh_properties = {
 
 
 Mol_mesh = Domain_Mesh(domain_properties['molecule'], 
-                N_points=mesh_properties, 
+                mesh_properties=mesh_properties, 
                 save_points=True,
                 path=main_path,
                 simulation=simulation_name

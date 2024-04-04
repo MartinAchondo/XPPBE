@@ -76,11 +76,11 @@ def convert_pqr2xyzr(mesh_pqr_path, mesh_xyzr_path,for_mesh=False):
             if len(line) == 0 or line[0] != "ATOM":
                 continue
             _,_,_,_,_,x,y,z,_,r = line
-            xyzr_file.write(f'{x} {y} {z} {r}\n')
+            xyzr_file.write(f'{float(x):9.4f} {float(y):9.4f} {float(z):9.4f} {float(r):9.4f}\n')
             cont += 1
         
         if for_mesh and cont==1:
-            xyzr_file.write(f'{x} {float(y)+0.001} {float(z)*1.001} {float(r)*0.01}\n')
+            xyzr_file.write(f'{float(x):9.4f} {float(y)+0.001:9.4f} {float(z)*1.001:9.4f} {float(r)*0.01:9.4f}')
 
 def convert_pdb2pqr(mesh_pdb_path, mesh_pqr_path, force_field, str_flag=""):
 

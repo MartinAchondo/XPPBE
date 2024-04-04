@@ -57,7 +57,8 @@ class Simulation():
             'N_pq': 100,
             'G_sigma': 0.04,
             'mesh_generator': 'msms',
-            'dR_exterior': 8
+            'dR_exterior': 8,
+            'force_field': 'AMBER'
             }
 
         self.sample_method='random_sample'
@@ -123,7 +124,7 @@ class Simulation():
         self.logger.info(f"Molecule: {self.domain_properties['molecule']}")
 
         self.Mol_mesh = Domain_Mesh(self.domain_properties['molecule'], 
-                        N_points=self.mesh_properties, 
+                        mesh_properties=self.mesh_properties, 
                         save_points=True,
                         path=self.main_path,
                         simulation=self.simulation_name
