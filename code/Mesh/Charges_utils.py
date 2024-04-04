@@ -81,3 +81,11 @@ def convert_pqr2xyzr(mesh_pqr_path, mesh_xyzr_path,for_mesh=False):
         
         if for_mesh and cont==1:
             xyzr_file.write(f'{x} {float(y)+0.001} {float(z)*1.001} {float(r)*0.01}\n')
+
+def convert_pdb2pqr(mesh_pdb_path, mesh_pqr_path, force_field, str_flag=""):
+
+    force_field = force_field.upper()
+    if str_flag:
+        os.system(f"pdb2pqr {str_flag} --ff={force_field} {mesh_pdb_path} {mesh_pqr_path}")
+    else:
+         os.system(f"pdb2pqr --ff={force_field} {mesh_pdb_path} {mesh_pqr_path}")
