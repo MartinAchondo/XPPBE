@@ -8,7 +8,7 @@ new_directory = os.path.sep.join(path_components[:-1])
 sys.path.append(new_directory)
 
 from Mesh.Charges_utils import get_charges_list
-
+from Model.Solutions_utils import Model_Funcs
 
 molecule = 'methanol'
 
@@ -19,10 +19,11 @@ Rs = {'born_ion': 1,
 
 
 q_list = get_charges_list(os.path.join(current_directory,molecule,f'{molecule}.pqr'))
-epsilon_1 = 1
-epsilon_2 = 80
-kappa = 0.125
-pi = np.pi
+Model_Funcs.epsilon_1 = 1
+Model_Funcs.epsilon_2 = 80
+Model_Funcs.kappa = 0.125
+Model_Funcs.pi = np.pi
+Model_Funcs.q_list = q_list
 
 
 Rmin = 1 + Rs[molecule]
@@ -33,15 +34,9 @@ num_points = 300
 x = np.random.uniform(-Rmax, Rmax, num_points)
 y = np.random.uniform(-Rmax, Rmax, num_points)
 z = np.random.uniform(-Rmax, Rmax, num_points)
+r = np.sqrt(x**2+y**2+z**2)
 
-sum = 0
-for q_obj in q_list:
-    qk = q_obj.q
-    xk,yk,zk = q_obj.x_q
-    r = np.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
-    sum += qk*np.exp(-kappa*r)/r
-phi_values = (1/(4*pi*epsilon_2))*sum
-
+phi_values = Model_Funcs.G_Yukawa(Model_Funcs, x,y,z)
 
 
 file_path = os.path.dirname(os.path.realpath(__file__))

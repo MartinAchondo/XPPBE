@@ -1,6 +1,6 @@
 Grid_scale = 2.0
 Grid_perfil = 90.0 
-XYZR_FileName = /mnt/d/PostUTFSM/Investigacion/pbj/Extra/5pti.xyzr
+XYZR_FileName = /Extra/5pti.xyzr
 Build_epsilon_maps = false
 Build_status_map = false
 Save_Mesh_MSMS_Format = true

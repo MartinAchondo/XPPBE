@@ -15,7 +15,7 @@ $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
 ## Features
 
 - Solves the electrostatic potential for the solute and solvent domain.
-- Simple molecule definition by .pqr file.
+- Simple molecule definition by .pdb or .pqr file.
 - Different loss terms can be added to the model.
 - Use of different architectures is available, very customizable.
 - Weigths balancing algortithm implemented.
@@ -95,13 +95,15 @@ All the results after executing `bash Allrun` will be added to the `code/results
     simulation.mesh_properties = {
             'vol_max_interior': 0.04,
             'vol_max_exterior': 0.1,
-            'density_mol': 40,
+            'density_mol': 10,
             'density_border': 4,
-            'dx_experimental': 1,
+            'dx_experimental': 1.0,
             'N_pq': 100,
             'G_sigma': 0.04,
             'mesh_generator': 'msms',
-            'dR_exterior': 6
+            'probe_radius': 1.4,
+            'dR_exterior': 6,
+            'force_field': 'AMBER'
             }
     ```
 

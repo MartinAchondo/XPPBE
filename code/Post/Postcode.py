@@ -123,7 +123,7 @@ class Postprocessing():
         ax.set_ylabel(text_l)
         max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
         Gsolv_value = np.format_float_positional(self.XPINN.G_solv_hist[str(max_iter)], unique=False, precision=2)
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {max_iter}, G_solv: {Gsolv_value} kcal/kmol')
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {max_iter}, G_solv: {Gsolv_value} kcal/mol')
         ax.grid()
 
         if self.save:

@@ -98,6 +98,7 @@ class Domain_Mesh():
             'N_pq': 100,
             'G_sigma': 0.04,
             'mesh_generator': 'msms',
+            'probe_radius': 1.4,
             'dR_exterior': 6,
             'force_field': 'AMBER'
             }
@@ -143,9 +144,9 @@ class Domain_Mesh():
         convert_pqr2xyzr(self.path_pqr,self.path_xyzr,for_mesh=True)
 
         if self.mesh_generator == 'msms':
-            generate_msms_mesh(self.path_xyzr,self.path_files,self.molecule,self.density_mol)
+            generate_msms_mesh(self.path_xyzr,self.path_files,self.molecule,self.density_mol,self.probe_radius)
         elif self.mesh_generator == 'nanoshaper':
-            generate_nanoshaper_mesh(self.path_xyzr,self.path_files,self.molecule,self.density_mol)
+            generate_nanoshaper_mesh(self.path_xyzr,self.path_files,self.molecule,self.density_mol,self.probe_radius)
             
         with open(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.face'),'r') as face_f:
             face = face_f.read()
