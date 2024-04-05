@@ -135,18 +135,17 @@ class Postprocessing():
     def plot_collocation_points_3D(self, jupyter=False):
 
         color_dict = {
-            'Charges': 'red',
-            'Inner Domain': 'lightgreen',
-            'Interface': 'purple',
-            'Outer Domain': 'lightblue',
-            'Outer Border': 'orange',
-            'Inner Domain Sample': 'lightgreen',
-            'Interface Sample': 'purple',
-            'Outer Domain Sample': 'lightblue',
-            'Outer Border Sample': 'orange',
-            'Experimental': 'cyan',
-            'test': 'red',
-
+            'Q1_verts': 'red',
+            'Q1_sample': 'red',
+            'R1_verts': 'lightgreen',
+            'R1_sample': 'lightgreen',
+            'I_verts': 'purple',
+            'I_sample': 'purple',
+            'R2_verts': 'lightblue',
+            'R2_sample': 'lightblue',
+            'D2_verts': 'orange',
+            'D2_sample': 'orange',
+            'E2_verts': 'cyan',
         }
 
         subsets_directory = os.path.join(self.directory,'mesh')
