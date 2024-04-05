@@ -171,8 +171,8 @@ class Domain_Mesh():
 
         self.centroid = np.mean(self.mol_verts, axis=0)
         
-        self.mol_faces_normal = self.mol_mesh.face_normals.astype(np.float32)
-        self.mol_verts_normal = self.mol_mesh.vertex_normals.astype(np.float32)
+        self.mol_faces_normal = self.mol_mesh.face_normals.reshape(-1,3).astype(np.float32)
+        self.mol_verts_normal = self.mol_mesh.vertex_normals.reshape(-1,3).astype(np.float32)
 
         vertx = self.mol_verts[self.mol_faces]
         mol_areas = 0.5*np.linalg.norm(np.cross(vertx[:, 1, :] - vertx[:, 0, :], vertx[:, 2, :] - vertx[:, 0, :]), axis=1).astype(np.float32)
@@ -182,7 +182,7 @@ class Domain_Mesh():
         self.R_mol = np.max(r)
         self.R_max_dist = np.max(np.sqrt((self.mol_verts[:,0])**2 + (self.mol_verts[:,1])**2 + (self.mol_verts[:,2])**2))
         
-        self.mol_faces_centroid = np.mean(self.mol_verts[self.mol_faces], axis=1).astype(np.float32)
+        self.mol_faces_centroid = np.mean(self.mol_verts[self.mol_faces], axis=1).reshape(-1,3).astype(np.float32)
 
     def create_sphere_mesh(self):
         r = self.R_max_dist + self.dR_exterior

@@ -55,7 +55,7 @@ class Postprocessing():
                     t2 = t if t in ('Iu','Id','Ir','G') else t[0]
                     if (t2 in loss or loss=='all') and not t in 'TL' and t in self.mesh.domain_mesh_names:
                         cx = c[t] if t in ('Iu','Id','Ir','G') else c[t[0]]
-                        ax.semilogy(range(1,len(self.XPINN.losses[t])+1), w[t]*np.array(self.XPINN.losses[t]),cx,label=f'Loss_{t}')
+                        ax.semilogy(range(1,len(self.XPINN.losses[t])+1), w[t]*self.XPINN.losses[t],cx,label=f'Loss_{t}')
 
         ax.legend()
         ax.set_xlabel('$n: iterations$')

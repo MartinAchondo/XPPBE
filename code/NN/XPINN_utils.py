@@ -1,6 +1,7 @@
 import os
 import copy
 import json
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 
@@ -18,18 +19,12 @@ class XPINN_utils():
         self.losses_names_list = [self.losses_names_1,self.losses_names_2]
         
         self.losses = dict()
-        for t in self.losses_names:
-            self.losses[t] = list()
-
         self.validation_losses = dict()
-        for t in self.validation_names:
-            self.validation_losses[t] = list()
 
         self.G_solv_hist = dict()
         self.G_solv_hist['0'] = 0.0
 
         self.iter = 0
-        self.lr = None
 
 
     def create_NeuralNet(self, NN_class, hyperparameters, *args, **kwargs):
@@ -56,17 +51,13 @@ class XPINN_utils():
         self.alpha_w = alpha_w
 
         self.w = dict()
-
-        w = weights
         for w_name in self.w_names:
-            if not w_name in w:
+            if not w_name in weights:
                 self.w[w_name] = 1.0
             else:
-                self.w[w_name] = w[w_name]
+                self.w[w_name] = weights[w_name]
 
         self.w_hist = dict()
-        for t in self.w:
-            self.w_hist[t] = list()
 
     def set_points_methods(self, sample_method='batches', N_batches=1, sample_size=1000):
         self.sample_method = sample_method
@@ -81,6 +72,14 @@ class XPINN_utils():
             else:
                 self.L_X_domain[t] = self.mesh.domain_mesh_data[t]
 
+    def create_losses_arrays(self, N):
+        for t in self.losses_names:
+            self.losses[t] = np.zeros(N, dtype=self.DTYPE)
+        for t in self.validation_names:
+            self.validation_losses[t] = np.zeros(N, dtype=self.DTYPE)
+
+        for t in self.w:
+            self.w_hist[t] = np.zeros(N, dtype=self.DTYPE)
 
     ##############################################################################################
                 
@@ -154,15 +153,16 @@ class XPINN_utils():
 
         loss,L = L_loss
         lossv,Lv = Lv_loss
+        i = self.iter - 1
 
         for t in self.losses_names:
             if not 'TL' in t:
-                self.losses[t].append(L[t].numpy())
+                self.losses[t][i] = L[t].numpy()
                 if t in self.validation_names:
-                    self.validation_losses[t].append(Lv[t].numpy())
+                    self.validation_losses[t][i] = Lv[t].numpy()
 
-        self.losses['TL'].append(loss.numpy())
-        self.validation_losses['TL'].append(lossv.numpy())
+        self.losses['TL'][i] = loss.numpy()
+        self.validation_losses['TL'][i] = lossv.numpy()
         self.current_loss = loss.numpy()
 
         loss1 = 0.0
@@ -174,9 +174,9 @@ class XPINN_utils():
                 if t in self.validation_names:
                     loss1v += L[t]
                     loss1_vl += Lv[t]
-        self.losses['TL1'].append(loss1.numpy())
-        self.losses['vTL1'].append(loss1v.numpy())
-        self.validation_losses['TL1'].append(loss1_vl.numpy())
+        self.losses['TL1'][i] = loss1.numpy()
+        self.losses['vTL1'][i] = loss1v.numpy()
+        self.validation_losses['TL1'][i] = loss1_vl.numpy()
 
         loss2 = 0.0
         loss2v = 0.0
@@ -187,12 +187,12 @@ class XPINN_utils():
                 if t in self.validation_names:
                     loss2v += L[t]
                     loss2_vl += Lv[t]
-        self.losses['TL2'].append(loss2.numpy())
-        self.losses['vTL2'].append(loss2v.numpy())
-        self.validation_losses['TL2'].append(loss2_vl.numpy())
+        self.losses['TL2'][i] = loss2.numpy()
+        self.losses['vTL2'][i] = loss2v.numpy()
+        self.validation_losses['TL2'][i] = loss2_vl.numpy()
         
         for t in self.w_names:
-            self.w_hist[t].append(self.w[t])
+            self.w_hist[t][i] = self.w[t]
 
         if self.save_model_iter > 0:
             if (self.iter % self.save_model_iter == 0 and self.iter>1) or self.iter==self.N_iters:
@@ -217,19 +217,19 @@ class XPINN_utils():
         df = pd.read_csv(path_load)
         self.w_hist,self.w = dict(),dict()
         for t in self.w_names:
-            self.w_hist[t] = list(df[t])
+            self.w_hist[t] = np.array(df[t])
             self.w[t] = self.w_hist[t][-1]
        
         path_load = os.path.join(path,'loss.csv')
         df = pd.read_csv(path_load)
         for t in self.losses_names:
-            self.losses[t] = list(df[t])
+            self.losses[t] = np.array(df[t])
         self.iter = len(self.losses['TL']) 
 
         path_load = os.path.join(path,'loss_validation.csv')
         df = pd.read_csv(path_load)
         for t in self.validation_names:
-            self.validation_losses[t] = list(df[t])
+            self.validation_losses[t] = np.array(df[t])
 
         path_load = os.path.join(path,'G_solv.csv')
         df_2 = pd.read_csv(path_load)
@@ -243,22 +243,15 @@ class XPINN_utils():
             os.makedirs(dir_save)
         self.model.save_weights(os.path.join(dir_save,'weights'))
 
-        df_dict = pd.DataFrame.from_dict(self.w_hist)
-        df = pd.DataFrame.from_dict(df_dict)
+        df = pd.DataFrame.from_dict(self.w_hist)
         path_save = os.path.join(dir_save,'w_hist.csv')
         df.to_csv(path_save)
 
-        df_dict = dict()
-        for t in self.losses_names:
-            df_dict[t] = list(self.losses[t])
-        df = pd.DataFrame.from_dict(df_dict)
+        df = pd.DataFrame.from_dict(self.losses)
         path_save = os.path.join(dir_save,'loss.csv')
         df.to_csv(path_save)
 
-        df_dict = dict()
-        for t in self.validation_names:
-            df_dict[t] = list(self.validation_losses[t])
-        df = pd.DataFrame.from_dict(df_dict)
+        df = pd.DataFrame.from_dict(self.validation_losses)
         path_save = os.path.join(dir_save,'loss_validation.csv')
         df.to_csv(path_save)
         

@@ -71,6 +71,7 @@ class XPINN(XPINN_utils):
         self.N_precond = N_precond
         self.current_loss = 100
 
+        self.create_losses_arrays(N)
         X_v = self.get_batches('full_batch', validation=True)
         X_d = self.get_batches(self.sample_method)
 
