@@ -19,16 +19,25 @@ class PBE(Solution_utils):
     DTYPE = 'float32'
     pi = tf.constant(np.pi, dtype=DTYPE)
 
-    def __init__(self, inputs, mesh, model, path):      
+    def __init__(self, domain_properties, mesh, equation, path):      
 
         self.mesh = mesh
         self.main_path = path
-        self.eq = model
+        self.equation = equation
 
+        self.domain_properties = {
+                'molecule': 'born_ion',
+                'epsilon_1':  1,
+                'epsilon_2': 80,
+                'kappa': 0.125,
+                'T' : 300 
+                }
         self.sigma = self.mesh.G_sigma
-        self.inputs = inputs
-        for key, value in inputs.items():
-            setattr(self, key, value)
+
+        for key in self.domain_properties:
+            if key in domain_properties:
+                self.domain_properties[key] = domain_properties[key]
+            setattr(self, key, self.domain_properties[key])
 
         self.get_charges()
         self.get_integral_operators()

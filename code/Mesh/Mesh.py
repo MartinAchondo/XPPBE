@@ -35,10 +35,10 @@ class Region_Mesh():
                 self.vertices = vertices
                 self.elements = elements
         if self.type_m=='points':
-            self.vertices = None
-            self.elements = None
             for key, value in kwargs.items():
                 setattr(self, key, value)
+            self.vertices = self.get_dataset()
+            self.elements = None
 
     def get_dataset(self):
         if self.type_m=='trimesh':
@@ -98,6 +98,7 @@ class Domain_Mesh():
             'N_pq': 100,
             'G_sigma': 0.04,
             'mesh_generator': 'msms',
+            'probe_radius': 1.4,
             'dR_exterior': 6,
             'force_field': 'AMBER'
             }
@@ -119,7 +120,6 @@ class Domain_Mesh():
         self.path_pdb = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.pdb')
 
         self.region_meshes = dict()
-        self.prior_data = dict()
         self.domain_mesh_names = set()
         self.domain_mesh_data = dict()
 
@@ -131,6 +131,7 @@ class Domain_Mesh():
         self.create_sphere_mesh()
         self.create_interior_mesh()
         self.create_exterior_mesh()
+        self.create_charges_mesh()
         self.create_mesh_obj()
         print("Mesh initialization ready")
 
@@ -143,9 +144,9 @@ class Domain_Mesh():
         convert_pqr2xyzr(self.path_pqr,self.path_xyzr,for_mesh=True)
 
         if self.mesh_generator == 'msms':
-            generate_msms_mesh(self.path_xyzr,self.path_files,self.molecule,self.density_mol)
+            generate_msms_mesh(self.path_xyzr,self.path_files,self.molecule,self.density_mol,self.probe_radius)
         elif self.mesh_generator == 'nanoshaper':
-            generate_nanoshaper_mesh(self.path_xyzr,self.path_files,self.molecule,self.density_mol)
+            generate_nanoshaper_mesh(self.path_xyzr,self.path_files,self.molecule,self.density_mol,self.probe_radius)
             
         with open(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.face'),'r') as face_f:
             face = face_f.read()
@@ -212,22 +213,20 @@ class Domain_Mesh():
         gInfo = self.mesh_molecule_pyg_2.getRoot() 
         gInfo.ishole = True   
 
-        for faceID in self.mesh_molecule_pyg_2.faceIDs:
-            faceID.data().marker = 23
-
         self.mesh_sphere_pyg = pygamer.readOFF(os.path.join(self.path_files,'mesh_sphere'+f'_d{self.density_border}'+'.off'))
         self.mesh_sphere_pyg.correctNormals()   
-        print("Found %i meshes in 2"%len(self.mesh_sphere_pyg.splitSurfaces()))
         gInfo = self.mesh_sphere_pyg.getRoot() 
         gInfo.ishole = False
-
-        for faceID in self.mesh_sphere_pyg.faceIDs:
-            faceID.data().marker = 50
 
         meshes = [self.mesh_molecule_pyg_2,self.mesh_sphere_pyg] 
         self.ext_tetmesh = pygamer.makeTetMesh(meshes, f'-pq1.2a{self.vol_max_exterior}YAO2/3') 
         self.region_meshes['R2'] = Region_Mesh('tetmesh',self.ext_tetmesh)
 
+    def create_charges_mesh(self):
+
+        path_files = os.path.join(self.main_path,'Molecules')
+        _,Lx_q,R_q,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
+        self.region_meshes['Q1'] = Region_Mesh(type_m='points', obj=None,charges=(Lx_q,R_q), G_sigma=self.G_sigma, N_pq=self.N_pq)
 
     def create_mesh_obj(self):
 
@@ -239,34 +238,11 @@ class Domain_Mesh():
         sphere_min, sphere_max = np.min(self.sphere_mesh.vertices, axis=0), np.max(self.sphere_mesh.vertices, axis=0)
         self.scale_2 = [sphere_min.tolist(), sphere_max.tolist()]
 
-        #########################################################################
-
-        self.prior_data['R1'] = tf.constant(self.region_meshes['R1'].vertices, dtype=self.DTYPE)
-
-        path_files = os.path.join(self.main_path,'Molecules')
-        _,Lx_q,R_q,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
-
-        self.region_meshes['Q1'] = Region_Mesh(type_m='points', obj=None,charges=(Lx_q,R_q), G_sigma=self.G_sigma, N_pq=self.N_pq)
-        self.prior_data['Q1'] = self.region_meshes['Q1'].get_dataset()
-
-        #########################################################################
-    
-        self.prior_data['R2'] = tf.constant(self.region_meshes['R2'].vertices, dtype=self.DTYPE)
-        self.prior_data['D2'] = tf.constant(self.region_meshes['D2'].vertices, dtype=self.DTYPE)
-
-        #############################################################################
-
         if self.save_points:
             X_plot = dict()
-            X_plot['Inner Domain'] = self.region_meshes['R1'].vertices
-            X_plot['Charges'] = self.prior_data['Q1'].numpy()
-            X_plot['Interface'] = self.region_meshes['I'].vertices
-            X_plot['Outer Domain'] = self.region_meshes['R2'].vertices
-            X_plot['Outer Border'] = self.region_meshes['D2'].vertices
-            X_plot['Inner Domain Sample'] = self.region_meshes['R1'].get_dataset().numpy()
-            X_plot['Interface Sample'] = self.region_meshes['I'].get_dataset().numpy()
-            X_plot['Outer Domain Sample'] = self.region_meshes['R2'].get_dataset().numpy()
-            X_plot['Outer Border Sample'] = self.region_meshes['D2'].get_dataset().numpy()
+            for type_b,mesh in self.region_meshes.items():
+                X_plot[f'{type_b}_verts'] = mesh.vertices
+                X_plot[f'{type_b}_sample'] = mesh.get_dataset().numpy()
             self.save_data_plot(X_plot)
 
     def adapt_meshes_domain(self,data,q_list):
@@ -279,7 +255,10 @@ class Domain_Mesh():
             flag = bl['domain'] 
 
             if type_b[0] in ('R','D','K','N','P','Q'): 
-                X = self.prior_data[type_b] if type_b in self.prior_data else None 
+                if type_b in self.region_meshes:
+                    X = tf.constant(self.region_meshes[type_b].vertices)
+                else:
+                    X = None
                 X,U = self.get_XU(X,bl)
                 self.domain_mesh_data[type_b] = ((X,U),flag)
                 self.domain_mesh_names.add(type_b)
@@ -351,7 +330,7 @@ class Domain_Mesh():
 
                 if self.save_points:
                     X_plot = dict()
-                    X_plot['Experimental'] = exterior_points
+                    X_plot['E2_verts'] = exterior_points
                     self.save_data_plot(X_plot)
 
 

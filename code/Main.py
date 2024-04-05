@@ -83,7 +83,7 @@ simulation.lr_p = 0.001
 simulation.N_iters = 10
 
 simulation.precondition = False
-simulation.N_precond = 3
+simulation.N_precond = 0
 simulation.iters_save_model = 5000
 
 

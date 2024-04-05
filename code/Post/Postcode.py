@@ -3,10 +3,10 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import logging
 import os
-import pandas as pd
 import json
+import pandas as pd
+import logging
 
 matplotlib_logger = logging.getLogger('matplotlib')
 matplotlib_logger.setLevel(logging.WARNING)
@@ -123,7 +123,7 @@ class Postprocessing():
         ax.set_ylabel(text_l)
         max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
         Gsolv_value = np.format_float_positional(self.XPINN.G_solv_hist[str(max_iter)], unique=False, precision=2)
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {max_iter}, G_solv: {Gsolv_value} kcal/kmol')
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {max_iter}, G_solv: {Gsolv_value} kcal/mol')
         ax.grid()
 
         if self.save:
@@ -135,18 +135,17 @@ class Postprocessing():
     def plot_collocation_points_3D(self, jupyter=False):
 
         color_dict = {
-            'Charges': 'red',
-            'Inner Domain': 'lightgreen',
-            'Interface': 'purple',
-            'Outer Domain': 'lightblue',
-            'Outer Border': 'orange',
-            'Inner Domain Sample': 'lightgreen',
-            'Interface Sample': 'purple',
-            'Outer Domain Sample': 'lightblue',
-            'Outer Border Sample': 'orange',
-            'Experimental': 'cyan',
-            'test': 'red',
-
+            'Q1_verts': 'red',
+            'Q1_sample': 'red',
+            'R1_verts': 'lightgreen',
+            'R1_sample': 'lightgreen',
+            'I_verts': 'purple',
+            'I_sample': 'purple',
+            'R2_verts': 'lightblue',
+            'R2_sample': 'lightblue',
+            'D2_verts': 'orange',
+            'D2_sample': 'orange',
+            'E2_verts': 'cyan',
         }
 
         subsets_directory = os.path.join(self.directory,'mesh')
