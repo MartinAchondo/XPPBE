@@ -1,6 +1,6 @@
-import numpy as np
 import tensorflow as tf
 import bempp.api
+import numpy as np
 
 from Model.PDE_Model import PBE
 
@@ -11,11 +11,11 @@ class PBE_Std(PBE):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
 
-        self.PDE_in = Poisson(self, field='phi')
+        self.PDE_in = Poisson(self,self.domain_properties,field='phi')
         if self.equation=='linear':
-            self.PDE_out = Helmholtz(self, field='phi')
+            self.PDE_out = Helmholtz(self,self.domain_properties,field='phi')
         elif self.equation=='nonlinear':
-            self.PDE_out = Non_Linear(self, field='phi')
+            self.PDE_out = Non_Linear(self,self.domain_properties,field='phi')
 
     def get_phi(self,X,flag,model,value='phi'):
         if flag=='molecule':
@@ -71,11 +71,11 @@ class PBE_Reg_1(PBE):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
 
-        self.PDE_in = Laplace(self, field='react')
+        self.PDE_in = Laplace(self,self.domain_properties,field='react')
         if self.equation=='linear':
-            self.PDE_out = Helmholtz(self, field='react')
+            self.PDE_out = Helmholtz(self,self.domain_properties,field='react')
         elif self.equation=='nonlinear':
-            self.PDE_out = Non_Linear(self, field='react')
+            self.PDE_out = Non_Linear(self,self.domain_properties,field='react')
 
     def get_phi(self,X,flag,model,value='phi'):
         if flag=='molecule':
@@ -119,11 +119,11 @@ class PBE_Reg_2(PBE):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
 
-        self.PDE_in = Laplace(self, field='react')
+        self.PDE_in = Laplace(self,self.domain_properties,field='react')
         if self.equation=='linear':
-            self.PDE_out = Helmholtz(self, field='phi')
+            self.PDE_out = Helmholtz(self,self.domain_properties,field='phi')
         elif self.equation=='nonlinear':
-            self.PDE_out = Non_Linear(self, field='phi')
+            self.PDE_out = Non_Linear(self,self.domain_properties,field='phi')
 
     def get_phi(self,X,flag,model,value='phi'):
         if flag=='molecule':
@@ -168,10 +168,12 @@ class PBE_Reg_2(PBE):
 # Residuals
 class Equations_utils():
 
-    def __init__(self, PBE, field):
+    def __init__(self, PBE, domain_properties, field):
         
         self.PBE = PBE
         self.field = field
+        for key, value in domain_properties.items():
+            setattr(self, key, value)
 
     def residual_loss(self,mesh,model,X,SU,flag):
         r = self.get_r(mesh,model,X,SU,flag)     
@@ -183,6 +185,7 @@ class Laplace(Equations_utils):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
+        self.epsilon = self.epsilon_1
 
     def get_r(self,mesh,model,X,SU,flag):
         r = self.PBE.laplacian(mesh,model,X,flag,value=self.field)     
@@ -193,6 +196,7 @@ class Poisson(Equations_utils):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
+        self.epsilon = self.epsilon_1
 
     def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
@@ -205,12 +209,13 @@ class Helmholtz(Equations_utils):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
+        self.epsilon = self.epsilon_2
 
     def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         u = self.PBE.get_phi(R,flag,model,value=self.field)
-        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.PBE.kappa**2*u      
+        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*u      
         return r  
 
 
@@ -218,11 +223,12 @@ class Non_Linear(Equations_utils):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
+        self.epsilon = self.epsilon_2
 
     def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         u = self.PBE.get_phi(R,flag,model,value=self.field)
-        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.PBE.kappa**2*tf.math.sinh(u)     
+        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*tf.math.sinh(u)     
         return r
     

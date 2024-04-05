@@ -10,7 +10,7 @@ simulation.pbe_model = 'linear'
 
 # Domain properties
 simulation.domain_properties = {
-        'molecule': 'arg',
+        'molecule': 'methanol',
         'epsilon_1':  1,
         'epsilon_2': 80,
         'kappa': 0.125,
@@ -26,7 +26,7 @@ simulation.mesh_properties = {
         'dx_experimental': 2,
         'N_pq': 100,
         'G_sigma': 0.04,
-        'mesh_generator': 'nanoshaper',
+        'mesh_generator': 'msms',
         'dR_exterior': 6
         }
 simulation.sample_method='random_sample'

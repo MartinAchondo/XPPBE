@@ -256,7 +256,7 @@ class Domain_Mesh():
 
             if type_b[0] in ('R','D','K','N','P','Q'): 
                 if type_b in self.region_meshes:
-                    X = tf.constant(self.region_meshes[type_b].vertices)
+                    X = tf.constant(self.region_meshes[type_b].vertices, dtype=self.DTYPE)
                 else:
                     X = None
                 X,U = self.get_XU(X,bl)
