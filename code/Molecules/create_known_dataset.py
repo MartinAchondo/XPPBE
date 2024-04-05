@@ -8,7 +8,7 @@ new_directory = os.path.sep.join(path_components[:-1])
 sys.path.append(new_directory)
 
 from Mesh.Charges_utils import get_charges_list
-from Model.Solutions_utils import Model_Funcs
+from Model.Solutions_utils import Solution_utils as Model_Funcs
 
 molecule = 'methanol'
 
