@@ -1,6 +1,6 @@
 import os
-import platform
 import shutil
+import platform
 
 
 def generate_msms_mesh(mesh_xyzr_path, output_dir, output_name, density, probe_radius=1.4):

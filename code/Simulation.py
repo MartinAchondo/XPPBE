@@ -139,7 +139,7 @@ class Simulation():
 
         self.PBE_model = PBE(self.domain_properties,
                 mesh=self.Mol_mesh, 
-                model=self.pbe_model,
+                equation=self.pbe_model,
                 path=self.main_path
                 ) 
 

@@ -3,10 +3,10 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import logging
 import os
-import pandas as pd
 import json
+import pandas as pd
+import logging
 
 matplotlib_logger = logging.getLogger('matplotlib')
 matplotlib_logger.setLevel(logging.WARNING)
