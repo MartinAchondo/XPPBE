@@ -118,7 +118,8 @@ class Solution_utils():
         return PHI
 
 
-    def get_K(self, x, n):
+    @staticmethod
+    def get_K(x, n):
         K = 0.0
         n_fact = sp.factorial(n)
         n_fact2 = sp.factorial(2 * n)
