@@ -8,6 +8,8 @@ if [ "$#" -eq 0 ]; then
 fi
 
 if [ "$2" = "Allclean" ]; then
+    bash Allclean results
+else
     bash Allclean
 fi
 

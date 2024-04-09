@@ -1,10 +1,12 @@
 #!/bin/sh
 
-filepath_results="results"
-if [ -d "${filepath_results}" ]; then
-    rm -r "${filepath_results}"
+if [ "$1" = "results" ]; then
+    filepath_results="results"
+    if [ -d "${filepath_results}" ]; then
+        rm -r "${filepath_results}"
+    fi
+    mkdir "${filepath_results}"
 fi
-mkdir "${filepath_results}"
 
 filepath_temp_meshes="Mesh/Temp"
 if [ -d "${filepath_temp_meshes}" ]; then
