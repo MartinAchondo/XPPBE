@@ -1,6 +1,8 @@
 import os
 import shutil
 import platform
+import logging
+import subprocess
 
 
 def generate_msms_mesh(mesh_xyzr_path, output_dir, output_name, density, probe_radius=1.4):
@@ -25,9 +27,7 @@ def generate_msms_mesh(mesh_xyzr_path, output_dir, output_name, density, probe_r
         + str(density)
         + " -no_header"
     )
-    print(command)
-    os.system(command)
-
+    execute_command(command)
 
 def generate_nanoshaper_mesh(
     mesh_xyzr_path,
@@ -64,11 +64,11 @@ def generate_nanoshaper_mesh(
 
     os.chdir(nanoshaper_temp_dir)
     if platform.system() == "Linux":
-        os.system("chmod +x " + nanoshaper_dir + "NanoShaper")
-        os.system(nanoshaper_dir + "NanoShaper")
+        execute_command("chmod +x " + nanoshaper_dir + "NanoShaper")
+        execute_command(nanoshaper_dir + "NanoShaper")
     elif platform.system() == "Windows":
         if platform.architecture()[0] == "32bit":
-            os.system(
+            execute_command(
                 nanoshaper_dir
                 + "NanoShaper32.exe"
                 + " "
@@ -76,7 +76,7 @@ def generate_nanoshaper_mesh(
                 + "surfaceConfiguration.prm"
             )
         elif platform.architecture()[0] == "64bit":
-            os.system(
+            execute_command(
                 nanoshaper_dir
                 + "NanoShaper64.exe"
                 + " "
@@ -108,3 +108,11 @@ def generate_nanoshaper_mesh(
     except (OSError, FileNotFoundError):
         print("The file doesn't exist or it wasn't created by NanoShaper")
 
+
+def execute_command(command):
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    output, error = process.communicate()
+    if process.returncode == 0:
+        logging.info(f"Command '{command}' executed successfully. Output: {output.decode().strip()}")
+    else:
+        logging.error(f"Error executing command '{command}'. Error: {error.decode().strip()}")

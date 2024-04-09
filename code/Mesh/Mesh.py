@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy as np
 import tensorflow as tf
 import trimesh
@@ -128,12 +129,16 @@ class Domain_Mesh():
         
     
     def read_create_meshes(self):
+        old_stdout = sys.stdout
+        sys.stdout = open(os.path.join(self.result_path,'results',self.simulation_name,'logfile2.log'), 'w')
         self.create_molecule_mesh()
         self.create_sphere_mesh()
         self.create_interior_mesh()
         self.create_exterior_mesh()
         self.create_charges_mesh()
         self.create_mesh_obj()
+        sys.stdout.close()
+        sys.stdout = old_stdout
         print("Mesh initialization ready")
 
 
@@ -192,7 +197,6 @@ class Domain_Mesh():
         self.region_meshes['D2'] = Region_Mesh('trimesh',self.sphere_mesh)
 
     def create_interior_mesh(self):
-
         mesh_molecule = pygamer.readOFF(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'))
         mesh_split = mesh_molecule.splitSurfaces() 
         
@@ -202,7 +206,7 @@ class Domain_Mesh():
         gInfo.ishole = False   
 
         meshes = [self.mesh_molecule_pyg] 
-        self.int_tetmesh = pygamer.makeTetMesh(meshes, f'-pq1.2a{self.vol_max_interior}YAO2/3')  
+        self.int_tetmesh = pygamer.makeTetMesh(meshes, f'pq1.2a{self.vol_max_interior}YAO2/3Q')  
         self.region_meshes['R1'] = Region_Mesh('tetmesh',self.int_tetmesh)
 
     def create_exterior_mesh(self):
@@ -220,7 +224,7 @@ class Domain_Mesh():
         gInfo.ishole = False
 
         meshes = [self.mesh_molecule_pyg_2,self.mesh_sphere_pyg] 
-        self.ext_tetmesh = pygamer.makeTetMesh(meshes, f'-pq1.2a{self.vol_max_exterior}YAO2/3') 
+        self.ext_tetmesh = pygamer.makeTetMesh(meshes, f'pq1.2a{self.vol_max_exterior}YAO2/3Q') 
         self.region_meshes['R2'] = Region_Mesh('tetmesh',self.ext_tetmesh)
 
     def create_charges_mesh(self):

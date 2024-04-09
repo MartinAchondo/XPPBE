@@ -222,7 +222,7 @@ class Postprocessing():
         for v in toRemove:
             ext_tetmesh.removeVertex(v)
         ext_surfmesh = ext_tetmesh.extractSurface()
-        ext_surfmesh.correctNormals()
+        #ext_surfmesh.correctNormals()
         v_ex, e_ex, f_ex = ext_surfmesh.to_ndarray()
 
         toRemove = []
@@ -233,7 +233,7 @@ class Postprocessing():
         for v in toRemove:
             int_tetmesh.removeVertex(v)
         int_surfmesh = int_tetmesh.extractSurface()
-        int_surfmesh.correctNormals()
+        #int_surfmesh.correctNormals()
         v_in, e_in, f_in = int_surfmesh.to_ndarray()
 
         element_trace_in = go.Mesh3d(

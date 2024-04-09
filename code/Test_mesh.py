@@ -9,18 +9,18 @@ simulation_name,results_path,main_path,logger = get_simulation_name(__file__)
 
 
 domain_properties = {
-    'molecule': 'sphere',
+    'molecule': 'arg',
     }
     
 mesh_properties = {
         'vol_mx_interior': 0.05,
         'vol_max_exterior': 0.5,
-        'density_mol': 6,
+        'density_mol': 2,
         'density_border': 3,
         'dx_experimental': 0.8,
         'N_pq': 100,
         'G_sigma': 0.04,
-        'mesh_generator': 'msms',
+        'mesh_generator': 'nanoshaper',
         'dR_exterior': 5
         }
 
@@ -33,6 +33,7 @@ Mol_mesh = Domain_Mesh(domain_properties['molecule'],
                 simulation=simulation_name
                 )
 
+
 print(Mol_mesh.R_mol,Mol_mesh.R_max_dist)
 
 Postprocessing.mesh = Mol_mesh
@@ -41,3 +42,4 @@ Postprocessing.path_plots_meshes = ''
 Postprocessing.plot_vol_mesh_3D(Postprocessing)
 Postprocessing.plot_collocation_points_3D(Postprocessing)
 Postprocessing.plot_surface_mesh_3D(Postprocessing)
+
