@@ -49,7 +49,8 @@ class Region_Mesh():
             dataset = self.random_points_near_charges(self.charges[0],self.charges[1])
         return tf.constant(dataset, dtype=self.DTYPE)
     
-    def random_points_in_elements(self,vertices, elements,num_vert_per_elem):
+    @staticmethod
+    def random_points_in_elements(vertices, elements,num_vert_per_elem):
         num_elements = len(elements)
         random_coordinates = np.random.uniform(0, 1, size=(num_elements, num_vert_per_elem))
         normalization_factors = np.sum(random_coordinates, axis=1, keepdims=True)
@@ -353,7 +354,8 @@ class Domain_Mesh():
                 U = U*self.add_noise(U)
         return X,U
 
-    def add_noise(self,x):    
+    @staticmethod
+    def add_noise(x):    
         n = x.shape[0]
         mu, sigma = 1, 0.1
         s = np.array(np.random.default_rng().normal(mu, sigma, n), dtype='float32')
@@ -387,21 +389,22 @@ class Domain_Mesh():
         return X,phi_b
 
 
-    @classmethod
-    def get_X(cls,X):
+    @staticmethod
+    def get_X(X):
         R = list()
         for i in range(X.shape[1]):
             R.append(X[:,i:i+1])
         return R
 
-    @classmethod
-    def stack_X(cls,x,y,z):
+    @staticmethod
+    def stack_X(x,y,z):
         R = tf.stack([x[:,0], y[:,0], z[:,0]], axis=1)
         return R
     
-    def value_u_b(self,x, y, z, value):
+    @classmethod
+    def value_u_b(cls,x, y, z, value):
         n = x.shape[0]
-        return tf.ones((n,1), dtype=self.DTYPE)*value
+        return tf.ones((n,1), dtype=cls.DTYPE)*value
 
     def save_data_plot(self,X_plot):
         path_files = os.path.join(self.result_path,'results',self.simulation_name,'mesh')

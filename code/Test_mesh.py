@@ -40,3 +40,4 @@ Postprocessing.directory = results_path
 Postprocessing.path_plots_meshes = ''
 Postprocessing.plot_vol_mesh_3D(Postprocessing)
 Postprocessing.plot_collocation_points_3D(Postprocessing)
+Postprocessing.plot_surface_mesh_3D(Postprocessing)

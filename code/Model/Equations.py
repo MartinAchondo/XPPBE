@@ -9,6 +9,7 @@ from Model.PDE_Model import PBE
 class PBE_Std(PBE):
 
     def __init__(self,*args,**kwargs):
+        self.scheme = 'standard'
         super().__init__(*args,**kwargs)
 
         self.PDE_in = Poisson(self,self.domain_properties,field='phi')
@@ -69,6 +70,7 @@ class PBE_Std(PBE):
 class PBE_Reg_1(PBE):
 
     def __init__(self,*args,**kwargs):
+        self.scheme = 'regularized_1'
         super().__init__(*args,**kwargs)
 
         self.PDE_in = Laplace(self,self.domain_properties,field='react')
@@ -117,6 +119,7 @@ class PBE_Reg_1(PBE):
 class PBE_Reg_2(PBE):
 
     def __init__(self,*args,**kwargs):
+        self.scheme = 'regularized_2'
         super().__init__(*args,**kwargs)
 
         self.PDE_in = Laplace(self,self.domain_properties,field='react')

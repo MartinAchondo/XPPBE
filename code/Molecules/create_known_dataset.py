@@ -17,7 +17,7 @@ molecule = 'sphere'
 Rs = {'born_ion': 1,
       'methanol': 2.54233,
       'arg': 5.9695745,
-      'sphere': 2.55}
+      'sphere': 1.55}
 
 
 q_list = get_charges_list(os.path.join(current_directory,molecule,f'{molecule}.pqr'))

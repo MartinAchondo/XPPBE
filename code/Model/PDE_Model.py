@@ -40,7 +40,8 @@ class PBE(Solution_utils):
             setattr(self, key, self.domain_properties[key])
 
         self.get_charges()
-        self.get_integral_operators()
+        if self.scheme == 'standard':
+            self.get_integral_operators()
 
         super().__init__()
 

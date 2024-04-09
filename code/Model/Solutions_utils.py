@@ -3,10 +3,7 @@ import tensorflow as tf
 from scipy import special as sp
 
 
-class Solution_utils():
-
-    def __init__(self):  
-        pass    
+class Solution_utils(): 
 
     def G_Yukawa(self,x,y,z):
         sum = 0
