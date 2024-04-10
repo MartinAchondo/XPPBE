@@ -670,6 +670,41 @@ class Postprocessing():
                                         show_layer_activations=True,
                                         dpi = 150)
 
+    @staticmethod
+    def plot_phis_line(u_list, X, labels=None, lims=None):
+        fig, ax = plt.subplots()
+        c = ['r','b','g','m']
+        if labels == None:
+            labels = ['1','2','3','4','5']
+        X_in,X_out,x0 = X
+        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
+        r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+        n = np.argmin(r_in)
+        r_in[:n] = -r_in[:n]
+
+        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
+        r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+        n = np.argmin(r_out)
+        r_out_1 = -r_out[:n]
+        r_out_2 = r_out[n:]
+
+        for i,(u_in,u_out) in enumerate(u_list):
+            ax.plot(r_in,u_in[:], c=c[i], label=labels[i])
+            ax.plot(r_out_1,u_out[:n], c=c[i])
+            ax.plot(r_out_2,u_out[n:], c=c[i])
+        
+        if lims != None:
+            limx,limy = lims
+            if limx != None:
+                ax.set_xlim(limx)
+            if limy != None:
+                ax.set_ylim(lims)
+
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+        ax.grid()
+        ax.legend()
+        return fig,ax
 
 class Born_Ion_Postprocessing(Postprocessing):
 

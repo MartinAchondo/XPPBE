@@ -129,7 +129,6 @@ class Domain_Mesh():
         
     
     def read_create_meshes(self):
-        old_stdout = sys.stdout
         sys.stdout = open(os.path.join(self.result_path,'results',self.simulation_name,'logfile2.log'), 'w')
         self.create_molecule_mesh()
         self.create_sphere_mesh()
@@ -138,7 +137,7 @@ class Domain_Mesh():
         self.create_charges_mesh()
         self.create_mesh_obj()
         sys.stdout.close()
-        sys.stdout = old_stdout
+        sys.stdout = sys.__stdout__
         print("Mesh initialization ready")
 
 
