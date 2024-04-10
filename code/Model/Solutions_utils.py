@@ -13,21 +13,23 @@ class Solution_utils():
     to_V = qe/(eps0 * ang_to_m)  
     cal2j = 4.184
 
-    def phi_known(self,function,field,X,flag,R=None):  
+    def phi_known(self,function,field,X,flag,R=None,N=20):  
         x, y, z = X[:,0], X[:,1], X[:,2]
         r = np.linalg.norm(X, axis=1)   
            
         if function == 'Harmonic_spheres':
-            phi_values = self.Harmonic_spheres(X, flag, R)
+            phi_values = self.Harmonic_spheres(X, flag, R,N=N)
+            if flag=='solvent':
+                phi_values -= self.G(x,y,z)
         elif function == 'G_Yukawa':
-            phi_values = self.G_Yukawa(x,y,z)
+            phi_values = self.G_Yukawa(x,y,z) - self.G(x,y,z)
         elif function == 'analytic_Born_Ion':
-            phi_values = self.analytic_Born_Ion(r)
+            phi_values = self.analytic_Born_Ion(r) - self.G(x,y,z)
         
-        if field == 'phi':
+        if field == 'react':
             return np.array(phi_values)
-        elif field == 'react':
-            return np.array(phi_values - self.G(x,y,z))
+        elif field == 'phi':
+            return np.array(phi_values + self.G(x,y,z))
 
 
     def G_Yukawa(self,x,y,z):

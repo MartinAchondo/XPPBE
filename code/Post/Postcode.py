@@ -685,14 +685,14 @@ class Postprocessing():
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
         r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
         n = np.argmin(r_out)
-        r_out_1 = -r_out[:n]
-        r_out_2 = r_out[n:]
+        r_out_1 = -r_out[:n+1]
+        r_out_2 = r_out[n+1:]
 
         for i,(u_in,u_out) in enumerate(u_list):
             if domain == 'all':
                 ax.plot(r_in,u_in[:], c=c[i])
-            ax.plot(r_out_1,u_out[:n], c=c[i], label=labels[i])
-            ax.plot(r_out_2,u_out[n:], c=c[i])
+            ax.plot(r_out_1,u_out[:n+1], c=c[i], label=labels[i])
+            ax.plot(r_out_2,u_out[n+1:], c=c[i])
 
         ax.set_xlabel('r')
         ax.set_ylabel(r'$\phi_{\theta}$')
