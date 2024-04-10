@@ -671,7 +671,7 @@ class Postprocessing():
                                         dpi = 150)
 
     @staticmethod
-    def plot_phis_line(u_list, X, labels=None, lims=None):
+    def plot_phis_line(u_list, X, labels=None, domain='all'):
         fig, ax = plt.subplots()
         c = ['r','b','g','m']
         if labels == None:
@@ -689,16 +689,10 @@ class Postprocessing():
         r_out_2 = r_out[n:]
 
         for i,(u_in,u_out) in enumerate(u_list):
-            ax.plot(r_in,u_in[:], c=c[i], label=labels[i])
-            ax.plot(r_out_1,u_out[:n], c=c[i])
+            if domain == 'all':
+                ax.plot(r_in,u_in[:], c=c[i])
+            ax.plot(r_out_1,u_out[:n], c=c[i], label=labels[i])
             ax.plot(r_out_2,u_out[n:], c=c[i])
-        
-        if lims != None:
-            limx,limy = lims
-            if limx != None:
-                ax.set_xlim(limx)
-            if limy != None:
-                ax.set_ylim(lims)
 
         ax.set_xlabel('r')
         ax.set_ylabel(r'$\phi_{\theta}$')
