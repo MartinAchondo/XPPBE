@@ -36,6 +36,7 @@ putty.bash
 pscp_pbj.bash
 pscp_sims.bash
 pscp_post.bash
+bash_codes/
 
 # Test-related directories
 /.test
