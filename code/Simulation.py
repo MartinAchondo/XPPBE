@@ -237,10 +237,10 @@ class Simulation():
         # self.Post.plot_loss_history(domain=1,loss='RIu');
         # self.Post.plot_loss_history(domain=2,loss='RIuD');
         
-        self.Post.plot_loss_validation_history(domain=1,loss='TL')
-        self.Post.plot_loss_validation_history(domain=2,loss='TL')
-        self.Post.plot_loss_validation_history(domain=1,loss='R')
-        self.Post.plot_loss_validation_history(domain=2,loss='R')
+        self.Post.plot_loss_validation_history(domain=1,loss='TL');
+        self.Post.plot_loss_validation_history(domain=2,loss='TL');
+        self.Post.plot_loss_validation_history(domain=1,loss='R');
+        self.Post.plot_loss_validation_history(domain=2,loss='R');
 
         self.Post.plot_weights_history(domain=1);
         self.Post.plot_weights_history(domain=2);
@@ -252,26 +252,26 @@ class Simulation():
         self.Post.plot_mesh_3D('R2');
         self.Post.plot_mesh_3D('I');
         self.Post.plot_mesh_3D('D2');
-        self.Post.plot_surface_mesh_normals(plot='vertices')
-        self.Post.plot_surface_mesh_normals(plot='faces')
+        self.Post.plot_surface_mesh_normals(plot='vertices');
+        self.Post.plot_surface_mesh_normals(plot='faces');
 
         self.Post.plot_G_solv_history();
-        self.Post.plot_phi_line(); 
-        self.Post.plot_phi_line(value='react'); 
-        self.Post.plot_phi_contour(); 
-        self.Post.plot_phi_contour(value='react'); 
+        self.Post.plot_phi_line();
+        self.Post.plot_phi_line(value='react');
+        self.Post.plot_phi_contour();
+        self.Post.plot_phi_contour(value='react');
         self.Post.plot_interface_3D(variable='phi');
         self.Post.plot_interface_3D(variable='dphi');
 
         if self.domain_properties['molecule'] == 'born_ion':
-            self.Post.plot_aprox_analytic(); 
-            self.Post.plot_aprox_analytic(value='react'); 
-            self.Post.plot_aprox_analytic(zoom=True); 
-            self.Post.plot_aprox_analytic(zoom=True, value='react'); 
-            self.Post.plot_line_interface(); 
-            self.Post.plot_line_interface(value='react'); 
-            self.Post.plot_line_interface(plot='du'); 
-            self.Post.plot_line_interface(plot='du',value='react'); 
+            self.Post.plot_aprox_analytic();
+            self.Post.plot_aprox_analytic(value='react');
+            self.Post.plot_aprox_analytic(zoom=True);
+            self.Post.plot_aprox_analytic(zoom=True, value='react');
+            self.Post.plot_line_interface();
+            self.Post.plot_line_interface(value='react');
+            self.Post.plot_line_interface(plot='du');
+            self.Post.plot_line_interface(plot='du',value='react');
 
         self.Post.save_values_file();
         self.Post.save_model_summary();

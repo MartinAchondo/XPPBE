@@ -66,6 +66,7 @@ class Postprocessing():
             path = f'loss_history_{domain}_loss{loss}.png' if not plot_w  else f'loss_history_{domain}_w.png' 
             path_save = os.path.join(self.directory,self.path_plots_losses,path)
             fig.savefig(path_save)
+        return fig,ax
 
     def plot_loss_validation_history(self, domain=1, loss='TL'):
         fig,ax = plt.subplots()
@@ -89,6 +90,7 @@ class Postprocessing():
             path = f'loss_val_history_{domain}_loss{loss}.png' 
             path_save = os.path.join(self.directory,self.path_plots_losses,path)
             fig.savefig(path_save)
+        return fig,ax
 
 
     def plot_weights_history(self, domain=1):
@@ -112,6 +114,7 @@ class Postprocessing():
             path = f'weights_history_{domain}.png'
             path_save = os.path.join(self.directory,self.path_plots_weights,path)
             fig.savefig(path_save)
+        return fig,ax
 
 
     def plot_G_solv_history(self):
@@ -130,6 +133,7 @@ class Postprocessing():
             path = 'Gsolv_history.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
+        return fig,ax
 
 
     def plot_collocation_points_3D(self, jupyter=False):
@@ -167,10 +171,11 @@ class Postprocessing():
 
         fig.update_layout(title='Dominio 3D', scene=dict(xaxis_title='X', yaxis_title='Y', zaxis_title='Z'))
         
-        if not jupyter:
+        if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory,self.path_plots_meshes, 'collocation_points_plot_3d.html'))
         elif jupyter:
             fig.show()
+        return fig
 
     def plot_surface_mesh_3D(self, jupyter=False):
 
@@ -208,10 +213,11 @@ class Postprocessing():
         fig = go.Figure(data=[element_trace,edge_trace])
         fig.update_layout(scene=dict(aspectmode='data'))
 
-        if not jupyter:
+        if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surf_3D.html'))
         elif jupyter:
             fig.show()
+        return fig
 
     def plot_vol_mesh_3D(self, jupyter=False):
         toRemove = []
@@ -298,10 +304,11 @@ class Postprocessing():
             aspectmode="data",
         )    )
 
-        if not jupyter:
+        if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_vol_3D.html'))
         elif jupyter:
             fig.show()
+        return fig
 
 
     def plot_mesh_3D(self,domain,element_indices=None, jupyter=False):
@@ -400,10 +407,11 @@ class Postprocessing():
             )
         )
 
-        if not jupyter:
+        if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_3D_{domain}.html'))
         elif jupyter:
             fig.show()
+        return fig
 
     def plot_surface_mesh_normals(self,plot='vertices',jupyter=False):
 
@@ -462,10 +470,11 @@ class Postprocessing():
         # Create the figure
         fig = go.Figure(data=[mesh_trace, vertex_normals_trace, edge_trace], layout=layout)
 
-        if not jupyter:
+        if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surface_normals_{plot}.html'))
         elif jupyter:
             fig.show()
+        return fig
 
 
     def plot_interface_3D(self,variable='phi', value='phi', domain='interface', jupyter=False):
@@ -492,10 +501,11 @@ class Postprocessing():
 
         fig.update_layout(scene=dict(aspectmode='data'))
 
-        if not jupyter:
+        if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.html'))
         elif jupyter:
             fig.show()
+        return fig
 
     def plot_phi_line(self, N=8000, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, value ='phi'):
         fig, ax = plt.subplots()
@@ -518,12 +528,12 @@ class Postprocessing():
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
         r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
         n = np.argmin(r_out)
-        r_out_1 = -r_out[:n]
-        r_out_2 = r_out[n:]
+        r_out_1 = -r_out[:n+1]
+        r_out_2 = r_out[n+1:]
 
         ax.plot(r_in,u_in[:], label='Solute', c='r')
-        ax.plot(r_out_1,u_out[:n], label='Solvent', c='b')
-        ax.plot(r_out_2,u_out[n:], c='b')
+        ax.plot(r_out_1,u_out[:n+1], label='Solvent', c='b')
+        ax.plot(r_out_2,u_out[n+1:], c='b')
         
         ax.set_xlabel('r')
         ax.set_ylabel(r'$\phi_{\theta}$')
@@ -542,6 +552,62 @@ class Postprocessing():
             path = f'solution_{value}.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
+        return fig,ax
+
+
+    def plot_phi_line_aprox_analytic(self, method, N=300, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, value ='phi'):
+        fig, ax = plt.subplots()
+        
+        r = np.linspace(-self.mesh.R_exterior,self.mesh.R_exterior,N)
+        x = x0[0] + r * np.sin(phi) * np.cos(theta) + self.mesh.centroid[0]
+        y = x0[1] + r * np.sin(phi) * np.sin(theta) + self.mesh.centroid[1]
+        z = x0[2] + r * np.cos(phi) + self.mesh.centroid[2]
+        points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
+        X_in,X_out,_ = self.get_interior_exterior(points)
+        
+        u_in = self.PDE.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model,  value)[:,0]
+        u_out = self.PDE.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model,  value)[:,0]
+
+        u_in_an = self.PDE.phi_known(method,value,tf.constant(X_in, dtype=self.DTYPE),'molecule',self.mesh.R_max_dist)
+        u_out_an = self.PDE.phi_known(method,value,tf.constant(X_out, dtype=self.DTYPE),'solvent',self.mesh.R_max_dist)
+
+        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
+        r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+        n = np.argmin(r_in)
+        r_in[:n] = -r_in[:n]
+
+        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
+        r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+        n = np.argmin(r_out)
+        r_out_1 = -r_out[:n+1]
+        r_out_2 = r_out[n+1:]
+
+        ax.plot(r_in,u_in[:], c='b')
+        ax.plot(r_out_1,u_out[:n+1], label='Aprox', c='b')
+        ax.plot(r_out_2,u_out[n+1:], c='b')
+
+        ax.plot(r_in,u_in_an[:], c='r', linestyle='--')
+        ax.plot(r_out_1,u_out_an[:n+1], label=method, c='r', linestyle='--')
+        ax.plot(r_out_2,u_out_an[n+1:], c='r', linestyle='--')
+        
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+        text_l = r'$\phi_{\theta}$' 
+        text_l = text_l if value=='phi' else f'{text_l}_react'
+        text_theta = r'$\theta$'
+        text_phi = r'$\phi$'
+        theta = np.format_float_positional(theta, unique=False, precision=2)
+        phi = np.format_float_positional(phi, unique=False, precision=2)
+        text_x0 = r'$x_0$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters};  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
+        ax.grid()
+        ax.legend()
+
+        if self.save:
+            path = f'solution_{value}.png'
+            path_save = os.path.join(self.directory,self.path_plots_solution,path)
+            fig.savefig(path_save)
+        return fig,ax
 
 
     def plot_phi_contour(self, N=100, x0=np.array([0,0,0]), n=np.array([1,0,0]), value='phi'):
@@ -589,6 +655,7 @@ class Postprocessing():
             path = f'contour_{value}.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
+        return fig,ax
 
 
     def get_max_min(self,u1,u2):
@@ -784,6 +851,7 @@ class Born_Ion_Postprocessing(Postprocessing):
             path = f'analytic_{value}.png' if zoom==False else f'analytic_zoom_{value}.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
+        return fig,ax
 
 
     def plot_line_interface(self,N=100,plot='u',value='phi'):
@@ -859,6 +927,7 @@ class Born_Ion_Postprocessing(Postprocessing):
             path = f'interface_line_{plot}_{value}.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
+        return fig,ax
 
 
     def L2_error_interface_analytic(self):
