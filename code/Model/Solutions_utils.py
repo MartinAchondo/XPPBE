@@ -1,6 +1,8 @@
 import numpy as np
 import tensorflow as tf
 from scipy import special as sp
+import os
+import sys
 
 
 class Solution_utils(): 
@@ -12,6 +14,10 @@ class Solution_utils():
     ang_to_m = 1e-10
     to_V = qe/(eps0 * ang_to_m)  
     cal2j = 4.184
+
+    pbj_created = False
+    pbj_mesh_density = 5
+    pbj_mesh_generator = 'msms'
 
     def phi_known(self,function,field,X,flag,R=None,N=20):  
         x, y, z = X[:,0], X[:,1], X[:,2]
@@ -25,6 +31,11 @@ class Solution_utils():
             phi_values = self.G_Yukawa(x,y,z) - self.G(x,y,z)
         elif function == 'analytic_Born_Ion':
             phi_values = self.analytic_Born_Ion(r) - self.G(x,y,z)
+        elif function == 'pbj':
+            phi_values = self.pbj(X, flag)
+            if flag=='solvent':
+                phi_values -= self.G(x,y,z)
+        
         
         if field == 'react':
             return np.array(phi_values)
@@ -161,3 +172,18 @@ class Solution_utils():
         G_solv = 0.5*np.sum(self.qs * phi_q)
         G_solv *= self.to_V*self.qe*self.Na*(10**-3/self.cal2j)   
         return G_solv
+
+
+    def pbj(self,X,flag):
+
+        if not self.pbj_created:
+            sys.path.append(os.path.dirname(os.getcwd()))
+            from pbj.pbj import pbj
+            self.pbj_obj = pbj(self.domain_properties,self.pqr_path,self.pbj_mesh_density,self.pbj_mesh_generator)
+            self.pbj_phi = self.pbj_obj.simulation.solutes[0].results['phi'].coefficients.reshape(-1,1)
+            self.pbj_vertices = np.array(self.pbj_obj.simulation.solutes[0].mesh.vertices).transpose()
+            self.pbj_elements = np.array(self.pbj_obj.simulation.solutes[0].mesh.elements).transpose()
+            self.pbj_created = True
+
+        phi = self.pbj_obj.calculate_potential(X,flag)
+        return phi

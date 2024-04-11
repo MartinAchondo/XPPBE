@@ -26,6 +26,7 @@ class Postprocessing():
         self.model = XPINN.model
         self.mesh = XPINN.mesh
         self.PDE = XPINN.PDE
+        self.PDE.pqr_path = self.mesh.path_pqr
 
         self.loss_last = [np.format_float_scientific(self.XPINN.losses['TL'][-1], unique=False, precision=3),
                           np.format_float_scientific(self.XPINN.losses['TL1'][-1], unique=False, precision=3),
@@ -504,6 +505,17 @@ class Postprocessing():
         if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.html'))
         elif jupyter:
+            fig.show()
+        return fig
+
+    
+    def plot_interface_3D_known(self, phi_known, vertices, elements, jupyter=True):
+        fig = go.Figure()
+        fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
+                            i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
+                            intensity=phi_known, colorscale='RdBu_r'))
+        fig.update_layout(scene=dict(aspectmode='data'))
+        if jupyter:
             fig.show()
         return fig
 
