@@ -47,8 +47,12 @@ bash_codes/
 code/simulations_list/*
 code/simulations_list/*/
 !code/simulations_list/Main.py
-code/pbj/
+code/pbj/*
 code/pbj/*/
+!code/pbj/pbj.py
+code/Model/pbj/*
+code/Model/pbj/*/
+!code/Model/pbj/pbj.py
 .pbj/
 tutorials/results/
 code/Molecules/mesh_files/

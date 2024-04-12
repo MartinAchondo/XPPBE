@@ -177,8 +177,8 @@ class Solution_utils():
     def pbj(self,X,flag):
 
         if not self.pbj_created:
-            sys.path.append(os.path.dirname(os.getcwd()))
-            from pbj.pbj import pbj
+
+            from Model.pbj.pbj import pbj
             self.pbj_obj = pbj(self.domain_properties,self.pqr_path,self.pbj_mesh_density,self.pbj_mesh_generator)
             self.pbj_phi = self.pbj_obj.simulation.solutes[0].results['phi'].coefficients.reshape(-1,1)
             self.pbj_vertices = np.array(self.pbj_obj.simulation.solutes[0].mesh.vertices).transpose()
