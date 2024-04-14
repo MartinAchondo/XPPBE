@@ -1,8 +1,6 @@
 import numpy as np
 import tensorflow as tf
 from scipy import special as sp
-import os
-import sys
 
 
 class Solution_utils(): 

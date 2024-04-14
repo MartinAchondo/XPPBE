@@ -39,6 +39,21 @@ class Postprocessing():
             path = os.path.join(self.directory, folder)
             os.makedirs(path, exist_ok=True)
 
+    def get_phi(self,*args,**kwargs):
+        return self.PDE.get_phi(*args,**kwargs)
+
+    def get_dphi(self,*args,**kwargs):
+        return self.PDE.get_dphi(*args,**kwargs)
+
+    def phi_known(self,*args,**kwargs):
+        return self.PDE.phi_known(*args,**kwargs)
+
+    def get_phi_interface(self,*args,**kwargs):
+        return self.PDE.get_phi_interface(*args,**kwargs)
+
+    def get_dphi_interface(self,*args,**kwargs):
+        return self.PDE.get_dphi_interface(*args,**kwargs)
+
     def plot_loss_history(self, domain=1, plot_w=False, loss='all'):
         fig,ax = plt.subplots()
         c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime', 'Ir': 'aqua', 'E':'darkslategrey','G': 'salmon'}
@@ -484,9 +499,9 @@ class Postprocessing():
         elements = self.mesh.mol_faces.astype(np.float32)
          
         if variable == 'phi':
-            values,values_1,values_2 = self.PDE.get_phi_interface(self.XPINN.model,value=value)
+            values,values_1,values_2 = self.get_phi_interface(self.XPINN.model,value=value)
         elif variable == 'dphi':
-            values,values_1,values_2 = self.PDE.get_dphi_interface(self.XPINN.model)
+            values,values_1,values_2 = self.get_dphi_interface(self.XPINN.model)
         
         if domain =='interface':
             values = values.flatten()
@@ -529,8 +544,8 @@ class Postprocessing():
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,_ = self.get_interior_exterior(points)
         
-        u_in = self.PDE.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model,  value)[:,0]
-        u_out = self.PDE.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model,  value)[:,0]
+        u_in = self.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model,  value)[:,0]
+        u_out = self.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model,  value)[:,0]
 
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
         r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
@@ -577,11 +592,11 @@ class Postprocessing():
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,_ = self.get_interior_exterior(points)
         
-        u_in = self.PDE.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model,  value)[:,0]
-        u_out = self.PDE.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model,  value)[:,0]
+        u_in = self.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model,  value)[:,0]
+        u_out = self.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model,  value)[:,0]
 
-        u_in_an = self.PDE.phi_known(method,value,tf.constant(X_in, dtype=self.DTYPE),'molecule',self.mesh.R_max_dist)
-        u_out_an = self.PDE.phi_known(method,value,tf.constant(X_out, dtype=self.DTYPE),'solvent',self.mesh.R_max_dist)
+        u_in_an = self.phi_known(method,value,tf.constant(X_in, dtype=self.DTYPE),'molecule',self.mesh.R_max_dist)
+        u_out_an = self.phi_known(method,value,tf.constant(X_out, dtype=self.DTYPE),'solvent',self.mesh.R_max_dist)
 
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
         r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
@@ -616,7 +631,7 @@ class Postprocessing():
         ax.legend()
 
         if self.save:
-            path = f'solution_{value}.png'
+            path = f'solution_{value}_{method}.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
         return fig,ax
@@ -646,8 +661,8 @@ class Postprocessing():
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,bools = self.get_interior_exterior(points,R_exterior)
 
-        u_in = self.PDE.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model, value)[:,0]
-        u_out = self.PDE.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model, value)[:,0]
+        u_in = self.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model, value)[:,0]
+        u_out = self.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model, value)[:,0]
 
         vmax,vmin = self.get_max_min(u_in,u_out)
         s = ax.scatter(T.ravel()[bools[0]], S.ravel()[bools[0]], c=u_in[:],vmin=vmin,vmax=vmax)
@@ -794,8 +809,8 @@ class Born_Ion_Postprocessing(Postprocessing):
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,_ = self.get_interior_exterior(points)
         
-        u_in = self.PDE.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model, value)[:,0]
-        u_out = self.PDE.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model, value)[:,0]
+        u_in = self.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model, value)[:,0]
+        u_out = self.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model, value)[:,0]
 
         x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
         r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
@@ -895,13 +910,13 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         for i,flag in zip([0,1],['molecule','solvent']):
             if plot=='u':
-                U = self.PDE.get_phi(XX_bl,flag,self.model,value)[:,0]
+                U = self.get_phi(XX_bl,flag,self.model,value)[:,0]
                 ax.plot(theta_bl[:,0],U[:], label=labels[i], c=colr[i])
             elif plot=='du':
                 radial_vector = XX_bl - self.mesh.centroid
                 magnitude = tf.norm(radial_vector, axis=1, keepdims=True)
                 normal_vector = radial_vector / magnitude
-                du = self.PDE.get_dphi(XX_bl,normal_vector,flag,self.model,value)
+                du = self.get_dphi(XX_bl,normal_vector,flag,self.model,value)
                 if i==0:
                     ax.plot(theta_bl[:,0],du[i][:,0]*self.PDE.PDE_in.epsilon, label=labels[i], c=colr[i])
                 else:
@@ -945,7 +960,7 @@ class Born_Ion_Postprocessing(Postprocessing):
     def L2_error_interface_analytic(self):
         verts = self.XPINN.mesh.mol_verts
 
-        u = self.PDE.get_phi(tf.constant(verts, dtype=self.DTYPE),'interface',self.model).numpy()
+        u = self.get_phi(tf.constant(verts, dtype=self.DTYPE),'interface',self.model).numpy()
         u1,u2 = u[:,0],u[:,1]
         u_mean = (u1+u2)/2
 
