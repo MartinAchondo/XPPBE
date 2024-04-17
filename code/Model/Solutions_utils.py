@@ -13,6 +13,8 @@ class Solution_utils():
     to_V = qe/(eps0 * ang_to_m)  
     cal2j = 4.184
 
+    pi = np.pi
+
     pbj_created = False
     pbj_mesh_density = 5
     pbj_mesh_generator = 'msms'

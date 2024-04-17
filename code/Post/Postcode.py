@@ -15,29 +15,30 @@ plt.rcParams['figure.max_open_warning'] = 50
 
 class Postprocessing():
 
-    def __init__(self,XPINN, save=False, directory=''):
+    def __init__(self,XPINN, save=False, directory='', solution_utils=False):
 
-        self.DTYPE='float32'
-        self.pi = tf.constant(np.pi, dtype=self.DTYPE)
-        self.save = save
-        self.directory = directory
+        if not solution_utils:
+            self.DTYPE='float32'
+            self.pi = tf.constant(np.pi, dtype=self.DTYPE)
+            self.save = save
+            self.directory = directory
 
-        self.XPINN = XPINN
-        self.model = XPINN.model
-        self.mesh = XPINN.mesh
-        self.PDE = XPINN.PDE
-        self.PDE.pqr_path = self.mesh.path_pqr
+            self.XPINN = XPINN
+            self.model = XPINN.model
+            self.mesh = XPINN.mesh
+            self.PDE = XPINN.PDE
+            self.PDE.pqr_path = self.mesh.path_pqr
 
-        self.loss_last = [np.format_float_scientific(self.XPINN.losses['TL'][-1], unique=False, precision=3),
-                          np.format_float_scientific(self.XPINN.losses['TL1'][-1], unique=False, precision=3),
-                          np.format_float_scientific(self.XPINN.losses['TL2'][-1], unique=False, precision=3)]
+            self.loss_last = [np.format_float_scientific(self.XPINN.losses['TL'][-1], unique=False, precision=3),
+                            np.format_float_scientific(self.XPINN.losses['TL1'][-1], unique=False, precision=3),
+                            np.format_float_scientific(self.XPINN.losses['TL2'][-1], unique=False, precision=3)]
 
-        save_folders = ['plots_solution', 'plots_losses', 'plots_weights', 'plots_meshes', 'plots_model']
-        
-        for folder in save_folders:
-            setattr(self, f'path_{folder}', folder)
-            path = os.path.join(self.directory, folder)
-            os.makedirs(path, exist_ok=True)
+            save_folders = ['plots_solution', 'plots_losses', 'plots_weights', 'plots_meshes', 'plots_model']
+            
+            for folder in save_folders:
+                setattr(self, f'path_{folder}', folder)
+                path = os.path.join(self.directory, folder)
+                os.makedirs(path, exist_ok=True)
 
     def get_phi(self,*args,**kwargs):
         return self.PDE.get_phi(*args,**kwargs)
@@ -150,6 +151,169 @@ class Postprocessing():
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save)
         return fig,ax
+
+
+    def plot_phi_line(self, N=8000, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, value ='phi'):
+        fig, ax = plt.subplots()
+        
+        X_in,X_out,r_in,r_out = self.get_points_line(N,x0,theta,phi)
+        
+        u_in = self.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model,  value)[:,0]
+        u_out = self.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model,  value)[:,0]
+
+        ax.plot(r_in,u_in[:], label='Solute', c='r')
+        ax.plot(r_out[r_out<0],u_out[r_out<0], label='Solvent', c='b')
+        ax.plot(r_out[r_out>0],u_out[r_out>0], c='b')
+        
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+        text_l = r'$\phi_{\theta}$' 
+        text_l = text_l if value=='phi' else f'{text_l}_react'
+        text_theta = r'$\theta$'
+        text_phi = r'$\phi$'
+        theta = np.format_float_positional(theta, unique=False, precision=2)
+        phi = np.format_float_positional(phi, unique=False, precision=2)
+        text_x0 = r'$x_0$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters};  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
+        ax.grid()
+        ax.legend()
+
+        if self.save:
+            path = f'solution_{value}.png'
+            path_save = os.path.join(self.directory,self.path_plots_solution,path)
+            fig.savefig(path_save)
+        return fig,ax
+
+
+    def plot_phi_line_aprox_analytic(self, method, N=300, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, value ='phi'):
+        fig, ax = plt.subplots()
+        
+        X_in,X_out,r_in,r_out = self.get_points_line(N,x0,theta,phi)
+        
+        u_in = self.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model,  value)[:,0]
+        u_out = self.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model,  value)[:,0]
+
+        u_in_an = self.phi_known(method,value,tf.constant(X_in, dtype=self.DTYPE),'molecule',self.mesh.R_max_dist)
+        u_out_an = self.phi_known(method,value,tf.constant(X_out, dtype=self.DTYPE),'solvent',self.mesh.R_max_dist)
+
+        ax.plot(r_in,u_in[:], c='b')
+        ax.plot(r_out[r_out<0],u_out[r_out<0], label='Aprox', c='b')
+        ax.plot(r_out[r_out>0],u_out[r_out>0], c='b')
+
+        ax.plot(r_in,u_in_an[:], c='r', linestyle='--')
+        ax.plot(r_out[r_out<0],u_out_an[r_out<0], label=method, c='r', linestyle='--')
+        ax.plot(r_out[r_out>0],u_out_an[r_out>0], c='r', linestyle='--')
+        
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+        text_l = r'$\phi_{\theta}$' 
+        text_l = text_l if value=='phi' else f'{text_l}_react'
+        text_theta = r'$\theta$'
+        text_phi = r'$\phi$'
+        theta = np.format_float_positional(theta, unique=False, precision=2)
+        phi = np.format_float_positional(phi, unique=False, precision=2)
+        text_x0 = r'$x_0$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters};  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
+        ax.grid()
+        ax.legend()
+
+        if self.save:
+            path = f'solution_{value}_{method}.png'
+            path_save = os.path.join(self.directory,self.path_plots_solution,path)
+            fig.savefig(path_save)
+        return fig,ax
+
+
+    def plot_phis_line(self,u_list, X, labels=None, domain='all'):
+        fig, ax = plt.subplots()
+        c = ['r','b','g','m']
+        if labels == None:
+            labels = ['1','2','3','4','5']
+        r_in,r_out= X
+
+        for i,(u_in,u_out) in enumerate(u_list):
+            if domain == 'all':
+                ax.plot(r_in,u_in[:], c=c[i])
+            ax.plot(r_out[r_out<0],u_out[r_out<0], c=c[i], label=labels[i])
+            ax.plot(r_out[r_out>0],u_out[r_out>0], c=c[i])
+
+        ax.set_xlabel('r')
+        ax.set_ylabel(r'$\phi_{\theta}$')
+        ax.grid()
+        ax.legend()
+        return fig,ax
+
+    def plot_phi_contour(self, N=100, x0=np.array([0,0,0]), n=np.array([1,0,0]), value='phi'):
+        
+        fig,ax = plt.subplots()
+
+        X_in,X_out,bools,vectors = self.get_points_plane(N, x0, n)
+        T,S = vectors
+
+        u_in = self.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model, value)[:,0]
+        u_out = self.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model, value)[:,0]
+
+        vmax,vmin = self.get_max_min(u_in,u_out)
+        s = ax.scatter(T.ravel()[bools[0]], S.ravel()[bools[0]], c=u_in[:],vmin=vmin,vmax=vmax)
+        s = ax.scatter(T.ravel()[bools[1]], S.ravel()[bools[1]], c=u_out[:],vmin=vmin,vmax=vmax)
+
+        fig.colorbar(s, ax=ax)
+        ax.set_xlabel(r'$u$')
+        ax.set_ylabel(r'$v$')
+        text_l = r'$\phi_{\theta}$'
+        text_l = text_l if value=='phi' else f'{text_l}_react'
+        text_n = r'$n$'
+        text_x0 = r'$x_0$'
+        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters};  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_n}=[{np.format_float_positional(n[0], unique=False, precision=2)},{np.format_float_positional(n[1], unique=False, precision=2)},{np.format_float_positional(n[2], unique=False, precision=2)}])')
+        ax.grid()
+
+        if self.save:
+            path = f'contour_{value}.png'
+            path_save = os.path.join(self.directory,self.path_plots_solution,path)
+            fig.savefig(path_save)
+        return fig,ax
+
+
+    def plot_interface_3D(self,variable='phi', value='phi', domain='interface', jupyter=False):
+        
+        vertices = self.mesh.mol_verts.astype(np.float32)
+        elements = self.mesh.mol_faces.astype(np.float32)
+         
+        if variable == 'phi':
+            values,values_1,values_2 = self.get_phi_interface(self.XPINN.model,value=value)
+        elif variable == 'dphi':
+            values,values_1,values_2 = self.get_dphi_interface(self.XPINN.model)
+        
+        if domain =='interface':
+            values = values.flatten()
+        elif domain =='molecule':
+            values = values_1.flatten()
+        elif domain =='solvent':
+            values = values_2.flatten()
+
+        fig = go.Figure()
+        fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
+                            i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
+                            intensity=values, colorscale='RdBu_r'))
+
+        fig.update_layout(scene=dict(aspectmode='data'))
+
+        if not jupyter and self.save:
+            fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.html'))
+        elif jupyter:
+            fig.show()
+        return fig
+
+    @staticmethod
+    def plot_interface_3D_known(phi_known, vertices, elements, jupyter=True):
+        fig = go.Figure()
+        fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
+                            i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
+                            intensity=phi_known, colorscale='RdBu_r'))
+        fig.update_layout(scene=dict(aspectmode='data'))
+        if jupyter:
+            fig.show()
+        return fig
 
 
     def plot_collocation_points_3D(self, jupyter=False):
@@ -449,7 +613,6 @@ class Postprocessing():
                        color='lightblue', 
                        opacity=0.5)
 
-        # Create a trace for the vertex normals
         vertex_normals_trace = go.Cone(x=vertices[:, 0],
                                         y=vertices[:, 1],
                                         z=vertices[:, 2],
@@ -479,11 +642,8 @@ class Postprocessing():
             line=dict(color='black', width=2),
         )
 
-        # Create the layout
         layout = go.Layout(scene=dict(aspectmode="cube",
                                     aspectratio=dict(x=1, y=1, z=1)))
-
-        # Create the figure
         fig = go.Figure(data=[mesh_trace, vertex_normals_trace, edge_trace], layout=layout)
 
         if not jupyter and self.save:
@@ -493,153 +653,23 @@ class Postprocessing():
         return fig
 
 
-    def plot_interface_3D(self,variable='phi', value='phi', domain='interface', jupyter=False):
-        
-        vertices = self.mesh.mol_verts.astype(np.float32)
-        elements = self.mesh.mol_faces.astype(np.float32)
-         
-        if variable == 'phi':
-            values,values_1,values_2 = self.get_phi_interface(self.XPINN.model,value=value)
-        elif variable == 'dphi':
-            values,values_1,values_2 = self.get_dphi_interface(self.XPINN.model)
-        
-        if domain =='interface':
-            values = values.flatten()
-        elif domain =='molecule':
-            values = values_1.flatten()
-        elif domain =='solvent':
-            values = values_2.flatten()
+    @staticmethod
+    def get_max_min(u1,u2):
+        U = tf.concat([u1,u2], axis=0)
+        vmax = tf.reduce_max(U)
+        vmin = tf.reduce_min(U)
+        return vmax,vmin
 
-        fig = go.Figure()
-        fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
-                            i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
-                            intensity=values, colorscale='RdBu_r'))
-
-        fig.update_layout(scene=dict(aspectmode='data'))
-
-        if not jupyter and self.save:
-            fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.html'))
-        elif jupyter:
-            fig.show()
-        return fig
-
-    
-    def plot_interface_3D_known(self, phi_known, vertices, elements, jupyter=True):
-        fig = go.Figure()
-        fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
-                            i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
-                            intensity=phi_known, colorscale='RdBu_r'))
-        fig.update_layout(scene=dict(aspectmode='data'))
-        if jupyter:
-            fig.show()
-        return fig
-
-    def plot_phi_line(self, N=8000, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, value ='phi'):
-        fig, ax = plt.subplots()
-        
+    def get_points_line(self,N,x0,theta,phi):
         r = np.linspace(-self.mesh.R_exterior,self.mesh.R_exterior,N)
-        x = x0[0] + r * np.sin(phi) * np.cos(theta) + self.mesh.centroid[0]
-        y = x0[1] + r * np.sin(phi) * np.sin(theta) + self.mesh.centroid[1]
-        z = x0[2] + r * np.cos(phi) + self.mesh.centroid[2]
+        x = x0[0] + r * np.sin(phi) * np.cos(theta)
+        y = x0[1] + r * np.sin(phi) * np.sin(theta)
+        z = x0[2] + r * np.cos(phi)
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
-        X_in,X_out,_ = self.get_interior_exterior(points)
-        
-        u_in = self.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model,  value)[:,0]
-        u_out = self.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model,  value)[:,0]
+        X_in,X_out,bools = self.get_interior_exterior(points)
+        return X_in,X_out,r[bools[0]],r[bools[1]]             
 
-        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
-        r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
-        n = np.argmin(r_in)
-        r_in[:n] = -r_in[:n]
-
-        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
-        r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
-        n = np.argmin(r_out)
-        r_out_1 = -r_out[:n+1]
-        r_out_2 = r_out[n+1:]
-
-        ax.plot(r_in,u_in[:], label='Solute', c='r')
-        ax.plot(r_out_1,u_out[:n+1], label='Solvent', c='b')
-        ax.plot(r_out_2,u_out[n+1:], c='b')
-        
-        ax.set_xlabel('r')
-        ax.set_ylabel(r'$\phi_{\theta}$')
-        text_l = r'$\phi_{\theta}$' 
-        text_l = text_l if value=='phi' else f'{text_l}_react'
-        text_theta = r'$\theta$'
-        text_phi = r'$\phi$'
-        theta = np.format_float_positional(theta, unique=False, precision=2)
-        phi = np.format_float_positional(phi, unique=False, precision=2)
-        text_x0 = r'$x_0$'
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters};  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
-        ax.grid()
-        ax.legend()
-
-        if self.save:
-            path = f'solution_{value}.png'
-            path_save = os.path.join(self.directory,self.path_plots_solution,path)
-            fig.savefig(path_save)
-        return fig,ax
-
-
-    def plot_phi_line_aprox_analytic(self, method, N=300, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, value ='phi'):
-        fig, ax = plt.subplots()
-        
-        r = np.linspace(-self.mesh.R_exterior,self.mesh.R_exterior,N)
-        x = x0[0] + r * np.sin(phi) * np.cos(theta) + self.mesh.centroid[0]
-        y = x0[1] + r * np.sin(phi) * np.sin(theta) + self.mesh.centroid[1]
-        z = x0[2] + r * np.cos(phi) + self.mesh.centroid[2]
-        points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
-        X_in,X_out,_ = self.get_interior_exterior(points)
-        
-        u_in = self.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model,  value)[:,0]
-        u_out = self.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model,  value)[:,0]
-
-        u_in_an = self.phi_known(method,value,tf.constant(X_in, dtype=self.DTYPE),'molecule',self.mesh.R_max_dist)
-        u_out_an = self.phi_known(method,value,tf.constant(X_out, dtype=self.DTYPE),'solvent',self.mesh.R_max_dist)
-
-        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
-        r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
-        n = np.argmin(r_in)
-        r_in[:n] = -r_in[:n]
-
-        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
-        r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
-        n = np.argmin(r_out)
-        r_out_1 = -r_out[:n+1]
-        r_out_2 = r_out[n+1:]
-
-        ax.plot(r_in,u_in[:], c='b')
-        ax.plot(r_out_1,u_out[:n+1], label='Aprox', c='b')
-        ax.plot(r_out_2,u_out[n+1:], c='b')
-
-        ax.plot(r_in,u_in_an[:], c='r', linestyle='--')
-        ax.plot(r_out_1,u_out_an[:n+1], label=method, c='r', linestyle='--')
-        ax.plot(r_out_2,u_out_an[n+1:], c='r', linestyle='--')
-        
-        ax.set_xlabel('r')
-        ax.set_ylabel(r'$\phi_{\theta}$')
-        text_l = r'$\phi_{\theta}$' 
-        text_l = text_l if value=='phi' else f'{text_l}_react'
-        text_theta = r'$\theta$'
-        text_phi = r'$\phi$'
-        theta = np.format_float_positional(theta, unique=False, precision=2)
-        phi = np.format_float_positional(phi, unique=False, precision=2)
-        text_x0 = r'$x_0$'
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters};  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
-        ax.grid()
-        ax.legend()
-
-        if self.save:
-            path = f'solution_{value}_{method}.png'
-            path_save = os.path.join(self.directory,self.path_plots_solution,path)
-            fig.savefig(path_save)
-        return fig,ax
-
-
-    def plot_phi_contour(self, N=100, x0=np.array([0,0,0]), n=np.array([1,0,0]), value='phi'):
-        
-        fig,ax = plt.subplots()
+    def get_points_plane(self,N, x0, n):
         n = n/np.linalg.norm(n)
         if np.all(n == np.array([0,0,1])):
             u = np.array([1,0,0])
@@ -655,41 +685,12 @@ class Postprocessing():
         t = np.linspace(-R_exterior,R_exterior,N)
         s = np.linspace(-R_exterior,R_exterior,N)
         T,S = np.meshgrid(t,s)
-        x = x0[0] + T*u[0] + S*v[0] + self.mesh.centroid[0]
-        y = x0[1] + T*u[1] + S*v[1] + self.mesh.centroid[1]
-        z = x0[2] + T*u[2] + S*v[2] + self.mesh.centroid[2]
+        x = x0[0] + T*u[0] + S*v[0]
+        y = x0[1] + T*u[1] + S*v[1]
+        z = x0[2] + T*u[2] + S*v[2]
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,bools = self.get_interior_exterior(points,R_exterior)
-
-        u_in = self.get_phi(tf.constant(X_in, dtype=self.DTYPE),'molecule',self.model, value)[:,0]
-        u_out = self.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model, value)[:,0]
-
-        vmax,vmin = self.get_max_min(u_in,u_out)
-        s = ax.scatter(T.ravel()[bools[0]], S.ravel()[bools[0]], c=u_in[:],vmin=vmin,vmax=vmax)
-        s = ax.scatter(T.ravel()[bools[1]], S.ravel()[bools[1]], c=u_out[:],vmin=vmin,vmax=vmax)
-
-        fig.colorbar(s, ax=ax)
-        ax.set_xlabel(r'$u$')
-        ax.set_ylabel(r'$v$')
-        text_l = r'$\phi_{\theta}$'
-        text_l = text_l if value=='phi' else f'{text_l}_react'
-        text_n = r'$n$'
-        text_x0 = r'$x_0$'
-        ax.set_title(f'Solution {text_l} of PDE, Iterations: {self.XPINN.N_iters};  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_n}=[{np.format_float_positional(n[0], unique=False, precision=2)},{np.format_float_positional(n[1], unique=False, precision=2)},{np.format_float_positional(n[2], unique=False, precision=2)}])')
-        ax.grid()
-
-        if self.save:
-            path = f'contour_{value}.png'
-            path_save = os.path.join(self.directory,self.path_plots_solution,path)
-            fig.savefig(path_save)
-        return fig,ax
-
-
-    def get_max_min(self,u1,u2):
-        U = tf.concat([u1,u2], axis=0)
-        vmax = tf.reduce_max(U)
-        vmin = tf.reduce_min(U)
-        return vmax,vmin
+        return X_in,X_out,bools,(T,S)
 
     def get_interior_exterior(self,points,R_exterior=None):
         if R_exterior==None:
@@ -764,35 +765,7 @@ class Postprocessing():
                                         show_layer_activations=True,
                                         dpi = 150)
 
-    @staticmethod
-    def plot_phis_line(u_list, X, labels=None, domain='all'):
-        fig, ax = plt.subplots()
-        c = ['r','b','g','m']
-        if labels == None:
-            labels = ['1','2','3','4','5']
-        X_in,X_out,x0 = X
-        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_in.transpose()
-        r_in = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
-        n = np.argmin(r_in)
-        r_in[:n] = -r_in[:n]
 
-        x_diff, y_diff, z_diff = x0[:, np.newaxis] - X_out.transpose()
-        r_out = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
-        n = np.argmin(r_out)
-        r_out_1 = -r_out[:n+1]
-        r_out_2 = r_out[n+1:]
-
-        for i,(u_in,u_out) in enumerate(u_list):
-            if domain == 'all':
-                ax.plot(r_in,u_in[:], c=c[i])
-            ax.plot(r_out_1,u_out[:n+1], c=c[i], label=labels[i])
-            ax.plot(r_out_2,u_out[n+1:], c=c[i])
-
-        ax.set_xlabel('r')
-        ax.set_ylabel(r'$\phi_{\theta}$')
-        ax.grid()
-        ax.legend()
-        return fig,ax
 
 class Born_Ion_Postprocessing(Postprocessing):
 
@@ -803,9 +776,9 @@ class Born_Ion_Postprocessing(Postprocessing):
         
         fig, ax = plt.subplots()
         r = np.linspace(-self.mesh.R_exterior,self.mesh.R_exterior,N)
-        x = x0[0] + r * np.sin(phi) * np.cos(theta) + self.mesh.centroid[0]
-        y = x0[1] + r * np.sin(phi) * np.sin(theta) + self.mesh.centroid[1]
-        z = x0[2] + r * np.cos(phi) + self.mesh.centroid[2]
+        x = x0[0] + r * np.sin(phi) * np.cos(theta)
+        y = x0[1] + r * np.sin(phi) * np.sin(theta)
+        z = x0[2] + r * np.cos(phi)
         points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=1)
         X_in,X_out,_ = self.get_interior_exterior(points)
         
@@ -893,9 +866,9 @@ class Born_Ion_Postprocessing(Postprocessing):
         phi_bl = np.linspace(np.pi/2, np.pi/2, N + 1, dtype=self.DTYPE)
         theta_bl = np.linspace(0, 2*np.pi, N + 1, dtype=self.DTYPE)
         
-        x_bl = tf.constant(r_bl*np.sin(phi_bl)*np.cos(theta_bl)) + self.mesh.centroid[0]
-        y_bl = tf.constant(r_bl*np.sin(phi_bl)*np.sin(theta_bl)) + self.mesh.centroid[1]
-        z_bl = tf.constant(r_bl*np.cos(phi_bl)) + self.mesh.centroid[2]
+        x_bl = tf.constant(r_bl*np.sin(phi_bl)*np.cos(theta_bl))
+        y_bl = tf.constant(r_bl*np.sin(phi_bl)*np.sin(theta_bl))
+        z_bl = tf.constant(r_bl*np.cos(phi_bl))
         
         x_bl = tf.reshape(x_bl,[x_bl.shape[0],1])
         y_bl = tf.reshape(y_bl,[y_bl.shape[0],1])

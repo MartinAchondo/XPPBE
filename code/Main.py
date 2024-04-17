@@ -10,7 +10,7 @@ simulation.pbe_model = 'linear'
 
 # Domain properties
 simulation.domain_properties = {
-        'molecule': 'born_ion',
+        'molecule': 'methanol',
         'epsilon_1':  1,
         'epsilon_2': 80,
         'kappa': 0.125,
@@ -27,7 +27,7 @@ simulation.mesh_properties = {
         'N_pq': 100,
         'G_sigma': 0.04,
         'mesh_generator': 'msms',
-        'dR_exterior': 6
+        'dR_exterior': 4
         }
 simulation.sample_method='random_sample'
 
@@ -35,7 +35,7 @@ simulation.sample_method='random_sample'
 simulation.G_solve_iter=6
 
 # Losses to add, and initial weights
-simulation.losses = ['R1','R2','D2','Iu','Id', 'E2','G']
+simulation.losses = ['R1','R2','D2','Iu','Id']
 simulation.weights = {
         'E2': 10**-10,
         }
@@ -50,8 +50,8 @@ simulation.alpha_w = 0.7
 simulation.network = 'xpinn'
 simulation.hyperparameters_in = {
         'input_shape': (None,3),
-        'num_hidden_layers': 4,
-        'num_neurons_per_layer': 150,
+        'num_hidden_layers': 2,
+        'num_neurons_per_layer': 15,
         'output_dim': 1,
         'activation': 'tanh',
         'adaptative_activation': True,
@@ -61,8 +61,8 @@ simulation.hyperparameters_in = {
         }
 simulation.hyperparameters_out = {
         'input_shape': (None,3),
-        'num_hidden_layers': 4,
-        'num_neurons_per_layer': 150,
+        'num_hidden_layers': 2,
+        'num_neurons_per_layer': 15,
         'output_dim': 1,
         'activation': 'tanh',
         'adaptative_activation': True,

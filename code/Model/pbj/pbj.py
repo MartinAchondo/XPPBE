@@ -4,7 +4,7 @@ from Model.pbj.electrostatics.simulation import Simulation
 
 class pbj():
 
-    def __init__(self,domain_properties,pqr_path,mesh_density,mesh_generator):
+    def __init__(self,domain_properties,pqr_path,mesh_density,mesh_generator, initial_guess_b=False,guess=None):
 
         mol_object = Solute(pqr_path, mesh_density=mesh_density, mesh_generator=mesh_generator, save_mesh_build_files=False)
         self.simulation = Simulation()
@@ -14,7 +14,7 @@ class pbj():
         self.simulation.solutes[0].ep_ex = domain_properties['epsilon_2']
         self.simulation.solutes[0].kappa = domain_properties['kappa']
 
-        self.simulation.calculate_surface_potential()
+        self.simulation.calculate_surface_potential(initial_guess_b=initial_guess_b, guess=guess)
 
     def calculate_potential(self,X,domain):
 

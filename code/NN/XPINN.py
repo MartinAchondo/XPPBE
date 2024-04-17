@@ -42,6 +42,7 @@ class XPINN(XPINN_utils):
         def train_step(X_batch, ws,precond=False):
             loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, ws, precond)
             optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
+            del grad_theta
             L = [loss,L_loss]
             return L
         
@@ -51,6 +52,8 @@ class XPINN(XPINN_utils):
             loss_2, L_loss_2, grad_theta_2 = self.get_grad_loss(X_batch, self.model, self.model.NNs[1].trainable_variables, ws, precond)
             optimizer_1.apply_gradients(zip(grad_theta_1, self.model.NNs[0].trainable_variables))
             optimizer_2.apply_gradients(zip(grad_theta_2, self.model.NNs[1].trainable_variables))
+            del grad_theta_1
+            del grad_theta_2
             L = [loss_1,L_loss_1]
             return L
 
@@ -58,6 +61,7 @@ class XPINN(XPINN_utils):
         def train_step_precond(X_batch, ws, precond=True):
             loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, ws, precond)
             optimizer_P.apply_gradients(zip(grad_theta, self.model.trainable_variables))
+            del grad_theta
             L = [loss,L_loss]
             return L
         

@@ -50,6 +50,7 @@ class NeuralNet(tf.keras.Model):
                  output_dim=1,
                  num_hidden_layers=2,
                  num_neurons_per_layer=20,
+                 trainable=True,
                  num_hidden_blocks=2,
                  activation='tanh',
                  adaptative_activation=False,
@@ -72,6 +73,10 @@ class NeuralNet(tf.keras.Model):
         self.num_fourier_features = num_fourier_features
         self.sigma = fourier_sigma
         self.use_fourier_features = fourier_features
+
+        if kernel_initializer == 'uniform':
+            kernel_initializer = tf.keras.initializers.RandomUniform(minval=-1, maxval=1)
+        
 
         # Scale layer
         self.scale = tf.keras.layers.Lambda(
@@ -116,6 +121,7 @@ class NeuralNet(tf.keras.Model):
                 layer = tf.keras.layers.Dense(num_neurons_per_layer,
                                               activation=CustomActivation(units=num_neurons_per_layer,adaptative_activation=adaptative_activation),
                                               kernel_initializer=kernel_initializer,
+                                              trainable=trainable,
                                               name=f'layer_{i}')
                 self.hidden_layers.append(layer)
 
