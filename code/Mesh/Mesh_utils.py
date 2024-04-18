@@ -53,7 +53,7 @@ def generate_nanoshaper_mesh(
         if "XYZR_FileName" in line:
             line = "XYZR_FileName = " + mesh_xyzr_path + " \n"
         elif "Grid_scale" in line:
-            line = "Grid_scale = {:04.1f} \n".format(density)
+            line = "Grid_scale = {:04.1f} \n".format(density_to_nanoshaper_grid_scale_conversion(density))
         elif "Probe_Radius" in line:
             line = "Probe_Radius = {:03.1f} \n".format(probe_radius)
 
@@ -107,6 +107,11 @@ def generate_nanoshaper_mesh(
 
     except (OSError, FileNotFoundError):
         print("The file doesn't exist or it wasn't created by NanoShaper")
+
+
+def density_to_nanoshaper_grid_scale_conversion(mesh_density):
+    grid_scale = round(0.797 * (mesh_density**0.507), 2)  
+    return grid_scale
 
 
 def execute_command(command):

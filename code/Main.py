@@ -10,7 +10,7 @@ simulation.pbe_model = 'linear'
 
 # Domain properties
 simulation.domain_properties = {
-        'molecule': 'methanol',
+        'molecule': 'born_ion',
         'epsilon_1':  1,
         'epsilon_2': 80,
         'kappa': 0.125,
@@ -35,7 +35,7 @@ simulation.sample_method='random_sample'
 simulation.G_solve_iter=6
 
 # Losses to add, and initial weights
-simulation.losses = ['R1','R2','D2','Iu','Id']
+simulation.losses = ['R1','R2','D2','Iu','Id','K2']
 simulation.weights = {
         'E2': 10**-10,
         }
@@ -80,7 +80,7 @@ simulation.lr = tf.keras.optimizers.schedules.ExponentialDecay(
 simulation.lr_p = 0.001
 
 # Solve parameters
-simulation.N_iters = 10
+simulation.N_iters = 2
 
 simulation.precondition = False
 simulation.N_precond = 0

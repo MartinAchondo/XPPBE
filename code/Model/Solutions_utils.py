@@ -23,8 +23,8 @@ class Solution_utils():
         x, y, z = X[:,0], X[:,1], X[:,2]
         r = np.linalg.norm(X, axis=1)   
            
-        if function == 'Harmonic_spheres':
-            phi_values = self.Harmonic_spheres(X, flag, R,N=N)
+        if function == 'Spherical_Harmonics':
+            phi_values = self.Spherical_Harmonics(X, flag, R,N=N)
             if flag=='solvent':
                 phi_values -= self.G(x,y,z)
         elif function == 'G_Yukawa':
@@ -105,7 +105,7 @@ class Solution_utils():
         return y
 
 
-    def Harmonic_spheres(self, x, flag, R=None, N=20):
+    def Spherical_Harmonics(self, x, flag, R=None, N=20):
 
         q = self.qs
         xq = self.x_qs
@@ -179,11 +179,14 @@ class Solution_utils():
         if not self.pbj_created:
 
             from Model.pbj.pbj import pbj
+            if hasattr(self, 'mesh'):
+                self.pbj_mesh_density = self.mesh.density_mol
+                self.pbj_mesh_generator = self.mesh.mesh_generator
             self.pbj_obj = pbj(self.domain_properties,self.pqr_path,self.pbj_mesh_density,self.pbj_mesh_generator)
             self.pbj_phi = self.pbj_obj.simulation.solutes[0].results['phi'].coefficients.reshape(-1,1)
             self.pbj_vertices = np.array(self.pbj_obj.simulation.solutes[0].mesh.vertices).transpose()
             self.pbj_elements = np.array(self.pbj_obj.simulation.solutes[0].mesh.elements).transpose()
             self.pbj_created = True
 
-        phi = self.pbj_obj.calculate_potential(X,flag)
+        phi, _ = self.pbj_obj.calculate_potential(X,flag)
         return phi

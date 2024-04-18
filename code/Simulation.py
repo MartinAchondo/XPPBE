@@ -262,6 +262,7 @@ class Simulation():
         self.Post.plot_phi_contour(value='react');
         self.Post.plot_interface_3D(variable='phi');
         self.Post.plot_interface_3D(variable='dphi');
+        #self.Post.plot_phi_line_aprox_known('G_Yukawa', value='react')
 
         if self.domain_properties['molecule'] == 'born_ion':
             self.Post.plot_aprox_analytic();

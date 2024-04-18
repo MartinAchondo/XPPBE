@@ -267,6 +267,12 @@ class Domain_Mesh():
                 self.domain_mesh_data[type_b] = ((X,U),flag)
                 self.domain_mesh_names.add(type_b)
 
+                if type_b[0]=='K':
+                    if self.save_points: 
+                        X_plot = dict()
+                        X_plot[f'{type_b}_verts'] = X.numpy()
+                        self.save_data_plot(X_plot)
+
             elif type_b in ('Iu','Id','Ir'):
                 N = self.mol_verts_normal
                 X = tf.constant(self.mol_verts, dtype=self.DTYPE)
@@ -417,6 +423,5 @@ class Domain_Mesh():
         for subset_name, subset_data in X_plot.items():
             file_name = os.path.join(path_files,f'{subset_name}.csv')
             np.savetxt(file_name, subset_data, delimiter=',', header='X,Y,Z', comments='')
-            data_ind = 'Elements' if 'Sample' in subset_name else 'Vertices' 
-            logger.info(f'Subset {subset_name}: {data_ind} {len(subset_data)}')
+            logger.info(f'Subset {subset_name}: {len(subset_data)}')
      

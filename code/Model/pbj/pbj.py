@@ -14,15 +14,23 @@ class pbj():
         self.simulation.solutes[0].ep_ex = domain_properties['epsilon_2']
         self.simulation.solutes[0].kappa = domain_properties['kappa']
 
-        self.simulation.calculate_surface_potential(initial_guess_b=initial_guess_b, guess=guess)
+        self.simulation.calculate_surface_potential()
 
     def calculate_potential(self,X,domain):
 
         if domain == 'molecule':
-            phir_solute, _ = self.simulation.calculate_reaction_potential_solute(X, units='e_eps0_angs')
-            return phir_solute
+            phir_solute, bools = self.simulation.calculate_reaction_potential_solute(X, units='e_eps0_angs')
+            return phir_solute, bools
 
         elif domain == 'solvent':
-            phi_solv, _ = self.simulation.calculate_potential_solvent(X,units='e_eps0_angs')
-            return phi_solv
+            phi_solv, bools = self.simulation.calculate_potential_solvent(X,units='e_eps0_angs')
+            return phi_solv, bools
+
+
+    def calculate_potential_ens(self, atom_name = ["H"], mesh_dx = 1.0, mesh_length = 40.):
+        self.simulation.calculate_potential_ens(atom_name = atom_name, mesh_dx = mesh_dx, mesh_length = mesh_length)
+        return self.simulation.solutes[0].results['phi_ens']
     
+    def calculate_solvation_energy(self):
+        self.simulation.calculate_solvation_energy()
+        return self.simulation.solutes[0].results['solvation_energy']
