@@ -186,7 +186,7 @@ class Postprocessing():
         ax.legend()
 
         if self.save:
-            path = f'solution_{value}.png'
+            path = f'solution_{value}_th{theta}_ph{phi}.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save, bbox_inches='tight')
         return fig,ax
@@ -224,7 +224,7 @@ class Postprocessing():
         ax.legend()
 
         if self.save:
-            path = f'solution_{value}_{method}.png'
+            path = f'solution_{value}_{method}_th{theta}_ph{phi}.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save, bbox_inches='tight')
         return fig,ax
@@ -778,7 +778,7 @@ class Born_Ion_Postprocessing(Postprocessing):
     def __init__(self,*kargs,**kwargs):
         super().__init__(*kargs,**kwargs)
 
-    def plot_aprox_analytic(self, N=8000, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, zoom=False, lims=None, lims_zoom=None, value='phi'):
+    def plot_aprox_analytic(self, N=8000, x0=np.array([0,0,0]), theta=0, phi=np.pi/2, zoom=False, value='phi'):
         
         fig, ax = plt.subplots()
         
@@ -794,28 +794,30 @@ class Born_Ion_Postprocessing(Postprocessing):
         u_in_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_in, dtype=self.DTYPE),'solvent')
         u_out_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_out, dtype=self.DTYPE),'solvent')
 
-        ax.plot(r_in[np.abs(r_in) > 0.04],u_in_an[np.abs(r_in) > 0.04], c='r', linestyle='--')
+        ax.plot(r_in[np.abs(r_in) > 0.05],u_in_an[np.abs(r_in) > 0.05], c='r', linestyle='--')
         ax.plot(r_out[r_out<0],u_out_an[r_out<0], label='Analytic', c='r', linestyle='--')
         ax.plot(r_out[r_out>0],u_out_an[r_out>0], c='r', linestyle='--')
 
         if zoom:
-            axin = ax.inset_axes([0.6, 0.02, 0.38, 0.38])
+            R = self.XPINN.mesh.R_mol
+            v = self.phi_known('analytic_Born_Ion',value,tf.constant([[R,0,0]], dtype=self.DTYPE),'solvent')
+
+            if value == 'phi':
+                axin = ax.inset_axes([0.65, 0.25, 0.28, 0.34])
+                axin.set_ylim(-0.06+v, 0.06+v)
+            else:
+                axin = ax.inset_axes([0.68, 0.20, 0.28, 0.34])
+                axin.set_ylim(-0.006+v, 0.006+v)
+            axin.set_xlim(0.9*R,1.1*R)
+
             axin.plot(r_in,u_in[:], c='b')
             axin.plot(r_out[r_out<0],u_out[r_out<0], c='b')
             axin.plot(r_out[r_out>0],u_out[r_out>0], c='b')
+
             axin.plot(r_in[np.abs(r_in) > 0.04],u_in_an[np.abs(r_in) > 0.04], c='r', linestyle='--')
             axin.plot(r_out[r_out<0],u_out_an[r_out<0], c='r', linestyle='--')
             axin.plot(r_out[r_out>0],u_out_an[r_out>0], c='r', linestyle='--')
 
-            R = self.XPINN.mesh.R_mol
-            axin.set_xlim(0.9*R,1.1*R)
-            axin.set_ylim(-0.05, 0.05)
-            if lims_zoom != None:
-                limx,limy = lims_zoom
-                if limx != None:
-                    axin.set_xlim(limx)
-                if limy != None:
-                    axin.set_ylim(lims)
             axin.grid()
             ax.indicate_inset_zoom(axin)
         
@@ -830,12 +832,12 @@ class Born_Ion_Postprocessing(Postprocessing):
         ax.set_title(f'Solution {text_l} of PBE;  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
         ax.grid()
         ax.legend()        
-        if lims != None:
-            limx,limy = lims
-            if limx != None:
-                ax.set_xlim(limx)
-            if limy != None:
-                ax.set_ylim(lims)
+
+        ax.set_xlim(-5,5)
+        if value == 'phi':
+            ax.set_ylim(-0.1,1.6)
+        elif value == 'react':
+            ax.set_ylim(-0.085,-0.01)
 
         if self.save:
             path = f'analytic_{value}.png' if zoom==False else f'analytic_zoom_{value}.png'

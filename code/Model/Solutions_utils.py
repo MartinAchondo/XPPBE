@@ -31,11 +31,10 @@ class Solution_utils():
             phi_values = self.G_Yukawa(x,y,z) - self.G(x,y,z)
         elif function == 'analytic_Born_Ion':
             phi_values = self.analytic_Born_Ion(r) - self.G(x,y,z)
-        elif function == 'pbj':
+        elif function == 'PBJ':
             phi_values = self.pbj(X, flag)
             if flag=='solvent':
                 phi_values -= self.G(x,y,z)
-        
         
         if field == 'react':
             return np.array(phi_values)

@@ -1,6 +1,7 @@
 import os
 import logging
 import shutil
+import numpy as np
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_RUN_EAGER_OP_AS_FUNCTION']='false'
@@ -218,7 +219,7 @@ class Simulation():
             )
         
 
-    def postprocessing(self, jupyter=False):
+    def postprocessing(self, jupyter=False, mesh=True):
           
         if self.domain_properties['molecule'] == 'born_ion':
             from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
@@ -245,15 +246,16 @@ class Simulation():
         self.Post.plot_weights_history(domain=1);
         self.Post.plot_weights_history(domain=2);
 
-        self.Post.plot_collocation_points_3D();
-        self.Post.plot_vol_mesh_3D();
-        self.Post.plot_surface_mesh_3D();
-        self.Post.plot_mesh_3D('R1');
-        self.Post.plot_mesh_3D('R2');
-        self.Post.plot_mesh_3D('I');
-        self.Post.plot_mesh_3D('D2');
-        self.Post.plot_surface_mesh_normals(plot='vertices');
-        self.Post.plot_surface_mesh_normals(plot='faces');
+        if mesh:
+            self.Post.plot_collocation_points_3D();
+            self.Post.plot_vol_mesh_3D();
+            self.Post.plot_surface_mesh_3D();
+            self.Post.plot_mesh_3D('R1');
+            self.Post.plot_mesh_3D('R2');
+            self.Post.plot_mesh_3D('I');
+            self.Post.plot_mesh_3D('D2');
+            self.Post.plot_surface_mesh_normals(plot='vertices');
+            self.Post.plot_surface_mesh_normals(plot='faces');
 
         self.Post.plot_G_solv_history();
         self.Post.plot_phi_line();
@@ -262,7 +264,6 @@ class Simulation():
         self.Post.plot_phi_contour(value='react');
         self.Post.plot_interface_3D(variable='phi');
         self.Post.plot_interface_3D(variable='dphi');
-        #self.Post.plot_phi_line_aprox_known('G_Yukawa', value='react')
 
         if self.domain_properties['molecule'] == 'born_ion':
             self.Post.plot_aprox_analytic();
@@ -272,7 +273,16 @@ class Simulation():
             self.Post.plot_line_interface();
             self.Post.plot_line_interface(value='react');
             self.Post.plot_line_interface(plot='du');
-            self.Post.plot_line_interface(plot='du',value='react');
+            #self.Post.plot_line_interface(plot='du',value='react');
+        else:
+            if 'sphere' in self.domain_properties['molecule']:
+                method = 'Spherical_Harmonics'
+            elif self.domain_properties['molecule'] in ('methanol', 'methanol_E','arg'):
+                method = 'PBJ'
+             
+            self.Post.plot_phi_line_aprox_known(method, value='react',theta=0, phi=np.pi/2)
+            self.Post.plot_phi_line_aprox_known(method, value='react',theta=np.pi/2, phi=np.pi/2)
+            self.Post.plot_phi_line_aprox_known(method, value='react', theta=np.pi/2, phi=np.pi)
 
         self.Post.save_values_file();
         self.Post.save_model_summary();
