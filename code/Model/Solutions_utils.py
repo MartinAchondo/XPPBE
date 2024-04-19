@@ -188,4 +188,4 @@ class Solution_utils():
             self.pbj_created = True
 
         phi, _ = self.pbj_obj.calculate_potential(X,flag)
-        return phi
+        return phi/self.scale_q_factor

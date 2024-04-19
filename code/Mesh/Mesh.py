@@ -249,9 +249,10 @@ class Domain_Mesh():
                 X_plot[f'{type_b}_sample'] = mesh.get_dataset().numpy()
             self.save_data_plot(X_plot)
 
-    def adapt_meshes_domain(self,data,q_list):
+    def adapt_meshes_domain(self,data,q_list,scale_q_factor=1.0):
 
         self.meshes_info = data
+        self.scale_q_factor = scale_q_factor
         
         for bl in self.meshes_info.values():
 
@@ -358,6 +359,7 @@ class Domain_Mesh():
             U = fun(x, y, z)
         elif file != None:
             X,U = self.read_file_data(file,bl['domain'])
+            U = U/self.scale_q_factor
             noise = bl['noise'] if 'noise' in bl else False
             if noise:
                 U = U*self.add_noise(U)

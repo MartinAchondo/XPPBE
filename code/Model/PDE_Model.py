@@ -19,7 +19,7 @@ class PBE(Solution_utils):
     DTYPE = 'float32'
     pi = tf.constant(np.pi, dtype=DTYPE)
 
-    def __init__(self, domain_properties, mesh, equation, path):      
+    def __init__(self, domain_properties, mesh, equation, path, scale_charges=False):      
 
         self.mesh = mesh
         self.main_path = path
@@ -39,7 +39,7 @@ class PBE(Solution_utils):
                 self.domain_properties[key] = domain_properties[key]
             setattr(self, key, self.domain_properties[key])
 
-        self.get_charges()
+        self.get_charges(scale_charges)
         if self.scheme == 'standard':
             self.get_integral_operators()
 
@@ -74,7 +74,7 @@ class PBE(Solution_utils):
 
         for x_q in X_q:
 
-            C_phi2 = self.get_phi(X_out,flag, model) * self.to_V * C
+            C_phi2 = self.get_phi(X_out,flag, model) * self.to_V * C * self.scale_q_factor
             r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
             G2_p = tf.math.reduce_sum(self.aprox_exp(-C_phi2)/r2**6)
             G2_m = tf.math.reduce_sum(self.aprox_exp(C_phi2)/r2**6)
@@ -267,10 +267,18 @@ class PBE(Solution_utils):
     
     # utils
 
-    def get_charges(self):
+    def get_charges(self, scale_charges=False):
         path_files = os.path.join(self.main_path,'Molecules')
         self.pqr_path = os.path.join(path_files,self.molecule,self.molecule+'.pqr')
         self.q_list = get_charges_list(self.pqr_path)
+
+        if not scale_charges:
+            self.scale_q_factor = 1.0
+        elif scale_charges:
+            self.scale_q_factor = min(self.q_list, key=lambda q_obj: q_obj.q).q
+            for q_obj in self.q_list:
+                q_obj.q = q_obj.q/self.scale_q_factor
+
         n = len(self.q_list)
         self.qs = np.zeros(n)
         self.x_qs = np.zeros((n,3))

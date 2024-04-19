@@ -43,19 +43,25 @@ class Postprocessing():
                 os.makedirs(path, exist_ok=True)
 
     def get_phi(self,*args,**kwargs):
-        return self.PDE.get_phi(*args,**kwargs)
+        return self.PDE.get_phi(*args,**kwargs)*self.PDE.scale_q_factor
 
     def get_dphi(self,*args,**kwargs):
-        return self.PDE.get_dphi(*args,**kwargs)
+        return self.PDE.get_dphi(*args,**kwargs)*self.PDE.scale_q_factor
 
     def phi_known(self,*args,**kwargs):
-        return self.PDE.phi_known(*args,**kwargs)
+        return self.PDE.phi_known(*args,**kwargs)*self.PDE.scale_q_factor
 
     def get_phi_interface(self,*args,**kwargs):
-        return self.PDE.get_phi_interface(*args,**kwargs)
+        return tuple(phi*self.PDE.scale_q_factor for phi in self.PDE.get_phi_interface(*args,**kwargs))
 
     def get_dphi_interface(self,*args,**kwargs):
-        return self.PDE.get_dphi_interface(*args,**kwargs)
+        return tuple(dphi*self.PDE.scale_q_factor for dphi in self.PDE.get_dphi_interface(*args,**kwargs))
+    
+    def get_solvation_energy(self):
+        return self.PDE.get_solvation_energy(self.model)*self.PDE.scale_q_factor**2
+    
+    def get_phi_ens(self,X_mesh,X_q):
+        return self.PDE.get_phi_ens(self.model,X_mesh,X_q)
 
     def plot_loss_history(self, domain=1, plot_w=False, loss='all'):
         fig,ax = plt.subplots()
@@ -144,13 +150,14 @@ class Postprocessing():
 
     def plot_G_solv_history(self):
         fig,ax = plt.subplots()
-        ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), self.XPINN.G_solv_hist.values(),'k-',label='G_solv')
+        gsolv_values = np.array(self.XPINN.G_solv_hist.values())*self.PDE.scale_q_factor**2
+        ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), gsolv_values,'k-',label='G_solv')
         ax.legend()
         ax.set_xlabel('$n: iterations$', fontsize='11')
         text_l = r'$G_{solv}$'
         ax.set_ylabel(r'$G_{solv}$ [kcal/mol]', fontsize='11')
         max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
-        Gsolv_value = np.format_float_positional(self.XPINN.G_solv_hist[str(max_iter)], unique=False, precision=2)
+        Gsolv_value = np.format_float_positional(self.XPINN.G_solv_hist[str(max_iter)]*self.PDE.scale_q_factor**2, unique=False, precision=2)
         ax.set_title(f'Solution {text_l} of PBE, G_solv: {Gsolv_value} kcal/mol')
         ax.grid()
 
@@ -880,21 +887,21 @@ class Born_Ion_Postprocessing(Postprocessing):
             i += 1
 
         if plot=='u':
-            U2 = self.XPINN.PDE.analytic_Born_Ion(rr)
+            U2 = self.XPINN.PDE.analytic_Born_Ion(rr)*self.PDE.scale_q_factor
             u2 = np.ones((N,1))*U2
             if value=='react':
                 n = u2.shape[0]
                 XX2 = tf.concat([tf.ones((n,1))*rr, tf.zeros((n, 2))] ,axis=1)
-                u2 -= self.XPINN.PDE.G(*self.mesh.get_X(XX2))
-            ax.plot(theta_bl, u2, c='g', label='Analytic', linestyle='--')
+                u2 -= self.XPINN.PDE.G(*self.mesh.get_X(XX2))*self.PDE.scale_q_factor
+            ax.plot(theta_bl, u2*self.PDE.scale_q_factor, c='g', label='Analytic', linestyle='--')
         elif plot=='du':
-            dU2 = self.XPINN.PDE.analytic_Born_Ion_du(rr)
+            dU2 = self.XPINN.PDE.analytic_Born_Ion_du(rr)*self.PDE.scale_q_factor
             du2 = np.ones((N,1))*dU2*self.PDE.PDE_in.epsilon
             if value=='react':
                 n = du2.shape[0]
                 nnvv = tf.concat([tf.ones((n, 1)), tf.zeros((n, 2))], axis=1)
                 XX2 = tf.concat([tf.ones((n,1))*rr, tf.zeros((n, 2))], axis=1)
-                du2 -= self.XPINN.PDE.dG_n(*self.mesh.get_X(XX2),nnvv)
+                du2 -= self.XPINN.PDE.dG_n(*self.mesh.get_X(XX2),nnvv)*self.PDE.scale_q_factor
             ax.plot(theta_bl, du2, c='g', label='Analytic', linestyle='--')
         
         if plot=='u':
@@ -930,7 +937,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         u_mean = (u1+u2)/2
 
         r = np.sqrt(verts[:,0]**2 + verts[:,1]**2 + verts[:,2]**2)
-        u_an = self.XPINN.PDE.analytic_Born_Ion(r)
+        u_an = self.XPINN.PDE.analytic_Born_Ion(r)*self.PDE.scale_q_factor
         u_dif = u_mean-u_an
         error = np.sqrt(np.sum(u_dif**2)/np.sum(u_an**2))
         return error

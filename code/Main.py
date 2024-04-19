@@ -31,6 +31,9 @@ simulation.mesh_properties = {
         }
 simulation.sample_method='random_sample'
 
+# Scale charges
+simulation.scale_charges = True
+
 # Frecuency of solvation energy calculation
 simulation.G_solve_iter=6
 

@@ -74,6 +74,7 @@ class Simulation():
         self.adapt_w_method = 'gradients'
         self.alpha_w = 0.7
 
+        self.scale_charges = False
         self.G_solve_iter=1000
 
         self.network = 'xpinn'
@@ -142,7 +143,8 @@ class Simulation():
         self.PBE_model = PBE(self.domain_properties,
                 mesh=self.Mol_mesh, 
                 equation=self.pbe_model,
-                path=self.main_path
+                path=self.main_path,
+                scale_charges=self.scale_charges
                 ) 
 
         meshes_domain = dict()           
@@ -178,7 +180,7 @@ class Simulation():
         for t in self.losses:
             self.meshes_domain[t] = meshes_domain[t]
 
-        self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
+        self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list,self.PBE_model.scale_q_factor)
 
         self.XPINN_solver = XPINN()
         self.XPINN_solver.folder_path = self.folder_path
