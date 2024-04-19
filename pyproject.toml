@@ -8,7 +8,7 @@ license = "MIT"
 repository = "https://github.com/MartinAchondo/XPINN-for-PBE-Simulation"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
+python = ">=3.8,<3.9"
 numpy = "1.21.0"
 tensorflow = "2.10.0"
 scipy = "1.10.1"
