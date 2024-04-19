@@ -46,7 +46,7 @@ class Postprocessing():
         return self.PDE.get_phi(*args,**kwargs)*self.PDE.scale_q_factor
 
     def get_dphi(self,*args,**kwargs):
-        return self.PDE.get_dphi(*args,**kwargs)*self.PDE.scale_q_factor
+        return tuple(dphi*self.PDE.scale_q_factor for dphi in self.PDE.get_dphi(*args,**kwargs))
 
     def phi_known(self,*args,**kwargs):
         return self.PDE.phi_known(*args,**kwargs)*self.PDE.scale_q_factor
@@ -893,7 +893,7 @@ class Born_Ion_Postprocessing(Postprocessing):
                 n = u2.shape[0]
                 XX2 = tf.concat([tf.ones((n,1))*rr, tf.zeros((n, 2))] ,axis=1)
                 u2 -= self.XPINN.PDE.G(*self.mesh.get_X(XX2))*self.PDE.scale_q_factor
-            ax.plot(theta_bl, u2*self.PDE.scale_q_factor, c='g', label='Analytic', linestyle='--')
+            ax.plot(theta_bl, u2, c='g', label='Analytic', linestyle='--')
         elif plot=='du':
             dU2 = self.XPINN.PDE.analytic_Born_Ion_du(rr)*self.PDE.scale_q_factor
             du2 = np.ones((N,1))*dU2*self.PDE.PDE_in.epsilon
