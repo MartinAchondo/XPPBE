@@ -60,6 +60,7 @@ class NeuralNet(tf.keras.Model):
                  num_fourier_features=128, 
                  fourier_sigma=1,
                  scale=([-1.,-1.,-1.],[1.,1.,1.]),
+                 scale_NN=1.0,
                  **kwargs):
         super().__init__(**kwargs)
 
@@ -69,6 +70,7 @@ class NeuralNet(tf.keras.Model):
         self.output_dim = output_dim
         self.lb = tf.constant(scale[0])
         self.ub = tf.constant(scale[1])
+        self.scale_NN = scale_NN
         self.architecture_Net = architecture_Net
         self.num_fourier_features = num_fourier_features
         self.sigma = fourier_sigma
@@ -153,6 +155,11 @@ class NeuralNet(tf.keras.Model):
         # Output layer
         self.out = tf.keras.layers.Dense(output_dim, name=f'output_layer')
 
+        # Scale output layer
+        self.scale_out = tf.keras.layers.Lambda(
+            lambda x: x*self.scale_NN, 
+            name=f'scale_output_layer')
+
     def build_Net(self):
         self.build(self.input_shape_N)
 
@@ -170,7 +177,8 @@ class NeuralNet(tf.keras.Model):
             Z = self.fourier_features(Z) 
         for layer in self.hidden_layers:
             Z = layer(Z)
-        return self.out(Z)
+        Z = self.out(Z)
+        return self.scale_out(Z)
 
     def call_ResNet(self, X):
         Z = self.scale(X)
@@ -180,5 +188,6 @@ class NeuralNet(tf.keras.Model):
         for block,activation in zip(self.hidden_blocks,self.hidden_blocks_activations):
             Z = activation(block(Z) + Z)
         Z = self.last(Z)
-        return self.out(Z)
+        Z = self.out(Z)
+        return self.scale_out(Z)
     

@@ -271,6 +271,8 @@ class PBE(Solution_utils):
         path_files = os.path.join(self.main_path,'Molecules')
         self.pqr_path = os.path.join(path_files,self.molecule,self.molecule+'.pqr')
         self.q_list = get_charges_list(self.pqr_path)
+        self.scale_q_factor = min(self.q_list, key=lambda q_obj: np.abs(q_obj.q)).q
+
         n = len(self.q_list)
         self.qs = np.zeros(n)
         self.x_qs = np.zeros((n,3))

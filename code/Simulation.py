@@ -102,6 +102,7 @@ class Simulation():
                         'num_fourier_features': 256
                     }   
 
+        self.scale_NN_q = False
 
         self.optimizer = 'Adam'
         self.lr = tf.keras.optimizers.schedules.ExponentialDecay(
@@ -197,6 +198,10 @@ class Simulation():
 
         self.hyperparameters_in['scale'] = self.XPINN_solver.mesh.scale_1
         self.hyperparameters_out['scale'] = self.XPINN_solver.mesh.scale_2
+
+        if self.scale_NN_q:
+            self.hyperparameters_in['scale_NN'] = self.PBE_model.scale_q_factor
+            self.hyperparameters_out['scale_NN'] = self.PBE_model.scale_q_factor 
                 
         if self.network == 'xpinn':
             from NN.NeuralNet import XPINN_NeuralNet as NeuralNet

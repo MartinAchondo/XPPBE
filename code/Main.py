@@ -70,6 +70,9 @@ simulation.hyperparameters_out = {
         'fourier_features': True
         }
 
+# Scale charges
+simulation.scale_NN_q = True
+
 # Optimizer properties
 simulation.optimizer = 'Adam'
 simulation.lr = tf.keras.optimizers.schedules.ExponentialDecay(
