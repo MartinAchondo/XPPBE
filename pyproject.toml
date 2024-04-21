@@ -20,15 +20,15 @@ pandas = "2.0.2"
 xlsxwriter = "^3.1.9"
 tqdm = "4.64.1"
 ipykernel = "6.16.0"
-pydot = "^1.4.2"
-pydotplus = "^2.0.2"
 rtree = "1.0.1"
 numba = "0.57.0"
 meshio = "5.3.4"
 gmsh = "4.11.1"
 bempp-cl = "0.3.0"
 pdb2pqr = "3.6.2"
+pydotplus = "^2.0.2"
 pbj = "https://github.com/bem4solvation/pbj"
+graphviz = "https://gitlab.com/graphviz/graphviz/"
 
 [build-system]
 requires = ["poetry-core"]

@@ -278,6 +278,7 @@ class Simulation():
             self.Post.plot_line_interface();
             self.Post.plot_line_interface(value='react');
             self.Post.plot_line_interface(plot='du');
+            self.Post.plot_G_solv_history(known=True,method='analytic_Born_Ion');
             #self.Post.plot_line_interface(plot='du',value='react');
         else:
             if 'sphere' in self.domain_properties['molecule']:
@@ -285,6 +286,7 @@ class Simulation():
             elif self.domain_properties['molecule'] in ('methanol', 'methanol_E','arg'):
                 method = 'PBJ'
              
+            self.Post.plot_G_solv_history(known=True,method=method);
             self.Post.plot_phi_line_aprox_known(method, value='react',theta=0, phi=np.pi/2)
             self.Post.plot_phi_line_aprox_known(method, value='react',theta=np.pi/2, phi=np.pi/2)
             self.Post.plot_phi_line_aprox_known(method, value='react', theta=np.pi/2, phi=np.pi)

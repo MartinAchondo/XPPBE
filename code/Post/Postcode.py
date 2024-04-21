@@ -57,6 +57,13 @@ class Postprocessing():
     def get_dphi_interface(self,*args,**kwargs):
         return self.PDE.get_dphi_interface(*args,**kwargs)
 
+    def get_solvation_energy(self,*args,**kwargs):
+        return self.PDE.get_solvation_energy(*args,**kwargs)
+    
+    def get_phi_ens(self,*args,**kwargs):
+        return self.PDE.get_phi_ens(*args,**kwargs)
+    
+
     def plot_loss_history(self, domain=1, plot_w=False, loss='all'):
         fig,ax = plt.subplots()
         c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime', 'Ir': 'aqua', 'E':'darkslategrey','G': 'salmon'}
@@ -142,9 +149,13 @@ class Postprocessing():
         return fig,ax
 
 
-    def plot_G_solv_history(self):
+    def plot_G_solv_history(self, known=False, method=None):
         fig,ax = plt.subplots()
-        ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), self.XPINN.G_solv_hist.values(),'k-',label='G_solv')
+        ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), self.XPINN.G_solv_hist.values(),'k-',label='G_solv_XPINN')
+        if known:
+            G_known = self.PDE.solvation_energy_phi_qs(self.phi_known(method,'react',tf.constant(self.PDE.x_qs, dtype=self.DTYPE),'molecule'))
+            G_known = np.ones(len(self.XPINN.G_solv_hist))*G_known
+            ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'G_solv_{method}')
         ax.legend()
         ax.set_xlabel('$n: iterations$', fontsize='11')
         text_l = r'$G_{solv}$'
@@ -155,7 +166,7 @@ class Postprocessing():
         ax.grid()
 
         if self.save:
-            path = 'Gsolv_history.png'
+            path = 'Gsolv_history.png' if not known else f'Gsolv_history_{method}.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save, bbox_inches='tight')
         return fig,ax
@@ -718,11 +729,15 @@ class Postprocessing():
 
         dict_pre = {
             'Gsolv_value': Gsolv_value,
-            'L2_continuity_u': np.sqrt(self.XPINN.losses['Iu'][-1]),
-            'L2_continuity_du': np.sqrt(self.XPINN.losses['Id'][-1]),
             'Loss_XPINN': self.loss_last[0],
             'Loss_NN1': self.loss_last[1],
-            'Loss_NN2': self.loss_last[2]
+            'Loss_NN2': self.loss_last[2],
+            'Loss_Val_NN1': self.XPINN.validation_losses['TL1'][-1],
+            'Loss_Val_NN2': self.XPINN.validation_losses['TL2'][-1],
+            'Loss_continuity_u': self.XPINN.losses['Iu'][-1],
+            'Loss_continuity_du': self.XPINN.losses['Id'][-1],
+            'Loss_Residual_R1': self.XPINN.losses['R1'][-1],
+            'Loss_Residual_R2': self.XPINN.losses['R2'][-1]  
         } 
 
         df_dict = {}
@@ -791,7 +806,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         ax.plot(r_out[r_out<0],u_out[r_out<0], label='XPINN', c='b')
         ax.plot(r_out[r_out>0],u_out[r_out>0], c='b')
 
-        u_in_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_in, dtype=self.DTYPE),'solvent')
+        u_in_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_in, dtype=self.DTYPE),'mmolecule')
         u_out_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_out, dtype=self.DTYPE),'solvent')
 
         ax.plot(r_in[np.abs(r_in) > 0.05],u_in_an[np.abs(r_in) > 0.05], c='r', linestyle='--')
@@ -880,13 +895,10 @@ class Born_Ion_Postprocessing(Postprocessing):
             i += 1
 
         if plot=='u':
-            U2 = self.XPINN.PDE.analytic_Born_Ion(rr)
+            U2 = self.phi_known('analytic_Born_Ion',value,tf.constant([[rr,0,0]], dtype=self.DTYPE),'')
             u2 = np.ones((N,1))*U2
-            if value=='react':
-                n = u2.shape[0]
-                XX2 = tf.concat([tf.ones((n,1))*rr, tf.zeros((n, 2))] ,axis=1)
-                u2 -= self.XPINN.PDE.G(*self.mesh.get_X(XX2))
             ax.plot(theta_bl, u2, c='g', label='Analytic', linestyle='--')
+
         elif plot=='du':
             dU2 = self.XPINN.PDE.analytic_Born_Ion_du(rr)
             du2 = np.ones((N,1))*dU2*self.PDE.PDE_in.epsilon

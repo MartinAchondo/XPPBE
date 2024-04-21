@@ -32,7 +32,7 @@ simulation.mesh_properties = {
 simulation.sample_method='random_sample'
 
 # Frecuency of solvation energy calculation
-simulation.G_solve_iter=6
+simulation.G_solve_iter=4
 
 # Losses to add, and initial weights
 simulation.losses = ['R1','R2','D2','Iu','Id','K2']
@@ -83,7 +83,7 @@ simulation.lr = tf.keras.optimizers.schedules.ExponentialDecay(
 simulation.lr_p = 0.001
 
 # Solve parameters
-simulation.N_iters = 2
+simulation.N_iters = 15
 
 simulation.precondition = False
 simulation.N_precond = 0

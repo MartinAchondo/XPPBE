@@ -30,7 +30,7 @@ class Solution_utils():
         elif function == 'G_Yukawa':
             phi_values = self.G_Yukawa(x,y,z) - self.G(x,y,z)
         elif function == 'analytic_Born_Ion':
-            phi_values = self.analytic_Born_Ion(r) - self.G(x,y,z)
+            phi_values = self.analytic_Born_Ion(r)
         elif function == 'PBJ':
             phi_values = self.pbj(X, flag)
             if flag=='solvent':
@@ -82,8 +82,8 @@ class Solution_utils():
         kappa = self.kappa
         q = self.q_list[0].q
 
-        f_IN = lambda r: (q/(4*self.pi)) * ( 1/(epsilon_1*r) - 1/(epsilon_1*rI) + 1/(epsilon_2*(1+kappa*rI)*rI) )
-        f_OUT = lambda r: (q/(4*self.pi)) * (np.exp(-kappa*(r-rI))/(epsilon_2*(1+kappa*rI)*r))
+        f_IN = lambda r: (q/(4*self.pi)) * ( - 1/(epsilon_1*rI) + 1/(epsilon_2*(1+kappa*rI)*rI) )
+        f_OUT = lambda r: (q/(4*self.pi)) * (np.exp(-kappa*(r-rI))/(epsilon_2*(1+kappa*rI)*r) - 1/(epsilon_1*r))
 
         y = np.piecewise(r, [r<=rI, r>rI], [f_IN, f_OUT])
 
