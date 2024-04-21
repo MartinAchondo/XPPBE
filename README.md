@@ -46,7 +46,7 @@ To install and run this project locally, follow these steps:
     ```
 3. Install project dependecies:
     ```bash
-   poetry install
+   pip install .
     ```
 
 ## Usage
