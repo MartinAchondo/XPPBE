@@ -1,37 +1,44 @@
-[tool.poetry]
-name = "xppbe"
+[project]
+name = "xpbe"
 version = "1.0.0"
-description = "Extended Phyisics Informed Neural Network code for Poisson-Boltzmann equation"
-authors = ["martinachondo <martin.achondom@gmail.com>"]
+description = "Physics Informed Neural Network code for Poisson-Boltzmann equation"
+authors = [{name = "martinachondo", email = "martin.achondom@gmail.com"}]
 readme = "README.md"
-license = "MIT"
+license = {file = "LICENCE"}
+requires-python = ">=3.8,<3.9"
+dependencies = [
+    "numpy==1.21.0",
+    "tensorflow==2.10.0",
+    "scipy==1.10.1",
+    "trimesh==3.23.5",
+    "pygamer==2.0.7",
+    "rtree==1.0.1",
+    "numba==0.57.0",
+    "meshio==5.3.4",
+    "gmsh==4.11.1",
+    "bempp-cl==0.3.0",
+    "pdb2pqr==3.6.2",
+    "matplotlib==3.6.1",
+    "plotly==5.14.1",
+    "pydotplus==2.0.2",
+    "pandas==2.0.2",
+    "xlsxwriter==3.1.9",
+    "tqdm==4.64.1",
+    "ipykernel==6.16.0"
+]
+
+[project.optional-dependencies]
+optional = [
+    "graphviz@git+https://gitlab.com/graphviz/graphviz/",
+    "pbj@git+https://github.com/bem4solvation/pbj",
+]
+
+[tool.setuptools]
+packages = ["code"]
+
+[project.urls]
 repository = "https://github.com/MartinAchondo/XPINN-for-PBE-Simulation"
 
-[tool.poetry.dependencies]
-python = ">=3.8,<3.9"
-numpy = "1.21.0"
-tensorflow = "2.10.0"
-scipy = "1.10.1"
-trimesh = "3.23.5"
-pygamer = "2.0.7"
-rtree = "1.0.1"
-numba = "0.57.0"
-meshio = "5.3.4"
-gmsh = "4.11.1"
-bempp-cl = "0.3.0"
-pdb2pqr = "3.6.2"
-matplotlib = "3.6.1"
-plotly = "5.14.1"
-pydotplus = "^2.0.2"
-pandas = "2.0.2"
-xlsxwriter = "^3.1.9"
-tqdm = "4.64.1"
-ipykernel = "6.16.0"
-
-[tool.poetry.optional-dependencies]
-pbj = {git = "https://github.com/bem4solvation/pbj"}
-graphviz = {git = "https://gitlab.com/graphviz/graphviz/"}
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
