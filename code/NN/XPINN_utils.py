@@ -32,11 +32,10 @@ class XPINN_utils():
         self.model = NN_class(hyperparameters, *args, **kwargs)
         self.model.build_Net()
 
-    def adapt_optimizer(self,optimizer,lr,lr_p=0.001,two_optimizers=False):
+    def adapt_optimizer(self,optimizer,lr,lr_p=0.001):
         self.optimizer_name = optimizer
         self.lr = lr
         self.lr_p = lr_p
-        self.two_optimizers = two_optimizers
 
     def adapt_PDE(self,PDE):
         self.PDE = PDE
@@ -87,10 +86,7 @@ class XPINN_utils():
         if self.optimizer_name == 'Adam':
             if not precond:
                 optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
-                if not self.two_optimizers:
-                    return optim
-                optim2 = tf.keras.optimizers.Adam(learning_rate=self.lr)
-                return optim,optim2
+                return optim
             elif precond:           
                 optimP = tf.keras.optimizers.Adam(learning_rate=self.lr_p)
                 return optimP

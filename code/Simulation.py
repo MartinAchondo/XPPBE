@@ -111,7 +111,6 @@ class Simulation():
                         decay_rate=0.9,
                         staircase=True)
         self.lr_p = 0.001
-        self.two_optimizers = False
 
         self.N_iters = 10000
 
@@ -210,7 +209,7 @@ class Simulation():
 
         self.XPINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out])
         self.XPINN_solver.set_points_methods(sample_method=self.sample_method)
-        self.XPINN_solver.adapt_optimizer(self.optimizer,self.lr,self.lr_p,self.two_optimizers)
+        self.XPINN_solver.adapt_optimizer(self.optimizer,self.lr,self.lr_p)
 
 
     def solve_model(self):

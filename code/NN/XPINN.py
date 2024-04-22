@@ -31,10 +31,8 @@ class XPINN(XPINN_utils):
     
     def main_loop(self, N=1000, N_precond=10):
         
-        if not self.two_optimizers:
-            optimizer = self.create_optimizer()
-        else: 
-            optimizer_1,optimizer_2 = self.create_optimizer()
+        optimizer = self.create_optimizer()
+
         if self.precondition:
             optimizer_P = self.create_optimizer(precond=True)
 
@@ -44,17 +42,6 @@ class XPINN(XPINN_utils):
             optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
             del grad_theta
             L = [loss,L_loss]
-            return L
-        
-        @tf.function
-        def train_step_2opt(X_batch, ws,precond=False):
-            loss_1, L_loss_1, grad_theta_1 = self.get_grad_loss(X_batch, self.model, self.model.NNs[0].trainable_variables, ws, precond)
-            loss_2, L_loss_2, grad_theta_2 = self.get_grad_loss(X_batch, self.model, self.model.NNs[1].trainable_variables, ws, precond)
-            optimizer_1.apply_gradients(zip(grad_theta_1, self.model.NNs[0].trainable_variables))
-            optimizer_2.apply_gradients(zip(grad_theta_2, self.model.NNs[1].trainable_variables))
-            del grad_theta_1
-            del grad_theta_2
-            L = [loss_1,L_loss_1]
             return L
 
         @tf.function
@@ -88,14 +75,11 @@ class XPINN(XPINN_utils):
                 
             self.checkers_iterations()
             
-            if self.precondition:
-                L = train_step_precond(X_d, ws=self.w)
+            if not self.precondition:
+                L = train_step(X_d, ws=self.w) 
 
-            elif not self.two_optimizers:
-                L = train_step(X_d, ws=self.w)   
-            
-            elif self.two_optimizers:
-                L = train_step_2opt(X_d, ws=self.w)
+            elif self.precondition:
+                L = train_step_precond(X_d, ws=self.w)
 
             self.iter+=1
             L_v = caclulate_validation_loss(X_v, self.precondition)
