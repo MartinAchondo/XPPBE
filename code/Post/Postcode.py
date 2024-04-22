@@ -12,8 +12,9 @@ matplotlib_logger = logging.getLogger('matplotlib')
 matplotlib_logger.setLevel(logging.WARNING)
 
 plt.rcParams['figure.max_open_warning'] = 50
-# plt.rcParams['figure.dpi'] = 200
-# plt.rcParams['savefig.dpi'] = 200
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams['figure.dpi'] = 150
+plt.rcParams['savefig.dpi'] = 150
 
 class Postprocessing():
 
@@ -85,8 +86,9 @@ class Postprocessing():
                         ax.semilogy(range(1,len(self.XPINN.losses[t])+1), w[t]*self.XPINN.losses[t],cx,label=f'Loss {t}')
 
         ax.legend()
-        ax.set_xlabel('$n: iterations$', fontsize='11')
-        ax.set_ylabel(r'$\mathcal{L}: Losses$', fontsize='11')
+        ax.set_xlabel('n: iterations', fontsize='11')
+        loss_label = r'$\mathcal{L}$'
+        ax.set_ylabel(f'{loss_label}: Losses', fontsize='11')
         if loss=='TL' or loss=='all':
             ax.set_title(f'Loss History of NN{domain}, Loss: {self.loss_last[domain]}')
         else:
@@ -112,8 +114,9 @@ class Postprocessing():
                         ax.semilogy(range(1,len(self.XPINN.validation_losses[t])+1), self.XPINN.validation_losses[t],'r-',label=f'{loss} validation')  
 
         ax.legend()
-        ax.set_xlabel('$n: iterations$', fontsize='11')
-        ax.set_ylabel(r'$\mathcal{L}: Losses$', fontsize='11')
+        ax.set_xlabel('n: iterations', fontsize='11')
+        loss_label = r'$\mathcal{L}$'
+        ax.set_ylabel(f'{loss_label}: Losses', fontsize='11')
         if loss=='TL' or loss=='all':
             ax.set_title(f'Loss History of NN{domain}, Loss: {self.loss_last[domain]}')
         else:
@@ -138,8 +141,9 @@ class Postprocessing():
                         ax.semilogy(range(1,len(w[t])+1), w[t], cx,label=f'w {t}')
                 
         ax.legend()
-        ax.set_xlabel('$n: iterations$', fontsize='11')
-        ax.set_ylabel('w: weights', fontsize='11')
+        ax.set_xlabel('n: iterations', fontsize='11')
+        w_label = r'$\mathcal{L}$'
+        ax.set_ylabel(f'{w_label}: weights', fontsize='11')
         ax.set_title(f'Weights History of NN{domain}')
         ax.grid()
 
@@ -159,7 +163,7 @@ class Postprocessing():
             label = method.replace('_','') if 'Born' not in method else 'Analytic'
             ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'{label}')
         ax.legend()
-        ax.set_xlabel('$n: iterations$', fontsize='11')
+        ax.set_xlabel('n: iterations', fontsize='11')
         text_l = r'$\Delta G_{solv}$'
         ax.set_ylabel(f'{text_l} [kcal/mol]', fontsize='11')
         max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
@@ -188,8 +192,8 @@ class Postprocessing():
         
         text_A = r'$\AA$'
         ax.set_xlabel(f'r [{text_A}]', fontsize='11')
-        ax.set_ylabel(r'$\phi$ [V]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
+        ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         text_theta = r'$\theta$'
         text_phi = r'$\phi$'
         theta = np.format_float_positional(theta, unique=False, precision=2)
@@ -227,8 +231,8 @@ class Postprocessing():
         
         text_A = r'$\AA$'
         ax.set_xlabel(f'r [{text_A}]', fontsize='11')
-        ax.set_ylabel(r'$\phi$ [V]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
+        ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         text_theta = r'$\theta$'
         text_phi = r'$\phi$'
         theta = np.format_float_positional(theta, unique=False, precision=2)
@@ -260,8 +264,8 @@ class Postprocessing():
 
         text_A = r'$\AA$'
         ax.set_xlabel(f'r [{text_A}]', fontsize='11')
-        ax.set_ylabel(r'$\phi$ [V]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
+        ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         ax.set_title(f'Solution {text_l} of PBE')
         ax.grid()
         ax.legend()
@@ -848,8 +852,8 @@ class Born_Ion_Postprocessing(Postprocessing):
         
         text_A = r'$\AA$'
         ax.set_xlabel(f'r [{text_A}]', fontsize='11')
-        ax.set_ylabel(r'$\phi$ [V]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
+        ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         text_theta = r'$\theta$'
         text_phi = r'$\phi$'
         theta = np.format_float_positional(theta, unique=False, precision=2)
