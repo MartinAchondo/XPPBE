@@ -309,7 +309,7 @@ class Postprocessing():
             text_l = r'phi' if value == 'phi' else r'phi_react'
         elif variable == 'dphi':
             values,values_1,values_2 = self.get_dphi_interface(self.XPINN.model)
-            text_l = r'dphi' if value == 'phi' else r'$dphi_react'
+            text_l = r'dphi' if value == 'phi' else r'dphi_react'
 
         if domain =='interface':
             values = values.flatten()

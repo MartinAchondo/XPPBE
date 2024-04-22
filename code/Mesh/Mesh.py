@@ -117,6 +117,7 @@ class Domain_Mesh():
         self.result_path = self.main_path if result_path=='' else result_path
 
         self.path_files = os.path.join(self.main_path,'Mesh','Temp')
+        os.makedirs(self.path_files, exist_ok=True)
         self.path_pqr = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.pqr')
         self.path_xyzr = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.xyzr')
         self.path_pdb = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.pdb')
