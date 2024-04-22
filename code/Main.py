@@ -80,13 +80,10 @@ simulation.lr = tf.keras.optimizers.schedules.ExponentialDecay(
                 decay_steps=2000,
                 decay_rate=0.9,
                 staircase=True)
-simulation.lr_p = 0.001
 
 # Solve parameters
 simulation.N_iters = 15
 
-simulation.precondition = False
-simulation.N_precond = 0
 simulation.iters_save_model = 5000
 
 

@@ -110,12 +110,8 @@ class Simulation():
                         decay_steps=2000,
                         decay_rate=0.9,
                         staircase=True)
-        self.lr_p = 0.001
 
         self.N_iters = 10000
-
-        self.precondition = False
-        self.N_precond = 0
 
         self.iters_save_model = 1000
 
@@ -164,8 +160,6 @@ class Simulation():
 
         meshes_domain['K1'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known.dat'}
         meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known.dat'}
-        meshes_domain['P1'] = {'domain': 'molecule', 'type':'P1', 'file':'data_precond.dat'}
-        meshes_domain['P2'] = {'domain': 'solvent', 'type':'P2', 'file':'data_precond.dat'}
         meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': 'data_experimental.dat'}
 
         if self.network=='xpinn':
@@ -209,15 +203,13 @@ class Simulation():
 
         self.XPINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out])
         self.XPINN_solver.set_points_methods(sample_method=self.sample_method)
-        self.XPINN_solver.adapt_optimizer(self.optimizer,self.lr,self.lr_p)
+        self.XPINN_solver.adapt_optimizer(self.optimizer,self.lr)
 
 
     def solve_model(self):
           
         self.XPINN_solver.solve(
             N=self.N_iters, 
-            precond = self.precondition, 
-            N_precond = self.N_precond,  
             save_model = self.iters_save_model, 
             G_solve_iter= self.G_solve_iter
             )

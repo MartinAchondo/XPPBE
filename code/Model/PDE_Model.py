@@ -198,21 +198,6 @@ class PBE(Solution_utils):
 
         return loss
     
-    def get_loss_preconditioner(self, X_batches, model):
-        L = self.create_L()
-
-        #residual
-        if 'P1' in X_batches:
-            ((X,U),flag) = X_batches['P1']
-            loss_p = self.dirichlet_loss(self.mesh,model,X,U,flag)
-            L['P1'] += loss_p  
-
-        if 'P2' in X_batches:
-            ((X,U),flag) = X_batches['P2']
-            loss_p = self.dirichlet_loss(self.mesh,model,X,U,flag)
-            L['P2'] += loss_p  
-            
-        return L
 
     def source(self,x,y,z):
         sum = 0

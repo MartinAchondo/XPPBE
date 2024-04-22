@@ -32,10 +32,9 @@ class XPINN_utils():
         self.model = NN_class(hyperparameters, *args, **kwargs)
         self.model.build_Net()
 
-    def adapt_optimizer(self,optimizer,lr,lr_p=0.001):
+    def adapt_optimizer(self,optimizer,lr):
         self.optimizer_name = optimizer
         self.lr = lr
-        self.lr_p = lr_p
 
     def adapt_PDE(self,PDE):
         self.PDE = PDE
@@ -82,14 +81,10 @@ class XPINN_utils():
 
     ##############################################################################################
                 
-    def create_optimizer(self, precond=False):
+    def create_optimizer(self):
         if self.optimizer_name == 'Adam':
-            if not precond:
-                optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
-                return optim
-            elif precond:           
-                optimP = tf.keras.optimizers.Adam(learning_rate=self.lr_p)
-                return optimP
+            optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
+            return optim
 
     def get_batches(self, sample_method='random_sample', validation=False):
 
@@ -128,18 +123,10 @@ class XPINN_utils():
             self.calc_Gsolv_now = False
 
         # adapt losses weights
-        if self.adapt_weights and (self.iter+1)%self.adapt_w_iter==0 and (self.iter+1)<self.N_iters and not self.precondition:
+        if self.adapt_weights and (self.iter+1)%self.adapt_w_iter==0 and (self.iter+1)<self.N_iters:
             self.adapt_w_now = True
         else:
             self.adapt_w_now = False  
-
-        # check precondition
-        if self.iter>=self.N_precond and self.precondition:
-            self.precondition = False
-            del self.L_X_domain['P1']
-            del self.L_X_domain['P2']
-            self.mesh.domain_mesh_names.remove('P1')
-            self.mesh.domain_mesh_names.remove('P2')
     
         if self.iter % 2 == 0:
             self.pbar.set_description("Loss: {:6.4e}".format(self.current_loss))                

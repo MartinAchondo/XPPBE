@@ -10,56 +10,40 @@ class XPINN(XPINN_utils):
     def __init__(self):
         super().__init__()       
     
-    def get_loss(self, X_batch, model, w, precond=False, validation=False):
+    def get_loss(self, X_batch, model, w, validation=False):
         loss = 0.0
-        if not precond:
-            L = self.PDE.get_loss(X_batch, model, validation=validation)
-            for t in self.mesh.domain_mesh_names:
-                loss += w[t]*L[t]
-            return loss,L
-        elif precond:
-            L = self.PDE.get_loss_preconditioner(X_batch, model)
-            return L['P1']+L['P2'],L
+        L = self.PDE.get_loss(X_batch, model, validation=validation)
+        for t in self.mesh.domain_mesh_names:
+            loss += w[t]*L[t]
+        return loss,L
 
-    def get_grad_loss(self,X_batch, model, trainable_variables, w, precond=False):
+    def get_grad_loss(self,X_batch, model, trainable_variables, w):
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(trainable_variables)
-            loss,L = self.get_loss(X_batch, model, w, precond)
+            loss,L = self.get_loss(X_batch, model, w)
         g = tape.gradient(loss, trainable_variables)
         del tape
         return loss, L, g
     
-    def main_loop(self, N=1000, N_precond=10):
+    def main_loop(self, N=1000):
         
         optimizer = self.create_optimizer()
 
-        if self.precondition:
-            optimizer_P = self.create_optimizer(precond=True)
-
         @tf.function
-        def train_step(X_batch, ws,precond=False):
-            loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, ws, precond)
+        def train_step(X_batch, ws):
+            loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, ws)
             optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
             del grad_theta
             L = [loss,L_loss]
             return L
-
-        @tf.function
-        def train_step_precond(X_batch, ws, precond=True):
-            loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, ws, precond)
-            optimizer_P.apply_gradients(zip(grad_theta, self.model.trainable_variables))
-            del grad_theta
-            L = [loss,L_loss]
-            return L
         
         @tf.function
-        def caclulate_validation_loss(X_v, precond):
-            loss,L_loss = self.get_loss(X_v,self.model,self.w, precond=precond, validation=True)
+        def caclulate_validation_loss(X_v):
+            loss,L_loss = self.get_loss(X_v,self.model,self.w, validation=True)
             L = [loss,L_loss]
             return L
 
         self.N_iters = N
-        self.N_precond = N_precond
         self.current_loss = 100
 
         self.create_losses_arrays(N)
@@ -70,19 +54,15 @@ class XPINN(XPINN_utils):
 
         for i in self.pbar:
 
+            self.checkers_iterations()
+
             if self.sample_method == 'random_sample':
                 X_d = self.get_batches(self.sample_method)
-                
-            self.checkers_iterations()
             
-            if not self.precondition:
-                L = train_step(X_d, ws=self.w) 
-
-            elif self.precondition:
-                L = train_step_precond(X_d, ws=self.w)
+            L = train_step(X_d, ws=self.w) 
+            L_v = caclulate_validation_loss(X_v)
 
             self.iter+=1
-            L_v = caclulate_validation_loss(X_v, self.precondition)
             self.calculate_G_solv(self.calc_Gsolv_now)
             self.callback(L,L_v)
             self.check_adapt_new_weights(self.adapt_w_now)
@@ -125,16 +105,15 @@ class XPINN(XPINN_utils):
             self.G_solv_hist[str(self.iter)] = G_solv   
 
 
-    def solve(self,N=1000, precond=False, N_precond=10, save_model=0, G_solve_iter=100):
+    def solve(self,N=1000, save_model=0, G_solve_iter=100):
 
-        self.precondition = precond
         self.save_model_iter = save_model if save_model != 0 else N
 
         self.G_solv_iter = G_solve_iter
 
         t0 = time()
 
-        self.main_loop(N, N_precond)
+        self.main_loop(N)
 
         logger = logging.getLogger(__name__)
         logger.info(f' Iterations: {self.iter}')
