@@ -5,14 +5,6 @@ from scipy import special as sp
 
 class Solution_utils(): 
 
-    qe = 1.60217663e-19
-    eps0 = 8.8541878128e-12     
-    kb = 1.380649e-23              
-    Na = 6.02214076e23
-    ang_to_m = 1e-10
-    to_V = qe/(eps0 * ang_to_m)  
-    cal2j = 4.184
-
     pi = np.pi
 
     pbj_created = False
@@ -166,12 +158,6 @@ class Solution_utils():
                 * x**s
             )
         return K
-    
-    def solvation_energy_phi_qs(self,phi_q):
-        G_solv = 0.5*np.sum(self.qs * phi_q)
-        G_solv *= self.to_V*self.qe*self.Na*(10**-3/self.cal2j)   
-        return G_solv
-
 
     def pbj(self,X,flag):
 

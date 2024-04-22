@@ -10,7 +10,7 @@ simulation.pbe_model = 'linear'
 
 # Domain properties
 simulation.domain_properties = {
-        'molecule': 'arg',
+        'molecule': 'born_ion',
         'epsilon_1':  1,
         'epsilon_2': 80,
         'kappa': 0.125,

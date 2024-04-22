@@ -30,6 +30,7 @@ class Postprocessing():
             self.mesh = XPINN.mesh
             self.PDE = XPINN.PDE
             self.PDE.pqr_path = self.mesh.path_pqr
+            self.to_V = self.PDE.to_V
 
             self.loss_last = [np.format_float_scientific(self.XPINN.losses['TL'][-1], unique=False, precision=3),
                             np.format_float_scientific(self.XPINN.losses['TL1'][-1], unique=False, precision=3),
@@ -43,19 +44,19 @@ class Postprocessing():
                 os.makedirs(path, exist_ok=True)
 
     def get_phi(self,*args,**kwargs):
-        return self.PDE.get_phi(*args,**kwargs)
+        return self.PDE.get_phi(*args,**kwargs)*self.to_V
 
     def get_dphi(self,*args,**kwargs):
-        return self.PDE.get_dphi(*args,**kwargs)
+        return tuple(dphi*self.to_V for dphi in self.PDE.get_dphi(*args,**kwargs))
 
     def phi_known(self,*args,**kwargs):
-        return self.PDE.phi_known(*args,**kwargs)
+        return self.PDE.phi_known(*args,**kwargs)*self.to_V
 
     def get_phi_interface(self,*args,**kwargs):
-        return self.PDE.get_phi_interface(*args,**kwargs)
+        return tuple(phi*self.to_V for phi in self.PDE.get_phi_interface(*args,**kwargs))
 
     def get_dphi_interface(self,*args,**kwargs):
-        return self.PDE.get_dphi_interface(*args,**kwargs)
+        return tuple(dphi*self.to_V for dphi in self.PDE.get_dphi_interface(*args,**kwargs))
 
     def get_solvation_energy(self,*args,**kwargs):
         return self.PDE.get_solvation_energy(*args,**kwargs)
@@ -151,18 +152,19 @@ class Postprocessing():
 
     def plot_G_solv_history(self, known=False, method=None):
         fig,ax = plt.subplots()
-        ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), self.XPINN.G_solv_hist.values(),'k-',label='G_solv_XPINN')
+        ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), self.XPINN.G_solv_hist.values(),'k-',label='XPINN')
         if known:
-            G_known = self.PDE.solvation_energy_phi_qs(self.phi_known(method,'react',tf.constant(self.PDE.x_qs, dtype=self.DTYPE),'molecule'))
+            G_known = self.PDE.solvation_energy_phi_qs(self.to_V**-1*self.phi_known(method,'react',tf.constant(self.PDE.x_qs, dtype=self.DTYPE),'molecule'))
             G_known = np.ones(len(self.XPINN.G_solv_hist))*G_known
-            ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'G_solv_{method}')
+            label = method.replace('_','') if 'Born' not in method else 'Analytic'
+            ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'{label}')
         ax.legend()
         ax.set_xlabel('$n: iterations$', fontsize='11')
-        text_l = r'$G_{solv}$'
-        ax.set_ylabel(r'$G_{solv}$ [kcal/mol]', fontsize='11')
+        text_l = r'$\Delta G_{solv}$'
+        ax.set_ylabel(f'{text_l} [kcal/mol]', fontsize='11')
         max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
         Gsolv_value = np.format_float_positional(self.XPINN.G_solv_hist[str(max_iter)], unique=False, precision=2)
-        ax.set_title(f'Solution {text_l} of PBE, G_solv: {Gsolv_value} kcal/mol')
+        ax.set_title(f'Solution {text_l} of PBE')
         ax.grid()
 
         if self.save:
@@ -184,8 +186,9 @@ class Postprocessing():
         ax.plot(r_out[r_out<0],u_out[r_out<0], label='Solvent', c='b')
         ax.plot(r_out[r_out>0],u_out[r_out>0], c='b')
         
-        ax.set_xlabel('r', fontsize='11')
-        ax.set_ylabel(r'$\phi$', fontsize='11')
+        text_A = r'$\AA$'
+        ax.set_xlabel(f'r [{text_A}]', fontsize='11')
+        ax.set_ylabel(r'$\phi$ [V]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
         text_theta = r'$\theta$'
         text_phi = r'$\phi$'
@@ -222,8 +225,9 @@ class Postprocessing():
         ax.plot(r_out[r_out<0],u_out_an[r_out<0], label=method.replace('_',' '), c='r', linestyle='--')
         ax.plot(r_out[r_out>0],u_out_an[r_out>0], c='r', linestyle='--')
         
-        ax.set_xlabel('r', fontsize='11')
-        ax.set_ylabel(r'$\phi$', fontsize='11')
+        text_A = r'$\AA$'
+        ax.set_xlabel(f'r [{text_A}]', fontsize='11')
+        ax.set_ylabel(r'$\phi$ [V]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
         text_theta = r'$\theta$'
         text_phi = r'$\phi$'
@@ -254,8 +258,9 @@ class Postprocessing():
             ax.plot(r_out[r_out<0],u_out[r_out<0], c=c[i], label=labels[i])
             ax.plot(r_out[r_out>0],u_out[r_out>0], c=c[i])
 
-        ax.set_xlabel('r', fontsize='11')
-        ax.set_ylabel(r'$\phi$', fontsize='11')
+        text_A = r'$\AA$'
+        ax.set_xlabel(f'r [{text_A}]', fontsize='11')
+        ax.set_ylabel(r'$\phi$ [V]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
         ax.set_title(f'Solution {text_l} of PBE')
         ax.grid()
@@ -276,10 +281,12 @@ class Postprocessing():
         s = ax.scatter(T.ravel()[bools[0]], S.ravel()[bools[0]], c=u_in[:],vmin=vmin,vmax=vmax)
         s = ax.scatter(T.ravel()[bools[1]], S.ravel()[bools[1]], c=u_out[:],vmin=vmin,vmax=vmax)
 
-        fig.colorbar(s, ax=ax)
-        ax.set_xlabel(r'$u$', fontsize='11')
-        ax.set_ylabel(r'$v$', fontsize='11')
+        text_A = r'$\AA$'
+        ax.set_xlabel(f'u [{text_A}]', fontsize='11')
+        ax.set_ylabel(f'v [{text_A}]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
+        cbar = fig.colorbar(s, ax=ax)
+        cbar.set_label(f'{text_l} [V]', rotation=270)
         text_n = r'$n$'
         text_x0 = r'$x_0$'
         ax.set_title(f'Solution {text_l} of PBE;  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_n}=[{np.format_float_positional(n[0], unique=False, precision=1)},{np.format_float_positional(n[1], unique=False, precision=1)},{np.format_float_positional(n[2], unique=False, precision=1)}])')
@@ -299,9 +306,11 @@ class Postprocessing():
          
         if variable == 'phi':
             values,values_1,values_2 = self.get_phi_interface(self.XPINN.model,value=value)
+            text_l = r'phi' if value == 'phi' else r'phi_react'
         elif variable == 'dphi':
             values,values_1,values_2 = self.get_dphi_interface(self.XPINN.model)
-        
+            text_l = r'dphi' if value == 'phi' else r'$dphi_react'
+
         if domain =='interface':
             values = values.flatten()
         elif domain =='molecule':
@@ -312,9 +321,10 @@ class Postprocessing():
         fig = go.Figure()
         fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
                             i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
-                            intensity=values, colorscale='RdBu_r'))
+                            intensity=values, colorscale='RdBu_r',
+                            colorbar=dict(title=f'{text_l} [V]')))
 
-        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X', yaxis_title='Y', zaxis_title='Z'),margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'),margin=dict(l=30, r=40, t=20, b=20))
 
         if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.html'))
@@ -328,7 +338,7 @@ class Postprocessing():
         fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
                             i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
                             intensity=phi_known, colorscale='RdBu_r'))
-        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X', yaxis_title='Y', zaxis_title='Z'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
         if jupyter:
             fig.show()
         return fig
@@ -369,7 +379,7 @@ class Postprocessing():
             )
             fig.add_trace(trace)
 
-        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X', yaxis_title='Y', zaxis_title='Z'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
         
         if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory,self.path_plots_meshes, 'collocation_points_plot_3d.html'))
@@ -411,7 +421,7 @@ class Postprocessing():
         )
 
         fig = go.Figure(data=[element_trace,edge_trace])
-        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X', yaxis_title='Y', zaxis_title='Z'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
 
         if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surf_3D.html'))
@@ -499,7 +509,7 @@ class Postprocessing():
         )
 
         fig = go.Figure(data=[element_trace_ex,edge_trace_ex, element_trace_in, edge_trace_in])
-        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X', yaxis_title='Y', zaxis_title='Z'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
         
 
         if not jupyter and self.save:
@@ -597,7 +607,7 @@ class Postprocessing():
 
             fig = go.Figure(data=[trace_vertices, trace_edges, trace_elements])
 
-        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X', yaxis_title='Y', zaxis_title='Z'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
 
         if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_3D_{domain}.html'))
@@ -655,7 +665,7 @@ class Postprocessing():
         )
 
         fig = go.Figure(data=[mesh_trace, vertex_normals_trace, edge_trace])
-        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X', yaxis_title='Y', zaxis_title='Z'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
 
         if not jupyter and self.save:
             fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surface_normals_{plot}.html'))
@@ -819,10 +829,10 @@ class Born_Ion_Postprocessing(Postprocessing):
 
             if value == 'phi':
                 axin = ax.inset_axes([0.65, 0.25, 0.28, 0.34])
-                axin.set_ylim(-0.06+v, 0.06+v)
+                axin.set_ylim(-0.06*self.to_V+v, 0.06*self.to_V+v)
             else:
                 axin = ax.inset_axes([0.68, 0.20, 0.28, 0.34])
-                axin.set_ylim(-0.006+v, 0.006+v)
+                axin.set_ylim(-0.006*self.to_V+v, 0.006*self.to_V+v)
             axin.set_xlim(0.9*R,1.1*R)
 
             axin.plot(r_in,u_in[:], c='b')
@@ -836,8 +846,9 @@ class Born_Ion_Postprocessing(Postprocessing):
             axin.grid()
             ax.indicate_inset_zoom(axin)
         
-        ax.set_xlabel('r', fontsize='11')
-        ax.set_ylabel(r'$\phi$', fontsize='11')
+        text_A = r'$\AA$'
+        ax.set_xlabel(f'r [{text_A}]', fontsize='11')
+        ax.set_ylabel(r'$\phi$ [V]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
         text_theta = r'$\theta$'
         text_phi = r'$\phi$'
@@ -850,9 +861,9 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         ax.set_xlim(-5,5)
         if value == 'phi':
-            ax.set_ylim(-0.1,1.6)
+            ax.set_ylim(-0.1*self.to_V,1.6*self.to_V)
         elif value == 'react':
-            ax.set_ylim(-0.085,-0.01)
+            ax.set_ylim(-0.085*self.to_V,-0.01*self.to_V)
 
         if self.save:
             path = f'analytic_{value}.png' if zoom==False else f'analytic_zoom_{value}.png'
@@ -900,13 +911,13 @@ class Born_Ion_Postprocessing(Postprocessing):
             ax.plot(theta_bl, u2, c='g', label='Analytic', linestyle='--')
 
         elif plot=='du':
-            dU2 = self.XPINN.PDE.analytic_Born_Ion_du(rr)
+            dU2 = self.XPINN.PDE.analytic_Born_Ion_du(rr)*self.to_V
             du2 = np.ones((N,1))*dU2*self.PDE.PDE_in.epsilon
             if value=='react':
                 n = du2.shape[0]
                 nnvv = tf.concat([tf.ones((n, 1)), tf.zeros((n, 2))], axis=1)
                 XX2 = tf.concat([tf.ones((n,1))*rr, tf.zeros((n, 2))], axis=1)
-                du2 -= self.XPINN.PDE.dG_n(*self.mesh.get_X(XX2),nnvv)
+                du2 -= self.XPINN.PDE.dG_n(*self.mesh.get_X(XX2),nnvv)*self.to_V
             ax.plot(theta_bl, du2, c='g', label='Analytic', linestyle='--')
         
         if plot=='u':
@@ -919,8 +930,8 @@ class Born_Ion_Postprocessing(Postprocessing):
                 text_l = r'$\partial_n\phi$'
             else:
                 text_l = r'$\partial_n\phi_{react}$'  
-        ax.set_xlabel(r'$\beta$', fontsize='11')
-        ax.set_ylabel(text_l, fontsize='11')
+        ax.set_xlabel(r'$\beta$ [rad]', fontsize='11')
+        ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         text_n = r'$n$'
         ax.set_title(f'Solution {text_l} of PBE at Interface;  ({text_n}=[{np.format_float_positional(nn[0], unique=False, precision=1)},{np.format_float_positional(nn[1], unique=False, precision=1)},{np.format_float_positional(nn[2], unique=False, precision=1)}])')
 

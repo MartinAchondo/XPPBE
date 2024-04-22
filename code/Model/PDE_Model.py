@@ -84,6 +84,10 @@ class PBE(Solution_utils):
 
         return phi_ens_L    
     
+    def solvation_energy_phi_qs(self,phi_q):
+        G_solv = 0.5*np.sum(self.qs * phi_q)
+        G_solv *= self.to_V*self.qe*self.Na*(10**-3/self.cal2j)   
+        return G_solv
 
     # Losses
 
