@@ -5,11 +5,6 @@ import logging
 import shutil
 import numpy as np
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ['TF_RUN_EAGER_OP_AS_FUNCTION']='false'
-import tensorflow as tf
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-
 from xppbe.Mesh.Mesh import Domain_Mesh
 from xppbe.NN.XPINN import XPINN
 
@@ -265,7 +260,7 @@ class Simulation():
         else:
             if 'sphere' in self.domain_properties['molecule']:
                 method = 'Spherical_Harmonics'
-            elif self.domain_properties['molecule'] in ('methanol', 'methanol_E','arg'):
+            elif self.domain_properties['molecule'] in ('methanol','arg'):
                 method = 'PBJ'
              
             self.Post.plot_G_solv_history(known=True,method=method);

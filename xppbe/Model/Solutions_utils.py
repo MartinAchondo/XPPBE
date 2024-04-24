@@ -5,6 +5,14 @@ from scipy import special as sp
 
 class Solution_utils(): 
 
+    qe = 1.60217663e-19
+    eps0 = 8.8541878128e-12     
+    kb = 1.380649e-23              
+    Na = 6.02214076e23
+    ang_to_m = 1e-10
+    to_V = qe/(eps0 * ang_to_m)  
+    cal2j = 4.184
+
     pi = np.pi
 
     pbj_created = False

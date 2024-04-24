@@ -1,8 +1,8 @@
-import os
-from xppbe.Simulation import Simulation
-yaml_path = os.path.join(os.getcwd(),'Main.yaml')
 
-simulation = Simulation(yaml_path)
+from xppbe.Simulation import Simulation
+
+
+simulation = Simulation('Main.yaml')
 
 simulation.create_simulation()
 simulation.adapt_simulation()
