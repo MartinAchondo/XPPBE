@@ -38,13 +38,17 @@ To install and run this project locally, follow these steps:
 1. Clone the repository to your local machine.
 
    ```bash
-   git clone https://github.com/MartinAchondo/XPINN-for-PBE-Simulation
+   git clone https://github.com/MartinAchondo/XPPBE
    ```
 2. Navigate to the project directory
    ```bash
-   cd XPINN-for-PBE-Simulation
-    ```
-3. Install project dependecies:
+   cd XPPBE
+   ```
+3. Create a virtual enviroment
+   ```bash
+   conda create --name xppbe python=3.8.18
+   ```
+4. Install project dependecies:
     ```bash
    pip install .
     ```
@@ -52,120 +56,116 @@ To install and run this project locally, follow these steps:
 ## Usage
 To use this project, start by following the [Tutorial.ipynb](./tutorials/tutorial.ipynb) notebook.
 
-Alternatively, you can modify the [Main.py](./code/Main.py) template code. Then, execute the following command in your terminal to run the `Main.py` script:
+Alternatively, you can modify the [Main.yaml](./code/Main.yaml) and the [Main.py](./code/Main.py) template code. Then, execute the following command in your terminal to run the `Main.py` script:
 
 ```bash
 bash Allrun Main 
 ```
 
-If you intend to run multiple simulations, add your customized `Main.py` files to the `code/simulations_list` folder. Finally, execute the following command:
-
-```bash
-bash Allrun Sims
-```
-
-This command will execute all Python scripts (*.py) found in the `code/simulations_list` folder, allowing you to run multiple simulations at once.
-
-All the results after executing `bash Allrun` will be added to the `code/results` folder.
+All the results after executing `bash Allrun` will be added to the `/results` folder.
 
 
 ### Explanation of the `Main.py` Template Code
 
 1. Import the simulation object and initialize it:
     ```py
-    from Simulation import Simulation
-    simulation = Simulation(__file__)
+    from xppbe.Simulation import Simulation
+    simulation = Simulation('Main.yaml')
     ```
-
-2. Define the molecule, the properties and the equation to solve:
-    ```py
-    simulation.equation = 'standard'
-    simulation.pbe_model = 'linear'
-
-    simulation.domain_properties = {
-            'molecule': 'born_ion',
-            'epsilon_1':  1,
-            'epsilon_2': 80,
-            'kappa': 0.125,
-            'T' : 300 
-            }
-    ```     
-3. Define the number of collocation points (mesh properties):
-    ```py
-    simulation.mesh_properties = {
-            'vol_max_interior': 0.04,
-            'vol_max_exterior': 0.1,
-            'density_mol': 10,
-            'density_border': 4,
-            'dx_experimental': 1.0,
-            'N_pq': 100,
-            'G_sigma': 0.04,
-            'mesh_generator': 'msms',
-            'probe_radius': 1.4,
-            'dR_exterior': 6,
-            'force_field': 'AMBER'
-            }
-    ```
-
-4. Define the different loss terms (solute domain, solvent domain and combination of boths)
-    ```py
-    simulation.losses = ['R1','R2','D2','Iu','Id','K2']
-    ```
-5. Define the architectures:
-    ```py
-
-    simulation.network = 'xpinn'
-    simulation.hyperparameters_in = {
-            'input_shape': (None,3),
-            'num_hidden_layers': 4,
-            'num_neurons_per_layer': 200,
-            'output_dim': 1,
-            'activation': 'tanh',
-            'adaptative_activation': True,
-            'architecture_Net': 'FCNN',
-            'fourier_features': True,
-            'num_fourier_features': 256
-            }
-    simulation.hyperparameters_out = {
-            'input_shape': (None,3),
-            'num_hidden_layers': 4,
-            'num_neurons_per_layer': 200,
-            'output_dim': 1,
-            'activation': 'tanh',
-            'adaptative_activation': True,
-            'architecture_Net': 'FCNN',
-            'fourier_features': False
-            }
-    ```
-
-6. Finally, specify the optimization algorithm, the weights algorithm, the batches/samples approach and the number of iterations.
-    ```py
-    simulation.adapt_weights = True,
-    simulation.adapt_w_iter = 1000
-    simulation.adapt_w_method = 'gradients'
-    simulation.alpha_w = 0.7           
-
-    simulation.sample_method='random_sample'
-
-    simulation.optimizer = 'Adam'
-    simulation.lr = tf.keras.optimizers.schedules.ExponentialDecay(
-                    initial_learning_rate=0.001,
-                    decay_steps=2000,
-                    decay_rate=0.9,
-                    staircase=True)
-
-    simulation.N_iters = 10000
-    ```
-
-7. Run the simulation:
+2. Run the simulation:
     ```py
     simulation.create_simulation()
     simulation.adapt_simulation()
     simulation.solve_model()
     simulation.postprocessing()
     ```
+The Simulation object import a YAML file, with all the problem definitions. An explanation is as follows:
 
-8. For quick postprocessing, use the [Postprocessing Jupyter Notebook](./code/Post/Post_Template.ipynb) that will be added to the results directory after executing the `bash Allrun` command.
+1. Define the molecule, the properties and the equation to solve:
+    ```yaml
+    equation: standard
+    pbe_model: linear
+
+    domain_properties:
+        molecule: methanol
+        epsilon_1: 1
+        epsilon_2: 80
+        kappa: 0.125
+        T: 300
+    ```     
+2. Define the number of collocation points (mesh properties):
+    ```yaml
+    mesh_properties:
+        vol_max_interior: 0.04
+        vol_max_exterior: 0.1
+        density_mol: 10
+        density_border: 4
+        dx_experimental: 1.0
+        N_pq: 100
+        G_sigma: 0.04
+        mesh_generator: msms
+        probe_radius: 1,4
+        dR_exterior: 3
+        force_field: AMBER
+    ```
+
+3. Define the different loss terms (solute domain, solvent domain and combination of boths)
+    ```yaml
+    losses:
+        - R1
+        - R2
+        - D2
+        - Iu
+        - Id
+        - K2
+    ```
+4. Define the architectures:
+    ```yaml
+    network: xpinn
+
+    hyperparameters_in:
+        input_shape: [null, 3]
+        num_hidden_layers: 4
+        num_neurons_per_layer: 200
+        output_dim: 1
+        activation: tanh
+        adaptative_activation: true
+        architecture_Net: FCNN
+        fourier_features: true
+        num_fourier_features: 256
+
+    hyperparameters_out:
+        input_shape: [null, 3]
+        num_hidden_layers: 4
+        num_neurons_per_layer: 200
+        output_dim: 1
+        activation: tanh
+        adaptative_activation: true
+        architecture_Net: FCNN
+        fourier_features: true
+    ```
+
+5. Finally, specify the optimization algorithm, the weights algorithm, the batches/samples approach and the number of iterations.
+    ```yaml
+    adapt_weights: true
+    adapt_w_iter: 1000
+    adapt_w_method: gradients
+    alpha_w: 0.7         
+
+    sample_method: random_sample
+    
+    optimizer: Adam
+    lr:
+        method: exponential_decay
+        initial_learning_rate: 0.001
+        decay_steps: 2000
+        decay_rate: 0.9
+        staircase: true
+
+    N_iters: 20000
+    ```
+
+For quick postprocessing, use the [Postprocessing Jupyter Notebook](./code/Post/Post_Template.ipynb) that will be added to the results directory after executing the `bash Allrun` command.
 
 ## Citing
 
