@@ -1,3 +1,5 @@
+import numpy as np
+import scipy.optimize
 import tensorflow as tf
 from time import time
 import logging
@@ -24,6 +26,74 @@ class XPINN(XPINN_utils):
         g = tape.gradient(loss, trainable_variables)
         del tape
         return loss, L, g
+    
+    def train_last_step(self, X, u, method='L-BFGS-B'):
+
+        options={'maxiter': 50000,
+            'maxfun': 50000,
+            'maxcor': 50,
+            'maxls': 50,
+            'ftol': 1.0*np.finfo(float).eps}
+        
+        def get_weight_tensor():
+            
+            weight_list = []
+            shape_list = []
+            
+            for v in self.model.variables:
+                shape_list.append(v.shape)
+                weight_list.extend(v.numpy().flatten())
+                
+            weight_list = tf.convert_to_tensor(weight_list)
+            return weight_list, shape_list
+
+        x0, shape_list = get_weight_tensor()
+        
+        def set_weight_tensor(weight_list):
+
+            idx = 0
+            for v in self.model.variables:
+                vs = v.shape
+                
+                if len(vs) == 2:  
+                    sw = vs[0]*vs[1]
+                    new_val = tf.reshape(weight_list[idx:idx+sw],(vs[0],vs[1]))
+                    idx += sw
+                
+                elif len(vs) == 1:
+                    new_val = weight_list[idx:idx+vs[0]]
+                    idx += vs[0]
+                    
+                elif len(vs) == 0:
+                    new_val = weight_list[idx]
+                    idx += 1
+                    
+                v.assign(tf.cast(new_val, DTYPE))
+        
+        def get_loss_and_grad(w):
+            
+            set_weight_tensor(w)
+
+            loss, grad = self.get_grad(X, u)
+                   
+            loss = loss.numpy().astype(np.float64)
+            self.current_loss = loss            
+            
+            grad_flat = []
+            for g in grad:
+                grad_flat.extend(g.numpy().flatten())
+            
+            grad_flat = np.array(grad_flat,dtype=np.float64)
+            
+            return loss, grad_flat
+        
+        
+        return scipy.optimize.minimize(fun=get_loss_and_grad,
+                                       x0=x0,
+                                       jac=True,
+                                       method=method,
+                                       callback=self.callback,
+                                       **options)
     
     def main_loop(self, N=1000):
         
