@@ -9,7 +9,7 @@ xppbe/*
 !xppbe/*/
 !xppbe/Main.py
 !xppbe/Simulation.py
-!xppbe/Test_mesh.py
+!xppbe/Main.yaml
 !xppbe/Allclean
 !xppbe/Allrun
 
