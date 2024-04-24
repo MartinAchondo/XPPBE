@@ -29,6 +29,7 @@ __pycache__/
 results_temp*
 *.log
 Temp/
+*.pyc
 
 # Shell script files
 pscp.bash
@@ -62,3 +63,6 @@ xppbe/Molecules/mesh_files/
 /.notas
 /.test
 /.tests
+
+/xppbe.egg-info
+build/

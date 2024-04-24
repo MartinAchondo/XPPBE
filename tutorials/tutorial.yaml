@@ -8,7 +8,7 @@ pbe_model: linear
 
 # Domain properties
 domain_properties:
-    molecule: born_ion
+    molecule: methanol
     epsilon_1: 1
     epsilon_2: 80
     kappa: 0.125
