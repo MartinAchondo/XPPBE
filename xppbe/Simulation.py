@@ -172,7 +172,7 @@ class Simulation():
         self.XPINN_solver.adapt_PDE(self.PBE_model)
 
 
-    def adapt_simulation(self):
+    def adapt_model(self):
 
         self.XPINN_solver.adapt_weights(
                 self.weights,
@@ -346,7 +346,7 @@ if __name__=='__main__':
     results_path = os.path.dirname(__file__)
     sim = Simulation(yaml_path, results_path=results_path)
     sim.create_simulation()
-    sim.adapt_simulation()
+    sim.adapt_model()
     sim.solve_model()
     sim.postprocessing()
 

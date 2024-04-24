@@ -28,41 +28,9 @@ class XPINN(XPINN_utils):
         return loss, L, g
     
 
-    def train_last_step(self, X_batch, X_batch_val, ws):
+    def train_sgd(self, X_d, X_v):
 
-        def train_step_sp(w):
-
-            self.set_weight_tensor(w)
-            loss, _ , grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, ws)
-
-            grad_flat = []
-            for g in grad_theta:
-                grad_flat.extend(g.numpy().flatten())
-            grad_flat = np.array(grad_flat,dtype=np.float64)
-            return loss, grad_flat
-        
-        def callback_ts(xr=None):
-            L = self.get_loss(X_batch,self.model,self.w)
-            L_v = self.get_loss(X_batch_val,self.model,self.w, validation=True)
-            self.complete_callback(L,L_v)
-        
-        x0, _ = self.get_weight_tensor()
-        return scipy.optimize.minimize(fun=train_step_sp,
-                                       x0=x0,
-                                       jac=True,
-                                       method=self.optimizer_2_name,
-                                       options=self.optimizer_2_opts,
-                                       callback=callback_ts
-                                       )
-    
-    def main_loop(self, N=1000):
-        
-        self.N_iters = N
-        self.N_iters_2 = N
-        
         optimizer = self.create_optimizer()
-        if self.use_optimizer_2:
-            self.N_iters_2 = N + self.optimizer_2_opts['maxiter']
 
         @tf.function
         def train_step(X_batch, ws):
@@ -78,13 +46,6 @@ class XPINN(XPINN_utils):
             L = [loss,L_loss]
             return L
 
-        self.create_losses_arrays(self.N_iters_2)
-        X_v = self.get_batches('full_batch', validation=True)
-        X_d = self.get_batches(self.sample_method)
-
-        self.current_loss = 100
-        self.pbar = log_progress(range(self.N_iters_2))
-
         for i in range(self.N_iters):
 
             if self.sample_method == 'random_sample':
@@ -94,12 +55,55 @@ class XPINN(XPINN_utils):
             L_v = caclulate_validation_loss(X_v)
             self.complete_callback(L,L_v)
 
+
+    def train_newton(self, X_batch, X_batch_val):
+
+        if self.sample_method == 'random_sample':
+            X_batch = self.get_batches(self.sample_method)
+
+        def train_step_sp(w):
+
+            self.set_weight_tensor(w)
+            loss, _ , grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, self.w)
+
+            grad_flat = []
+            for g in grad_theta:
+                grad_flat.extend(g.numpy().flatten())
+            grad_flat = np.array(grad_flat,dtype=np.float64)
+            return loss, grad_flat
+        
+        def callback_ts(xr=None):
+            L = self.get_loss(X_batch,self.model,self.w)
+            L_v = self.get_loss(X_batch_val,self.model,self.w, validation=True)
+            self.complete_callback(L,L_v)
+        
+        x0, _ = self.get_weight_tensor()
+        return scipy.optimize.minimize(fun=train_step_sp,
+                                        x0=x0,
+                                        jac=True,
+                                        method=self.optimizer_2_name,
+                                        options=self.optimizer_2_opts,
+                                        callback=callback_ts
+                                        )
+    
+    def main_loop(self, N=1000):
+        
+        self.N_iters = N
+        self.N_iters_2 = N
+        
         if self.use_optimizer_2:
+            self.N_iters_2 = N + self.optimizer_2_opts['maxiter']
 
-            if self.sample_method == 'random_sample':
-                X_d = self.get_batches(self.sample_method)
+        self.pbar = log_progress(range(self.N_iters_2))
 
-            self.train_last_step(X_d,X_v,ws=self.w)   
+        self.create_losses_arrays(self.N_iters_2)
+        X_v = self.get_batches('full_batch', validation=True)
+        X_d = self.get_batches(self.sample_method)
+
+        self.train_sgd(X_d, X_v)
+
+        if self.use_optimizer_2:
+            self.train_newton(X_d,X_v)   
 
 
     def complete_callback(self, L,L_v):
@@ -156,9 +160,7 @@ class XPINN(XPINN_utils):
     def solve(self,N=1000, save_model=0, G_solve_iter=100):
 
         self.save_model_iter = save_model if save_model != 0 else N
-
         self.G_solv_iter = G_solve_iter
-
         t0 = time()
 
         self.main_loop(N)
