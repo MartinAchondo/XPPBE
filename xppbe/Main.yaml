@@ -1,14 +1,14 @@
 # Simulation settings
 
 # Equation to solve
-equation: standard
+equation: regularized_scheme_2
 
 # PBE model
 pbe_model: linear
 
 # Domain properties
 domain_properties:
-    molecule: methanol
+    molecule: born_ion
     epsilon_1: 1
     epsilon_2: 80
     kappa: 0.125

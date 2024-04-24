@@ -44,30 +44,19 @@ To install and run this project locally, follow these steps:
    ```bash
    cd XPPBE
    ```
-3. Create a virtual enviroment
+3. Create a virtual environment
    ```bash
    conda create --name xppbe python=3.8.18
    ```
-4. Install project dependecies:
+4. Install the project
     ```bash
    pip install .
     ```
 
 ## Usage
-To use this project, start by following the [Tutorial.ipynb](./tutorials/tutorial.ipynb) notebook.
+To use this project, start by following the [Tutorial.ipynb](./tutorials/tutorial.ipynb) notebook. An explanation of this notebook is as follows:
 
-Alternatively, you can modify the [Main.yaml](./code/Main.yaml) and the [Main.py](./code/Main.py) template code. Then, execute the following command in your terminal to run the `Main.py` script:
-
-```bash
-bash Allrun Main 
-```
-
-All the results after executing `bash Allrun` will be added to the `/results` folder.
-
-
-### Explanation of the `Main.py` Template Code
-
-1. Import the simulation object and initialize it:
+1. Import the simulation object, the YAML file, and initialize it:
     ```py
     from xppbe.Simulation import Simulation
     simulation = Simulation('Main.yaml')
@@ -79,7 +68,7 @@ All the results after executing `bash Allrun` will be added to the `/results` fo
     simulation.solve_model()
     simulation.postprocessing()
     ```
-The Simulation object import a YAML file, with all the problem definitions. An explanation is as follows:
+The Simulation object import a YAML file with all the problem definitions. An explanation is as follows:
 
 1. Define the molecule, the properties and the equation to solve:
     ```yaml
@@ -164,8 +153,6 @@ The Simulation object import a YAML file, with all the problem definitions. An e
 
     N_iters: 20000
     ```
-
-For quick postprocessing, use the [Postprocessing Jupyter Notebook](./code/Post/Post_Template.ipynb) that will be added to the results directory after executing the `bash Allrun` command.
 
 ## Citing
 

@@ -16,7 +16,7 @@ from xppbe.NN.XPINN import XPINN
 
 class Simulation():
        
-    def __init__(self, yaml_path, molecule_path=None, results_path=None):
+    def __init__(self, yaml_path, molecule_path=None, results_path=None, load_results=False):
             
         self.equation = 'standard'
         self.pbe_model = 'linear'
@@ -94,7 +94,7 @@ class Simulation():
 
         self.iters_save_model = 1000
 
-        self.simulation_name, self.results_path, molecule_path, self.main_path,self.logger = self.get_simulation_paths(yaml_path,molecule_path,results_path)
+        self.simulation_name, self.results_path, molecule_path, self.main_path,self.logger = self.get_simulation_paths(yaml_path,molecule_path,results_path,not load_results)
 
         with open(yaml_path, 'r') as yaml_file:
             yaml_data = yaml.safe_load(yaml_file)
@@ -281,15 +281,15 @@ class Simulation():
         return self.Post
 
 
-    def load_model(self,folder_path,results_path,Iter,save=False):
+    def load_model(self,Iter,save=False):
 
         if self.network == 'xpinn':
             from xppbe.NN.NeuralNet import XPINN_NeuralNet as NeuralNet
         elif self.network == 'pinn':
             from xppbe.NN.NeuralNet import PINN_NeuralNet as NeuralNet
 
-        self.XPINN_solver.folder_path = folder_path
-        self.XPINN_solver.load_NeuralNet(NeuralNet,results_path,f'iter_{Iter}')
+        self.XPINN_solver.results_path = self.results_path
+        self.XPINN_solver.load_NeuralNet(NeuralNet,self.results_path,f'iter_{Iter}')
         self.XPINN_solver.N_iters = self.XPINN_solver.iter
          
         if self.domain_properties['molecule'] == 'born_ion':
@@ -297,13 +297,14 @@ class Simulation():
         else:
             from xppbe.Post.Postcode import Postprocessing
 
-        self.Post = Postprocessing(self.XPINN_solver, save=save, directory=self.folder_path)
+        self.Post = Postprocessing(self.XPINN_solver, save=save, directory=self.results_path)
 
 
     @staticmethod
-    def get_simulation_paths(yaml_path, molecule_path=None, results_path=None):
+    def get_simulation_paths(yaml_path, molecule_path=None, results_path=None, clean_results=True):
     
-        main_path = os.path.dirname(os.path.abspath(__file__))
+        from xppbe import xppbe_path
+        main_path = xppbe_path
         simulation_name = os.path.basename(yaml_path).split('.')[0]
 
         folder_name = simulation_name
@@ -314,16 +315,20 @@ class Simulation():
             results_path = os.path.join(results_path,'results',folder_name)
 
         if molecule_path is None:
-            folder_path = os.path.dirname(os.path.abspath(__file__))
+            folder_path = xppbe_path
             molecule_path = os.path.join(folder_path,'Molecules')
         else:
             molecule_path = os.path.join(molecule_path)
 
-        if os.path.exists(results_path):
-                shutil.rmtree(results_path)
-        os.makedirs(results_path)
+        if clean_results:
+            if os.path.exists(results_path):
+                    shutil.rmtree(results_path)
+        os.makedirs(results_path, exist_ok=True)
 
-        shutil.copy(yaml_path,os.path.join(results_path))
+        try:
+            shutil.copy(yaml_path,os.path.join(results_path))
+        except shutil.SameFileError:
+            pass
 
         filename = os.path.join(results_path,'logfile.log')
         LOG_format = '%(levelname)s - %(name)s: %(message)s'
