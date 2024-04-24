@@ -30,7 +30,7 @@ mesh_properties:
 sample_method: random_sample
 
 # Frequency of solvation energy calculation
-G_solve_iter: 4
+G_solve_iter: 2
 
 # Losses to add, and initial weights
 losses:
@@ -45,7 +45,7 @@ weights:
 
 # Weights adapting algorithm inputs
 adapt_weights: true
-adapt_w_iter: 1000
+adapt_w_iter: 500
 adapt_w_method: gradients
 alpha_w: 0.7
 
@@ -84,7 +84,17 @@ lr:
     decay_steps: 2000
     decay_rate: 0.9
     staircase: true
+
+optimizer2: L-BFGS-B
+options_optimizer2:
+    maxiter: 10
+    maxfun: 5000
+    maxcor: 50
+    maxls: 50
+    ftol: 0.0000000000002
     
 # Solve parameters
-N_iters: 15
+N_iters: 100
+
+
 iters_save_model: 5000
