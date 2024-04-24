@@ -5,19 +5,19 @@
 /.vscode
 
 # Results and test directories
-code/*
-!code/*/
-!code/Main.py
-!code/Simulation.py
-!code/Test_mesh.py
-!code/Allclean
-!code/Allrun
+xppbe/*
+!xppbe/*/
+!xppbe/Main.py
+!xppbe/Simulation.py
+!xppbe/Test_mesh.py
+!xppbe/Allclean
+!xppbe/Allrun
 
-code/results
+xppbe/results
 /.results
-code/temp
-code/S_test.py
-code/S_temp.py
+xppbe/temp
+xppbe/S_test.py
+xppbe/S_temp.py
 
 # Compiled Python files
 __pycache__/
@@ -44,18 +44,18 @@ bash_codes/
 
 
 # Simulation-related directories
-code/simulations_list/*
-code/simulations_list/*/
-!code/simulations_list/Main.py
-code/pbj/*
-code/pbj/*/
-!code/pbj/pbj.py
-code/Model/pbj/*
-code/Model/pbj/*/
-!code/Model/pbj/pbj.py
+xppbe/simulations_list/*
+xppbe/simulations_list/*/
+!xppbe/simulations_list/Main.py
+xppbe/pbj/*
+xppbe/pbj/*/
+!xppbe/pbj/pbj.py
+xppbe/Model/pbj/*
+xppbe/Model/pbj/*/
+!xppbe/Model/pbj/pbj.py
 .pbj/
 tutorials/results/
-code/Molecules/mesh_files/
+xppbe/Molecules/mesh_files/
 
 # Files related to notes
 /.notes

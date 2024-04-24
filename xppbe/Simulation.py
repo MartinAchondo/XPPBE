@@ -1,4 +1,5 @@
 import os
+import sys
 import yaml
 import logging
 import shutil
@@ -8,47 +9,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_RUN_EAGER_OP_AS_FUNCTION']='false'
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-logging.getLogger('bempp').setLevel(logging.WARNING)
 
-from Mesh.Mesh import Domain_Mesh
-from NN.XPINN import XPINN
-
-
-def get_simulation_name(yaml_path, molecule_path=None, results_path=None):
-  
-    main_path = os.path.dirname(os.path.abspath(__file__))
-    simulation_name = os.path.basename(yaml_path).split('.')[0]
-
-    folder_name = simulation_name
-    if results_path is None:
-        folder_path = os.path.dirname(os.path.abspath(yaml_path))
-        results_path = os.path.join(folder_path,'results',folder_name)
-    else:
-         results_path = os.path.join(results_path,'results',folder_name)
-
-    if molecule_path is None:
-        folder_path = os.path.dirname(os.path.abspath(__file__))
-        molecule_path = os.path.join(folder_path,'Molecules')
-    else:
-         molecule_path = os.path.join(molecule_path)
-
-    if os.path.exists(results_path):
-            shutil.rmtree(results_path)
-    os.makedirs(results_path)
-
-    filename = os.path.join(results_path,'logfile.log')
-    LOG_format = '%(levelname)s - %(name)s: %(message)s'
-    logging.basicConfig(filename=filename, filemode='w', level=logging.INFO, format=LOG_format)
-    logger = logging.getLogger(__name__)
-    logger.info('================================================')
-    
-    return simulation_name,results_path,molecule_path, main_path,logger
-
-
-def read_and_adapt_yaml(file_path):
-    with open(file_path, 'r') as yaml_file:
-        data = yaml.safe_load(yaml_file)
-        return data
+from xppbe.Mesh.Mesh import Domain_Mesh
+from xppbe.NN.XPINN import XPINN
 
 
 class Simulation():
@@ -131,9 +94,11 @@ class Simulation():
 
         self.iters_save_model = 1000
 
-        self.simulation_name, self.results_path, molecule_path, self.main_path,self.logger = get_simulation_name(yaml_path,molecule_path,results_path)
+        self.simulation_name, self.results_path, molecule_path, self.main_path,self.logger = self.get_simulation_paths(yaml_path,molecule_path,results_path)
 
-        yaml_data = read_and_adapt_yaml(yaml_path)
+        with open(yaml_path, 'r') as yaml_file:
+            yaml_data = yaml.safe_load(yaml_file)
+
         for key, value in yaml_data.items():
             setattr(self, key, value)
 
@@ -155,11 +120,11 @@ class Simulation():
                         )
 
         if self.equation == 'standard':
-                from Model.Equations import PBE_Std as PBE
+                from xppbe.Model.Equations import PBE_Std as PBE
         elif self.equation == 'regularized_scheme_1':
-                from Model.Equations import PBE_Reg_1 as PBE
+                from xppbe.Model.Equations import PBE_Reg_1 as PBE
         elif self.equation == 'regularized_scheme_2':
-                from Model.Equations import PBE_Reg_2 as PBE
+                from xppbe.Model.Equations import PBE_Reg_2 as PBE
 
         self.PBE_model = PBE(self.domain_properties,
                 mesh=self.Mol_mesh, 
@@ -223,9 +188,9 @@ class Simulation():
             self.hyperparameters_out['scale_NN'] = self.PBE_model.scale_q_factor 
                 
         if self.network == 'xpinn':
-            from NN.NeuralNet import XPINN_NeuralNet as NeuralNet
+            from xppbe.NN.NeuralNet import XPINN_NeuralNet as NeuralNet
         elif self.network == 'pinn':
-            from NN.NeuralNet import PINN_NeuralNet as NeuralNet
+            from xppbe.NN.NeuralNet import PINN_NeuralNet as NeuralNet
 
         self.XPINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out])
         self.XPINN_solver.set_points_methods(sample_method=self.sample_method)
@@ -244,9 +209,9 @@ class Simulation():
     def postprocessing(self, jupyter=False, mesh=True):
           
         if self.domain_properties['molecule'] == 'born_ion':
-            from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
+            from xppbe.Post.Postcode import Born_Ion_Postprocessing as Postprocessing
         else:
-            from Post.Postcode import Postprocessing
+            from xppbe.Post.Postcode import Postprocessing
 
         self.Post = Postprocessing(self.XPINN_solver, save=True, directory=self.results_path)
         
@@ -319,30 +284,62 @@ class Simulation():
     def load_model(self,folder_path,results_path,Iter,save=False):
 
         if self.network == 'xpinn':
-            from NN.NeuralNet import XPINN_NeuralNet as NeuralNet
+            from xppbe.NN.NeuralNet import XPINN_NeuralNet as NeuralNet
         elif self.network == 'pinn':
-            from NN.NeuralNet import PINN_NeuralNet as NeuralNet
+            from xppbe.NN.NeuralNet import PINN_NeuralNet as NeuralNet
 
         self.XPINN_solver.folder_path = folder_path
         self.XPINN_solver.load_NeuralNet(NeuralNet,results_path,f'iter_{Iter}')
         self.XPINN_solver.N_iters = self.XPINN_solver.iter
          
         if self.domain_properties['molecule'] == 'born_ion':
-            from Post.Postcode import Born_Ion_Postprocessing as Postprocessing
+            from xppbe.Post.Postcode import Born_Ion_Postprocessing as Postprocessing
         else:
-            from Post.Postcode import Postprocessing
+            from xppbe.Post.Postcode import Postprocessing
 
         self.Post = Postprocessing(self.XPINN_solver, save=save, directory=self.folder_path)
 
-  
-def main():
-    sim = Simulation()
-    sim.create_simulation(__file__)
-    sim.adapt_simulation()
-    sim.solve_model()
-    sim.postprocessing()
+
+    @staticmethod
+    def get_simulation_paths(yaml_path, molecule_path=None, results_path=None):
+    
+        main_path = os.path.dirname(os.path.abspath(__file__))
+        simulation_name = os.path.basename(yaml_path).split('.')[0]
+
+        folder_name = simulation_name
+        if results_path is None:
+            folder_path = os.path.dirname(os.path.abspath(yaml_path))
+            results_path = os.path.join(folder_path,'results',folder_name)
+        else:
+            results_path = os.path.join(results_path,'results',folder_name)
+
+        if molecule_path is None:
+            folder_path = os.path.dirname(os.path.abspath(__file__))
+            molecule_path = os.path.join(folder_path,'Molecules')
+        else:
+            molecule_path = os.path.join(molecule_path)
+
+        if os.path.exists(results_path):
+                shutil.rmtree(results_path)
+        os.makedirs(results_path)
+
+        shutil.copy(yaml_path,os.path.join(results_path))
+
+        filename = os.path.join(results_path,'logfile.log')
+        LOG_format = '%(levelname)s - %(name)s: %(message)s'
+        logging.basicConfig(filename=filename, filemode='w', level=logging.INFO, format=LOG_format)
+        logger = logging.getLogger(__name__)
+        
+        return simulation_name,results_path,molecule_path, main_path,logger
+
 
 
 if __name__=='__main__':
-        main()
+    yaml_path = os.path.abspath(sys.argv[1])
+    results_path = os.path.dirname(__file__)
+    sim = Simulation(yaml_path, results_path=results_path)
+    sim.create_simulation()
+    sim.adapt_simulation()
+    sim.solve_model()
+    sim.postprocessing()
 

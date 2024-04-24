@@ -163,10 +163,11 @@ class Solution_utils():
 
         if not self.pbj_created:
 
-            from Model.pbj.pbj import pbj
+            from xppbe.Model.pbj.pbj import pbj
             if hasattr(self, 'mesh'):
                 self.pbj_mesh_density = self.mesh.density_mol
                 self.pbj_mesh_generator = self.mesh.mesh_generator
+
             self.pbj_obj = pbj(self.domain_properties,self.pqr_path,self.pbj_mesh_density,self.pbj_mesh_generator)
             self.pbj_phi = self.pbj_obj.simulation.solutes[0].results['phi'].coefficients.reshape(-1,1)
             self.pbj_vertices = np.array(self.pbj_obj.simulation.solutes[0].mesh.vertices).transpose()

@@ -3,7 +3,7 @@ from time import time
 import logging
 from tqdm import tqdm as log_progress
 
-from NN.XPINN_utils import XPINN_utils
+from xppbe.NN.XPINN_utils import XPINN_utils
 
 class XPINN(XPINN_utils):
     

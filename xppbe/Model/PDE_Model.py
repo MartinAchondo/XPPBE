@@ -3,8 +3,8 @@ import numpy as np
 import bempp.api
 import tensorflow as tf
 
-from Mesh.Charges_utils import get_charges_list
-from Model.Solutions_utils import Solution_utils
+from xppbe.Mesh.Charges_utils import get_charges_list
+from xppbe.Model.Solutions_utils import Solution_utils
 
 class PBE(Solution_utils):
 

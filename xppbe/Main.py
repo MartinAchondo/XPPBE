@@ -1,5 +1,7 @@
 import os
-from Simulation import Simulation
+
+from xppbe.Simulation import Simulation
+
 
 # Create simulation object
 

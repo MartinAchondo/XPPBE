@@ -2,7 +2,7 @@ import tensorflow as tf
 import bempp.api
 import numpy as np
 
-from Model.PDE_Model import PBE
+from xppbe.Model.PDE_Model import PBE
 
 # PBE Equations and schemes 
 
