@@ -89,7 +89,7 @@ class Domain_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, result_path=''):
+    def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, result_path='', molecule_path=''):
 
         self.mesh_properties = {
             'vol_max_interior': 0.04,
@@ -115,12 +115,13 @@ class Domain_Mesh():
         self.main_path = path
         self.simulation_name = simulation
         self.result_path = self.main_path if result_path=='' else result_path
+        self.molecule_path = os.path.join(self.main_path,'Molecules',molecule) if molecule_path=='' else molecule_path
 
         self.path_files = os.path.join(self.main_path,'Mesh','Temp')
         os.makedirs(self.path_files, exist_ok=True)
-        self.path_pqr = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.pqr')
-        self.path_xyzr = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.xyzr')
-        self.path_pdb = os.path.join(self.main_path,'Molecules',self.molecule,self.molecule+'.pdb')
+        self.path_pqr = os.path.join(self.molecule_path,self.molecule+'.pqr')
+        self.path_xyzr = os.path.join(self.molecule_path,self.molecule+'.xyzr')
+        self.path_pdb = os.path.join(self.molecule_path,self.molecule+'.pdb')
 
         self.region_meshes = dict()
         self.domain_mesh_names = set()
@@ -130,7 +131,7 @@ class Domain_Mesh():
         
     
     def read_create_meshes(self):
-        sys.stdout = open(os.path.join(self.result_path,'results',self.simulation_name,'logfile2.log'), 'w')
+        sys.stdout = open(os.path.join(self.result_path,'logfile2.log'), 'w')
         self.create_molecule_mesh()
         self.create_sphere_mesh()
         self.create_interior_mesh()
@@ -229,8 +230,7 @@ class Domain_Mesh():
 
     def create_charges_mesh(self):
 
-        path_files = os.path.join(self.main_path,'Molecules')
-        _,Lx_q,R_q,_,_,_ = import_charges_from_pqr(os.path.join(path_files,self.molecule,self.molecule+'.pqr'))
+        _,Lx_q,R_q,_,_,_ = import_charges_from_pqr(self.path_pqr)
         self.region_meshes['Q1'] = Region_Mesh(type_m='points', obj=None,charges=(Lx_q,R_q), G_sigma=self.G_sigma, N_pq=self.N_pq)
 
     def create_mesh_obj(self):
@@ -290,9 +290,8 @@ class Domain_Mesh():
 
             elif type_b[0] in ('E'):
                 file = bl['file']
-                path_files = os.path.join(self.main_path,'Molecules')
 
-                with open(os.path.join(path_files,self.molecule,file),'r') as f:
+                with open(os.path.join(self.molecule_path,file),'r') as f:
                     L_phi = dict()
                     for line in f:
                         res_n, phi = line.strip().split()
@@ -378,8 +377,7 @@ class Domain_Mesh():
         elif domain=='solvent':
             name = 2
         x_b, y_b, z_b, phi_b = list(), list(), list(), list()
-        path_files = os.path.join(self.main_path,'Molecules')
-        with open(os.path.join(path_files,self.molecule,file),'r') as f:
+        with open(os.path.join(self.molecule_path,file),'r') as f:
             for line in f:
                 condition, x, y, z, phi = line.strip().split()
 
@@ -417,7 +415,7 @@ class Domain_Mesh():
         return tf.ones((n,1), dtype=cls.DTYPE)*value
 
     def save_data_plot(self,X_plot):
-        path_files = os.path.join(self.result_path,'results',self.simulation_name,'mesh')
+        path_files = os.path.join(self.result_path,'mesh')
         os.makedirs(path_files, exist_ok=True)
         logger = logging.getLogger(__name__)
 

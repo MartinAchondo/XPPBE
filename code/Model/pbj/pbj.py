@@ -4,7 +4,7 @@ from Model.pbj.electrostatics.simulation import Simulation
 
 class pbj():
 
-    def __init__(self,domain_properties,pqr_path,mesh_density,mesh_generator, initial_guess_b=False,guess=None):
+    def __init__(self,domain_properties,pqr_path,mesh_density,mesh_generator):
 
         mol_object = Solute(pqr_path, mesh_density=mesh_density, mesh_generator=mesh_generator, save_mesh_build_files=False)
         self.simulation = Simulation()

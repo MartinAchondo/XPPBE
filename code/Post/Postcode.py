@@ -78,21 +78,22 @@ class Postprocessing():
                     w = self.XPINN.w_hist
                 
                 if plot_w==False and (loss=='TL' or loss=='all'):
-                    ax.semilogy(range(1,len(self.XPINN.losses['TL'+i])+1), self.XPINN.losses['TL'+i],'k-',label='Loss NN')
+                    ax.semilogy(range(1,len(self.XPINN.losses['TL'+i])+1), self.XPINN.losses['TL'+i],'k-',label='TL'+i)
                 for t in self.XPINN.losses_names_list[int(i)-1]:
                     t2 = t if t in ('Iu','Id','Ir','G') else t[0]
                     if (t2 in loss or loss=='all') and not t in 'TL' and t in self.mesh.domain_mesh_names:
                         cx = c[t] if t in ('Iu','Id','Ir','G') else c[t[0]]
-                        ax.semilogy(range(1,len(self.XPINN.losses[t])+1), w[t]*self.XPINN.losses[t],cx,label=f'Loss {t}')
+                        ax.semilogy(range(1,len(self.XPINN.losses[t])+1), w[t]*self.XPINN.losses[t],cx,label=f'{t}')
 
         ax.legend()
-        ax.set_xlabel('n: iterations', fontsize='11')
+        n_label = r'$n$'
+        ax.set_xlabel(f'Iterations', fontsize='11')
         loss_label = r'$\mathcal{L}$'
-        ax.set_ylabel(f'{loss_label}: Losses', fontsize='11')
-        if loss=='TL' or loss=='all':
-            ax.set_title(f'Loss History of NN{domain}, Loss: {self.loss_last[domain]}')
-        else:
-            ax.set_title(f'Loss History of NN{domain}')
+        ax.set_ylabel(f'Losses {loss_label}', fontsize='11')
+        # if loss=='TL' or loss=='all':
+        #     ax.set_title(f'Loss History of NN{domain}, Loss: {self.loss_last[domain]}')
+        # else:
+        #     ax.set_title(f'Loss History of NN{domain}')
         ax.grid()
         if self.save:
             path = f'loss_history_{domain}_loss{loss}.png' if not plot_w  else f'loss_history_{domain}_w.png' 
@@ -105,8 +106,8 @@ class Postprocessing():
         for i in ['1','2']:
             if int(i)==domain:               
                 if loss=='TL' or loss=='all':
-                    ax.semilogy(range(1,len(self.XPINN.losses['vTL'+i])+1), self.XPINN.losses['vTL'+i],'b-',label=f'{loss} training')
-                    ax.semilogy(range(1,len(self.XPINN.validation_losses['TL'+i])+1), self.XPINN.validation_losses['TL'+i],'r-',label=f'{loss} validation')
+                    ax.semilogy(range(1,len(self.XPINN.losses['vTL'+i])+1), self.XPINN.losses['vTL'+i],'b-',label=f'Training {i}')
+                    ax.semilogy(range(1,len(self.XPINN.validation_losses['TL'+i])+1), self.XPINN.validation_losses['TL'+i],'r-',label=f'Validation {i}')
                 else:
                     t = loss if loss in ('Iu','Id','Ir','G') else loss+i
                     if t in self.mesh.domain_mesh_names :
@@ -114,13 +115,14 @@ class Postprocessing():
                         ax.semilogy(range(1,len(self.XPINN.validation_losses[t])+1), self.XPINN.validation_losses[t],'r-',label=f'{loss} validation')  
 
         ax.legend()
-        ax.set_xlabel('n: iterations', fontsize='11')
+        n_label = r'$n$'
+        ax.set_xlabel(f'Iterations', fontsize='11')
         loss_label = r'$\mathcal{L}$'
-        ax.set_ylabel(f'{loss_label}: Losses', fontsize='11')
-        if loss=='TL' or loss=='all':
-            ax.set_title(f'Loss History of NN{domain}, Loss: {self.loss_last[domain]}')
-        else:
-            ax.set_title(f'Loss History of NN{domain}')
+        ax.set_ylabel(f'Losses {loss_label}', fontsize='11')
+        # if loss=='TL' or loss=='all':
+        #     ax.set_title(f'Loss History of NN{domain}, Loss: {self.loss_last[domain]}')
+        # else:
+        #     ax.set_title(f'Loss History of NN{domain}')
         ax.grid()
         if self.save:
             path = f'loss_val_history_{domain}_loss{loss}.png' 
@@ -138,15 +140,15 @@ class Postprocessing():
                 for t in self.XPINN.losses_names_list[int(i)-1]:
                     if t in self.mesh.domain_mesh_names:
                         cx = c[t] if t in ('Iu','Id','Ir','G') else c[t[0]]
-                        ax.semilogy(range(1,len(w[t])+1), w[t], cx,label=f'w {t}')
+                        ax.semilogy(range(1,len(w[t])+1), w[t], cx,label=f'{t}')
                 
         ax.legend()
-        ax.set_xlabel('n: iterations', fontsize='11')
-        w_label = r'$\mathcal{L}$'
-        ax.set_ylabel(f'{w_label}: weights', fontsize='11')
-        ax.set_title(f'Weights History of NN{domain}')
+        n_label = r'$n$'
+        ax.set_xlabel(f'Iterations', fontsize='11')
+        w_label = r'$w$'
+        ax.set_ylabel(f'Weights', fontsize='11')
+        # ax.set_title(f'Weights History of NN{domain}')
         ax.grid()
-
         if self.save:
             path = f'weights_history_{domain}.png'
             path_save = os.path.join(self.directory,self.path_plots_weights,path)
@@ -163,12 +165,13 @@ class Postprocessing():
             label = method.replace('_','') if 'Born' not in method else 'Analytic'
             ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'{label}')
         ax.legend()
-        ax.set_xlabel('n: iterations', fontsize='11')
+        n_label = r'$n$'
+        ax.set_xlabel(f'Iterations', fontsize='11')
         text_l = r'$\Delta G_{solv}$'
         ax.set_ylabel(f'{text_l} [kcal/mol]', fontsize='11')
         max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
         Gsolv_value = np.format_float_positional(self.XPINN.G_solv_hist[str(max_iter)], unique=False, precision=2)
-        ax.set_title(f'Solution {text_l} of PBE')
+        # ax.set_title(f'Solution {text_l} of PBE')
         ax.grid()
 
         if self.save:
@@ -191,7 +194,8 @@ class Postprocessing():
         ax.plot(r_out[r_out>0],u_out[r_out>0], c='b')
         
         text_A = r'$\AA$'
-        ax.set_xlabel(f'r [{text_A}]', fontsize='11')
+        text_r = r'$r$'
+        ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
         ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         text_theta = r'$\theta$'
@@ -199,7 +203,7 @@ class Postprocessing():
         theta = np.format_float_positional(theta, unique=False, precision=2)
         phi = np.format_float_positional(phi, unique=False, precision=2)
         text_x0 = r'$x_0$'
-        ax.set_title(f'Solution {text_l} of PBE;  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
+        # ax.set_title(f'Solution {text_l} of PBE;  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
         ax.grid()
         ax.legend()
 
@@ -230,7 +234,8 @@ class Postprocessing():
         ax.plot(r_out[r_out>0],u_out_an[r_out>0], c='r', linestyle='--')
         
         text_A = r'$\AA$'
-        ax.set_xlabel(f'r [{text_A}]', fontsize='11')
+        text_r = r'$r$'
+        ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
         ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         text_theta = r'$\theta$'
@@ -238,7 +243,7 @@ class Postprocessing():
         theta = np.format_float_positional(theta, unique=False, precision=2)
         phi = np.format_float_positional(phi, unique=False, precision=2)
         text_x0 = r'$x_0$'
-        ax.set_title(f'Solution {text_l} of PBE;  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
+        # ax.set_title(f'Solution {text_l} of PBE;  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
         ax.grid()
         ax.legend()
 
@@ -263,10 +268,11 @@ class Postprocessing():
             ax.plot(r_out[r_out>0],u_out[r_out>0], c=c[i])
 
         text_A = r'$\AA$'
-        ax.set_xlabel(f'r [{text_A}]', fontsize='11')
+        text_r = r'$r$'
+        ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
         ax.set_ylabel(f'{text_l} [V]', fontsize='11')
-        ax.set_title(f'Solution {text_l} of PBE')
+        # ax.set_title(f'Solution {text_l} of PBE')
         ax.grid()
         ax.legend()
         return fig,ax
@@ -286,14 +292,16 @@ class Postprocessing():
         s = ax.scatter(T.ravel()[bools[1]], S.ravel()[bools[1]], c=u_out[:],vmin=vmin,vmax=vmax)
 
         text_A = r'$\AA$'
-        ax.set_xlabel(f'u [{text_A}]', fontsize='11')
-        ax.set_ylabel(f'v [{text_A}]', fontsize='11')
+        text_u = r'$u$'
+        text_v = r'$v$'
+        ax.set_xlabel(f'{text_u} [{text_A}]', fontsize='11')
+        ax.set_ylabel(f'{text_v} [{text_A}]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
         cbar = fig.colorbar(s, ax=ax)
         cbar.set_label(f'{text_l} [V]', rotation=270)
         text_n = r'$n$'
         text_x0 = r'$x_0$'
-        ax.set_title(f'Solution {text_l} of PBE;  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_n}=[{np.format_float_positional(n[0], unique=False, precision=1)},{np.format_float_positional(n[1], unique=False, precision=1)},{np.format_float_positional(n[2], unique=False, precision=1)}])')
+        # ax.set_title(f'Solution {text_l} of PBE;  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_n}=[{np.format_float_positional(n[0], unique=False, precision=1)},{np.format_float_positional(n[1], unique=False, precision=1)},{np.format_float_positional(n[2], unique=False, precision=1)}])')
         ax.grid()
 
         if self.save:
@@ -751,7 +759,9 @@ class Postprocessing():
             'Loss_continuity_u': self.XPINN.losses['Iu'][-1],
             'Loss_continuity_du': self.XPINN.losses['Id'][-1],
             'Loss_Residual_R1': self.XPINN.losses['R1'][-1],
-            'Loss_Residual_R2': self.XPINN.losses['R2'][-1]  
+            'Loss_Residual_R2': self.XPINN.losses['R2'][-1],
+            'Loss_Boundary_D2': self.XPINN.losses['D2'][-1],
+            'Loss_Data_K2': self.XPINN.losses['K2'][-1]
         } 
 
         df_dict = {}
@@ -851,7 +861,8 @@ class Born_Ion_Postprocessing(Postprocessing):
             ax.indicate_inset_zoom(axin)
         
         text_A = r'$\AA$'
-        ax.set_xlabel(f'r [{text_A}]', fontsize='11')
+        text_r = r'$r$'
+        ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
         text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
         ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         text_theta = r'$\theta$'
@@ -859,7 +870,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         theta = np.format_float_positional(theta, unique=False, precision=2)
         phi = np.format_float_positional(phi, unique=False, precision=2)
         text_x0 = r'$x_0$'
-        ax.set_title(f'Solution {text_l} of PBE;  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
+        # ax.set_title(f'Solution {text_l} of PBE;  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
         ax.grid()
         ax.legend()        
 
@@ -937,7 +948,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         ax.set_xlabel(r'$\beta$ [rad]', fontsize='11')
         ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         text_n = r'$n$'
-        ax.set_title(f'Solution {text_l} of PBE at Interface;  ({text_n}=[{np.format_float_positional(nn[0], unique=False, precision=1)},{np.format_float_positional(nn[1], unique=False, precision=1)},{np.format_float_positional(nn[2], unique=False, precision=1)}])')
+        # ax.set_title(f'Solution {text_l} of PBE at Interface;  ({text_n}=[{np.format_float_positional(nn[0], unique=False, precision=1)},{np.format_float_positional(nn[1], unique=False, precision=1)},{np.format_float_positional(nn[2], unique=False, precision=1)}])')
 
         ax.grid()
         ax.legend()

@@ -9,8 +9,9 @@ class XPINN_utils():
 
     DTYPE='float32'
 
-    def __init__(self):
+    def __init__(self, results_path):
 
+        self.results_path = results_path
         self.losses_names = ['TL','TL1','TL2','vTL1','vTL2','R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','Ir','E2','P1','P2']
         self.losses_names_1 = ['TL1','R1','D1','N1','K1','Q1','Iu','Id','Ir','G','P1']
         self.losses_names_2 = ['TL2','R2','D2','N2','K2','Iu','Id','Ir','E2','G','P2']
@@ -34,7 +35,12 @@ class XPINN_utils():
 
     def adapt_optimizer(self,optimizer,lr):
         self.optimizer_name = optimizer
-        self.lr = lr
+        if lr['method']=='exponential_decay':
+            self.lr = tf.keras.optimizers.schedules.ExponentialDecay(
+                    initial_learning_rate=lr['initial_learning_rate'],
+                    decay_steps=lr['decay_steps'],
+                    decay_rate=lr['decay_rate'],
+                    staircase=lr['staircase'])
 
     def adapt_PDE(self,PDE):
         self.PDE = PDE
@@ -179,7 +185,7 @@ class XPINN_utils():
 
         if self.save_model_iter > 0:
             if (self.iter % self.save_model_iter == 0 and self.iter>1) or self.iter==self.N_iters:
-                dir_save = os.path.join(self.folder_path,'iterations',f'iter_{self.iter}')
+                dir_save = os.path.join(self.results_path,'iterations',f'iter_{self.iter}')
                 self.save_model(dir_save)
 
 

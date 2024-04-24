@@ -1,4 +1,5 @@
 import os
+import yaml
 import logging
 import shutil
 import numpy as np
@@ -12,14 +13,25 @@ logging.getLogger('bempp').setLevel(logging.WARNING)
 from Mesh.Mesh import Domain_Mesh
 from NN.XPINN import XPINN
 
-def get_simulation_name(file):
+
+def get_simulation_name(yaml_path, molecule_path=None, results_path=None):
   
-    main_path = os.path.join(os.path.dirname(os.path.abspath(__file__)))
-    simulation_name =  os.path.basename(os.path.abspath(file)).replace('.py','')
+    main_path = os.path.dirname(os.path.abspath(__file__))
+    simulation_name = os.path.basename(yaml_path).split('.')[0]
 
     folder_name = simulation_name
-    folder_path = os.path.join(os.path.dirname(os.path.abspath(file)))
-    results_path = os.path.join(folder_path,'results',folder_name)
+    if results_path is None:
+        folder_path = os.path.dirname(os.path.abspath(yaml_path))
+        results_path = os.path.join(folder_path,'results',folder_name)
+    else:
+         results_path = os.path.join(results_path,'results',folder_name)
+
+    if molecule_path is None:
+        folder_path = os.path.dirname(os.path.abspath(__file__))
+        molecule_path = os.path.join(folder_path,'Molecules')
+    else:
+         molecule_path = os.path.join(molecule_path)
+
     if os.path.exists(results_path):
             shutil.rmtree(results_path)
     os.makedirs(results_path)
@@ -30,14 +42,18 @@ def get_simulation_name(file):
     logger = logging.getLogger(__name__)
     logger.info('================================================')
     
-    return simulation_name,results_path,main_path,logger
+    return simulation_name,results_path,molecule_path, main_path,logger
+
+
+def read_and_adapt_yaml(file_path):
+    with open(file_path, 'r') as yaml_file:
+        data = yaml.safe_load(yaml_file)
+        return data
 
 
 class Simulation():
        
-    def __init__(self,simulation_file):
-
-        self.simulation_name, self.folder_path, self.main_path,self.logger = get_simulation_name(simulation_file)
+    def __init__(self, yaml_path, molecule_path=None, results_path=None):
             
         self.equation = 'standard'
         self.pbe_model = 'linear'
@@ -105,15 +121,23 @@ class Simulation():
         self.scale_NN_q = False
 
         self.optimizer = 'Adam'
-        self.lr = tf.keras.optimizers.schedules.ExponentialDecay(
-                        initial_learning_rate=0.001,
-                        decay_steps=2000,
-                        decay_rate=0.9,
-                        staircase=True)
+        self.lr = {'method': 'exponential_decay',
+                   'initial_learning_rate': 0.001,
+                   'decay_steps': 2000,
+                   'decay_rate': 0.9,
+                   'staircase': True}
 
         self.N_iters = 10000
 
         self.iters_save_model = 1000
+
+        self.simulation_name, self.results_path, molecule_path, self.main_path,self.logger = get_simulation_name(yaml_path,molecule_path,results_path)
+
+        yaml_data = read_and_adapt_yaml(yaml_path)
+        for key, value in yaml_data.items():
+            setattr(self, key, value)
+
+        self.molecule_path = os.path.join(molecule_path,self.domain_properties['molecule'])
 
 
     def create_simulation(self):
@@ -125,7 +149,9 @@ class Simulation():
                         mesh_properties=self.mesh_properties, 
                         save_points=True,
                         path=self.main_path,
-                        simulation=self.simulation_name
+                        simulation=self.simulation_name,
+                        result_path=self.results_path,
+                        molecule_path=self.molecule_path
                         )
 
         if self.equation == 'standard':
@@ -138,7 +164,8 @@ class Simulation():
         self.PBE_model = PBE(self.domain_properties,
                 mesh=self.Mol_mesh, 
                 equation=self.pbe_model,
-                path=self.main_path
+                main_path=self.main_path,
+                molecule_path=self.molecule_path
                 ) 
 
         meshes_domain = dict()           
@@ -174,8 +201,7 @@ class Simulation():
 
         self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
 
-        self.XPINN_solver = XPINN()
-        self.XPINN_solver.folder_path = self.folder_path
+        self.XPINN_solver = XPINN(results_path=self.results_path)
         self.XPINN_solver.adapt_PDE(self.PBE_model)
 
 
@@ -222,7 +248,7 @@ class Simulation():
         else:
             from Post.Postcode import Postprocessing
 
-        self.Post = Postprocessing(self.XPINN_solver, save=True, directory=self.folder_path)
+        self.Post = Postprocessing(self.XPINN_solver, save=True, directory=self.results_path)
         
         if jupyter:
              return self.Post
@@ -286,6 +312,8 @@ class Simulation():
         self.Post.save_model_summary();
         self.Post.plot_architecture(domain=1);
         self.Post.plot_architecture(domain=2);
+    
+        return self.Post
 
 
     def load_model(self,folder_path,results_path,Iter,save=False):

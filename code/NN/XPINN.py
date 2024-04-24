@@ -7,8 +7,8 @@ from NN.XPINN_utils import XPINN_utils
 
 class XPINN(XPINN_utils):
     
-    def __init__(self):
-        super().__init__()       
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)       
     
     def get_loss(self, X_batch, model, w, validation=False):
         loss = 0.0

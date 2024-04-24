@@ -1,10 +1,19 @@
 [project]
-name = "xpbe"
+name = "xppbe"
 version = "1.0.0"
-description = "Physics Informed Neural Network code for Poisson-Boltzmann equation"
+description = "Physics Informed Neural Network for Poisson-Boltzmann equation"
 authors = [{name = "martinachondo", email = "martin.achondom@gmail.com"}]
 readme = "README.md"
 license = {file = "LICENCE"}
+keywords = [
+    "Deep learning",
+    "Neural networks",
+    "Physics-informed neural networks",
+    "Scientific computing",
+    "Scientific machine learning",
+    "Poisson-Boltzmann equation",
+    "Macromolecules in polarizable media"
+]
 requires-python = ">=3.8,<3.9"
 dependencies = [
     "numpy==1.21.0",
@@ -24,7 +33,8 @@ dependencies = [
     "pandas==2.0.2",
     "xlsxwriter==3.1.9",
     "tqdm==4.64.1",
-    "ipykernel==6.16.0"
+    "ipykernel==6.16.0",
+    "pyyaml==6.0.1"
 ]
 
 [project.optional-dependencies]
@@ -34,7 +44,7 @@ optional = [
 ]
 
 [tool.setuptools]
-packages = ["code"]
+packages = ["xppbe"]
 
 [project.urls]
 repository = "https://github.com/MartinAchondo/XPINN-for-PBE-Simulation"

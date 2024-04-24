@@ -19,11 +19,12 @@ class PBE(Solution_utils):
     DTYPE = 'float32'
     pi = tf.constant(np.pi, dtype=DTYPE)
 
-    def __init__(self, domain_properties, mesh, equation, path):      
+    def __init__(self, domain_properties, mesh, equation, main_path, molecule_path):      
 
         self.mesh = mesh
-        self.main_path = path
+        self.main_path = main_path
         self.equation = equation
+        self.molecule_path = molecule_path
 
         self.domain_properties = {
                 'molecule': 'born_ion',
@@ -257,8 +258,7 @@ class PBE(Solution_utils):
     # utils
 
     def get_charges(self):
-        path_files = os.path.join(self.main_path,'Molecules')
-        self.pqr_path = os.path.join(path_files,self.molecule,self.molecule+'.pqr')
+        self.pqr_path = os.path.join(self.molecule_path,self.molecule+'.pqr')
         self.q_list = get_charges_list(self.pqr_path)
         self.scale_q_factor = min(self.q_list, key=lambda q_obj: np.abs(q_obj.q)).q
 
