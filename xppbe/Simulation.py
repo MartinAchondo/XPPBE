@@ -85,6 +85,13 @@ class Simulation():
                    'decay_rate': 0.9,
                    'staircase': True}
 
+        self.optimizer2 = 'L-BFGS-B'
+        self.options_optimizer2 = {
+                'maxiter': 0,
+                'maxfun': 5000,
+                'maxcor': 50,
+                'maxls': 50}
+
         self.N_iters = 10000
 
         self.iters_save_model = 1000
@@ -189,7 +196,7 @@ class Simulation():
 
         self.XPINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out])
         self.XPINN_solver.set_points_methods(sample_method=self.sample_method)
-        self.XPINN_solver.adapt_optimizer(self.optimizer,self.lr)
+        self.XPINN_solver.adapt_optimizer(self.optimizer,self.lr, self.optimizer2,self.options_optimizer2)
 
 
     def solve_model(self):

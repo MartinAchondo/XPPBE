@@ -33,7 +33,7 @@ class XPINN_utils():
         self.model = NN_class(hyperparameters, *args, **kwargs)
         self.model.build_Net()
 
-    def adapt_optimizer(self,optimizer,lr):
+    def adapt_optimizer(self,optimizer,lr,optimizer2=False,options2=None):
         self.optimizer_name = optimizer
         if lr['method']=='exponential_decay':
             self.lr = tf.keras.optimizers.schedules.ExponentialDecay(
@@ -41,6 +41,13 @@ class XPINN_utils():
                     decay_steps=lr['decay_steps'],
                     decay_rate=lr['decay_rate'],
                     staircase=lr['staircase'])
+
+        if options2['maxiter']>0:
+            self.optimizer_2_name = optimizer2
+            self.optimizer_2_opts = options2
+            self.use_optimizer_2 = True
+        else:
+            self.use_optimizer_2 = False
 
     def adapt_PDE(self,PDE):
         self.PDE = PDE
@@ -91,6 +98,7 @@ class XPINN_utils():
         if self.optimizer_name == 'Adam':
             optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
             return optim
+        
 
     def get_batches(self, sample_method='random_sample', validation=False):
 
@@ -119,23 +127,47 @@ class XPINN_utils():
                     del X_vd[t]
             return X_vd
 
+    def get_weight_tensor(self):
+        weight_list = []
+        shape_list = []
+        for v in self.model.trainable_variables:
+            shape_list.append(v.shape)
+            weight_list.extend(v.numpy().flatten())
+        weight_list = tf.convert_to_tensor(weight_list)
+        return weight_list, shape_list
+
+    def set_weight_tensor(self,weight_list):
+        idx = 0
+        for v in self.model.trainable_variables:
+            vs = v.shape
+            if len(vs) == 2:  
+                sw = vs[0]*vs[1]
+                new_val = tf.reshape(weight_list[idx:idx+sw],(vs[0],vs[1]))
+                idx += sw
+            elif len(vs) == 1:
+                new_val = weight_list[idx:idx+vs[0]]
+                idx += vs[0]
+            elif len(vs) == 0:
+                new_val = weight_list[idx]
+                idx += 1
+            v.assign(tf.cast(new_val, self.DTYPE))
+
+
     #utils
     def checkers_iterations(self):
 
         # solvation energy
-        if (self.iter+1)%self.G_solv_iter==0 and self.iter>1:
+        if (self.iter)%self.G_solv_iter==0 and self.iter>1:
             self.calc_Gsolv_now = True
         else:
             self.calc_Gsolv_now = False
 
         # adapt losses weights
-        if self.adapt_weights and (self.iter+1)%self.adapt_w_iter==0 and (self.iter+1)<self.N_iters:
+        if self.adapt_weights and (self.iter)%self.adapt_w_iter==0 and (self.iter)<self.N_iters:
             self.adapt_w_now = True
         else:
             self.adapt_w_now = False  
-    
-        if self.iter % 2 == 0:
-            self.pbar.set_description("Loss: {:6.4e}".format(self.current_loss))                
+              
 
 
     def callback(self, L_loss,Lv_loss):
@@ -184,7 +216,7 @@ class XPINN_utils():
             self.w_hist[t][i] = self.w[t]
 
         if self.save_model_iter > 0:
-            if (self.iter % self.save_model_iter == 0 and self.iter>1) or self.iter==self.N_iters:
+            if (self.iter % self.save_model_iter == 0 and self.iter>1) or self.iter==self.N_iters or self.iter==self.N_iters_2:
                 dir_save = os.path.join(self.results_path,'iterations',f'iter_{self.iter}')
                 self.save_model(dir_save)
 

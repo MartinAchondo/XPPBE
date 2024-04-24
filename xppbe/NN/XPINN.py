@@ -1,3 +1,5 @@
+import numpy as np
+import scipy.optimize
 import tensorflow as tf
 from time import time
 import logging
@@ -25,9 +27,42 @@ class XPINN(XPINN_utils):
         del tape
         return loss, L, g
     
+
+    def train_last_step(self, X_batch, X_batch_val, ws):
+
+        def train_step_sp(w):
+
+            self.set_weight_tensor(w)
+            loss, _ , grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, ws)
+
+            grad_flat = []
+            for g in grad_theta:
+                grad_flat.extend(g.numpy().flatten())
+            grad_flat = np.array(grad_flat,dtype=np.float64)
+            return loss, grad_flat
+        
+        def callback_ts(xr=None):
+            L = self.get_loss(X_batch,self.model,self.w)
+            L_v = self.get_loss(X_batch_val,self.model,self.w, validation=True)
+            self.complete_callback(L,L_v)
+        
+        x0, _ = self.get_weight_tensor()
+        return scipy.optimize.minimize(fun=train_step_sp,
+                                       x0=x0,
+                                       jac=True,
+                                       method=self.optimizer_2_name,
+                                       options=self.optimizer_2_opts,
+                                       callback=callback_ts
+                                       )
+    
     def main_loop(self, N=1000):
         
+        self.N_iters = N
+        self.N_iters_2 = N
+        
         optimizer = self.create_optimizer()
+        if self.use_optimizer_2:
+            self.N_iters_2 = N + self.optimizer_2_opts['maxiter']
 
         @tf.function
         def train_step(X_batch, ws):
@@ -43,29 +78,42 @@ class XPINN(XPINN_utils):
             L = [loss,L_loss]
             return L
 
-        self.N_iters = N
-        self.current_loss = 100
-
-        self.create_losses_arrays(N)
+        self.create_losses_arrays(self.N_iters_2)
         X_v = self.get_batches('full_batch', validation=True)
         X_d = self.get_batches(self.sample_method)
 
-        self.pbar = log_progress(range(N))
+        self.current_loss = 100
+        self.pbar = log_progress(range(self.N_iters_2))
 
-        for i in self.pbar:
-
-            self.checkers_iterations()
+        for i in range(self.N_iters):
 
             if self.sample_method == 'random_sample':
                 X_d = self.get_batches(self.sample_method)
-            
+
             L = train_step(X_d, ws=self.w) 
             L_v = caclulate_validation_loss(X_v)
+            self.complete_callback(L,L_v)
 
-            self.iter+=1
-            self.calculate_G_solv(self.calc_Gsolv_now)
-            self.callback(L,L_v)
-            self.check_adapt_new_weights(self.adapt_w_now)
+        if self.use_optimizer_2:
+
+            if self.sample_method == 'random_sample':
+                X_d = self.get_batches(self.sample_method)
+
+            self.train_last_step(X_d,X_v,ws=self.w)   
+
+
+    def complete_callback(self, L,L_v):
+
+        self.iter+=1
+        self.checkers_iterations()
+        self.calculate_G_solv(self.calc_Gsolv_now)
+        self.callback(L,L_v)
+        self.check_adapt_new_weights(self.adapt_w_now)
+
+        self.pbar.update()
+        if self.iter % 2 == 0:
+            opt_name = self.optimizer_name if self.iter<=self.N_iters else self.optimizer_2_name
+            self.pbar.set_description("{} loop, Loss: {:6.4e}".format(opt_name, self.current_loss))  
 
 
     def check_adapt_new_weights(self,adapt_now):
