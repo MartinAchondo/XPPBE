@@ -12,6 +12,7 @@ xppbe/*
 !xppbe/Main.yaml
 !xppbe/Allclean
 !xppbe/Allrun
+!xppbe/__init__.py
 
 xppbe/results
 /.results
