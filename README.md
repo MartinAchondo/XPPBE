@@ -64,7 +64,7 @@ To use this project, start by following the [Tutorial.ipynb](./tutorials/tutoria
 2. Run the simulation:
     ```py
     simulation.create_simulation()
-    simulation.adapt_simulation()
+    simulation.adapt_model()
     simulation.solve_model()
     simulation.postprocessing()
     ```

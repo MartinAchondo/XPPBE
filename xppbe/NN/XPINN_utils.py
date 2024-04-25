@@ -42,7 +42,7 @@ class XPINN_utils():
                     decay_rate=lr['decay_rate'],
                     staircase=lr['staircase'])
 
-        if options2['maxiter']>0:
+        if optimizer2:
             self.optimizer_2_name = optimizer2
             self.optimizer_2_opts = options2
             self.use_optimizer_2 = True
@@ -216,7 +216,7 @@ class XPINN_utils():
             self.w_hist[t][i] = self.w[t]
 
         if self.save_model_iter > 0:
-            if (self.iter % self.save_model_iter == 0 and self.iter>1) or self.iter==self.N_iters or self.iter==self.N_iters_2:
+            if (self.iter % self.save_model_iter == 0 and self.iter>1) or self.iter==self.N_iters or self.iter==self.N_iters+self.N_iters_2:
                 dir_save = os.path.join(self.results_path,'iterations',f'iter_{self.iter}')
                 self.save_model(dir_save)
 

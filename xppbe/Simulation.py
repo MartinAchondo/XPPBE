@@ -87,12 +87,13 @@ class Simulation():
 
         self.optimizer2 = 'L-BFGS-B'
         self.options_optimizer2 = {
-                'maxiter': 0,
+                'maxiter': 100,
                 'maxfun': 5000,
                 'maxcor': 50,
                 'maxls': 50}
 
         self.N_iters = 10000
+        self.N_steps_2 = 0
 
         self.iters_save_model = 1000
 
@@ -203,6 +204,7 @@ class Simulation():
           
         self.XPINN_solver.solve(
             N=self.N_iters, 
+            N2=self.N_steps_2,
             save_model = self.iters_save_model, 
             G_solve_iter= self.G_solve_iter
             )

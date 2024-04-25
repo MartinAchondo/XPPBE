@@ -87,14 +87,15 @@ lr:
 
 optimizer2: L-BFGS-B
 options_optimizer2:
-    maxiter: 10
+    maxiter: 15
     maxfun: 5000
     maxcor: 50
     maxls: 50
     ftol: 0.0000000000002
     
 # Solve parameters
-N_iters: 100
+N_iters: 300
+N_steps_2: 2
 
 
 iters_save_model: 5000

@@ -58,45 +58,53 @@ class XPINN(XPINN_utils):
 
     def train_newton(self, X_batch, X_batch_val):
 
-        if self.sample_method == 'random_sample':
-            X_batch = self.get_batches(self.sample_method)
+        def train_step(X_batch,X_batch_val):
 
-        def train_step_sp(w):
+            def get_loss_grad(w):
 
-            self.set_weight_tensor(w)
-            loss, _ , grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, self.w)
+                self.set_weight_tensor(w)
+                loss, _ , grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, self.w)
 
-            grad_flat = []
-            for g in grad_theta:
-                grad_flat.extend(g.numpy().flatten())
-            grad_flat = np.array(grad_flat,dtype=np.float64)
-            return loss, grad_flat
-        
-        def callback_ts(xr=None):
-            L = self.get_loss(X_batch,self.model,self.w)
-            L_v = self.get_loss(X_batch_val,self.model,self.w, validation=True)
-            self.complete_callback(L,L_v)
-        
-        x0, _ = self.get_weight_tensor()
-        return scipy.optimize.minimize(fun=train_step_sp,
-                                        x0=x0,
-                                        jac=True,
-                                        method=self.optimizer_2_name,
-                                        options=self.optimizer_2_opts,
-                                        callback=callback_ts
-                                        )
-    
-    def main_loop(self, N=1000):
+                grad_flat = np.concatenate([g.numpy().flatten() for g in grad_theta], axis=0).astype(np.float64)
+
+                return loss, grad_flat
+            
+            def callback_ts(w):
+                self.set_weight_tensor(w)
+                L = self.get_loss(X_batch,self.model,self.w)
+                L_v = self.get_loss(X_batch_val,self.model,self.w, validation=True)
+                self.complete_callback(L,L_v)
+            
+            x0, _ = self.get_weight_tensor()
+            scipy.optimize.minimize(
+                            fun=get_loss_grad,
+                            x0=x0,
+                            jac=True,
+                            method=self.optimizer_2_name,
+                            options=self.optimizer_2_opts,
+                            callback=callback_ts)
+
+            
+        for i in range(self.N_steps_2):
+
+            if self.sample_method == 'random_sample':
+                X_batch = self.get_batches(self.sample_method)
+            
+            train_step(X_batch,X_batch_val)
+            
+            
+    def main_loop(self, N=1000, N2=0):
         
         self.N_iters = N
-        self.N_iters_2 = N
-        
+        self.N_steps_2 = N2
+
         if self.use_optimizer_2:
-            self.N_iters_2 = N + self.optimizer_2_opts['maxiter']
+            self.N_iters_2 = self.N_steps_2 * self.optimizer_2_opts['maxiter'] 
 
-        self.pbar = log_progress(range(self.N_iters_2))
+        N_total = self.N_iters + self.N_iters_2
+        self.pbar = log_progress(range(N_total))
 
-        self.create_losses_arrays(self.N_iters_2)
+        self.create_losses_arrays(N_total)
         X_v = self.get_batches('full_batch', validation=True)
         X_d = self.get_batches(self.sample_method)
 
@@ -157,13 +165,13 @@ class XPINN(XPINN_utils):
             self.G_solv_hist[str(self.iter)] = G_solv   
 
 
-    def solve(self,N=1000, save_model=0, G_solve_iter=100):
+    def solve(self,N=1000, N2=0, save_model=0, G_solve_iter=100):
 
         self.save_model_iter = save_model if save_model != 0 else N
         self.G_solv_iter = G_solve_iter
         t0 = time()
 
-        self.main_loop(N)
+        self.main_loop(N,N2)
 
         logger = logging.getLogger(__name__)
         logger.info(f' Iterations: {self.iter}')
