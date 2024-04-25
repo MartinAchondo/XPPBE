@@ -60,6 +60,7 @@ class NeuralNet(tf.keras.Model):
                  num_fourier_features=128, 
                  fourier_sigma=1,
                  scale=([-1.,-1.,-1.],[1.,1.,1.]),
+                 scale_input=True,
                  scale_NN=1.0,
                  **kwargs):
         super().__init__(**kwargs)
@@ -72,6 +73,7 @@ class NeuralNet(tf.keras.Model):
         self.ub = tf.constant(scale[1])
         self.scale_NN = scale_NN
         self.architecture_Net = architecture_Net
+        self.scale_input = scale_input
         self.num_fourier_features = num_fourier_features
         self.sigma = fourier_sigma
         self.use_fourier_features = fourier_features
@@ -81,9 +83,10 @@ class NeuralNet(tf.keras.Model):
         
 
         # Scale layer
-        self.scale = tf.keras.layers.Lambda(
-            lambda x: 2.0 * (x - self.lb) / (self.ub - self.lb) - 1.0, 
-            name=f'scale_layer')
+        if scale_input:
+            self.scale = tf.keras.layers.Lambda(
+                lambda x: 2.0 * (x - self.lb) / (self.ub - self.lb) - 1.0, 
+                name=f'scale_layer')
 
         # Fourier feature layer
         if self.use_fourier_features:
@@ -117,7 +120,7 @@ class NeuralNet(tf.keras.Model):
                 return activation_func(inputs * a_expanded)
 
         # FCNN architecture
-        if self.architecture_Net == 'FCNN':
+        if self.architecture_Net in ('FCNN','ModMLP'):
             self.hidden_layers = list()
             for i in range(self.num_hidden_layers):
                 layer = tf.keras.layers.Dense(num_neurons_per_layer,
@@ -152,6 +155,18 @@ class NeuralNet(tf.keras.Model):
                                               kernel_initializer=kernel_initializer,
                                               name=f'layer_1')
 
+        if architecture_Net == 'ModMLP':
+            self.U = tf.keras.layers.Dense(num_neurons_per_layer,
+                                              activation=CustomActivation(units=num_neurons_per_layer,adaptative_activation=adaptative_activation),
+                                              kernel_initializer=kernel_initializer,
+                                              trainable=trainable,
+                                              name=f'layer_u')
+            self.V = tf.keras.layers.Dense(num_neurons_per_layer,
+                                              activation=CustomActivation(units=num_neurons_per_layer,adaptative_activation=adaptative_activation),
+                                              kernel_initializer=kernel_initializer,
+                                              trainable=trainable,
+                                              name=f'layer_v')
+
         # Output layer
         self.out = tf.keras.layers.Dense(output_dim, name=f'output_layer')
 
@@ -166,28 +181,44 @@ class NeuralNet(tf.keras.Model):
     def call(self, X):
         if self.architecture_Net == 'FCNN':
             return self.call_FCNN(X)
+        elif self.architecture_Net == 'ModMLP':
+            return self.call_ModMLP(X)
         elif self.architecture_Net == 'ResNet':
            return self.call_ResNet(X)
 
     # Call NeuralNet functions with the desired architecture
 
     def call_FCNN(self, X):
-        Z = self.scale(X)
+        if self.scale_input:
+            X = self.scale(X)
         if self.use_fourier_features:
-            Z = self.fourier_features(Z) 
+            X = self.fourier_features(X) 
         for layer in self.hidden_layers:
-            Z = layer(Z)
-        Z = self.out(Z)
-        return self.scale_out(Z)
+            X = layer(X)
+        X = self.out(X)
+        return self.scale_out(X)
+
+    def call_ModMLP(self, X):
+        if self.scale_input:
+            X = self.scale(X)
+        if self.use_fourier_features:
+            X = self.fourier_features(X) 
+        U = self.U(X)
+        V = self.V(X)
+        for layer in self.hidden_layers:
+            X = layer(X)*U + (1-layer(X))*V
+        X = self.out(X)
+        return self.scale_out(X)
 
     def call_ResNet(self, X):
-        Z = self.scale(X)
+        if self.scale_input:
+            X = self.scale(X)
         if self.use_fourier_features:
-            Z = self.fourier_features(Z)  
-        Z = self.first(Z)
+            X = self.fourier_features(X)  
+        X = self.first(X)
         for block,activation in zip(self.hidden_blocks,self.hidden_blocks_activations):
-            Z = activation(block(Z) + Z)
-        Z = self.last(Z)
-        Z = self.out(Z)
-        return self.scale_out(Z)
+            X = activation(block(X) + X)
+        X = self.last(X)
+        X = self.out(X)
+        return self.scale_out(X)
     

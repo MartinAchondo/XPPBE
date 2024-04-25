@@ -54,24 +54,24 @@ network: xpinn
 
 hyperparameters_in:
     input_shape: [null, 3]
-    num_hidden_layers: 2
-    num_neurons_per_layer: 15
+    num_hidden_layers: 3
+    num_neurons_per_layer: 100
     output_dim: 1
     activation: tanh
     adaptative_activation: true
-    architecture_Net: FCNN
+    architecture_Net: ModMLP
     fourier_features: true
-    num_fourier_features: 256
 
 hyperparameters_out:
     input_shape: [null, 3]
-    num_hidden_layers: 2
-    num_neurons_per_layer: 15
+    num_hidden_layers: 3
+    num_neurons_per_layer: 100
     output_dim: 1
     activation: tanh
     adaptative_activation: true
-    architecture_Net: FCNN
+    architecture_Net: ModMLP
     fourier_features: true
+    scale_input: false
 
 # Scale charges
 scale_NN_q: true
@@ -94,8 +94,8 @@ options_optimizer2:
     ftol: 0.0000000000002
     
 # Solve parameters
-N_iters: 300
-N_steps_2: 2
+N_iters: 5
+N_steps_2: 0
 
 
 iters_save_model: 5000
