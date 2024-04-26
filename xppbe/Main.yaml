@@ -59,8 +59,9 @@ hyperparameters_in:
     output_dim: 1
     activation: tanh
     adaptative_activation: true
-    architecture_Net: ModMLP
+    architecture_Net: ResNet
     fourier_features: true
+    weight_factorization: true
 
 hyperparameters_out:
     input_shape: [null, 3]
@@ -69,9 +70,9 @@ hyperparameters_out:
     output_dim: 1
     activation: tanh
     adaptative_activation: true
-    architecture_Net: ModMLP
+    architecture_Net: ResNet
     fourier_features: true
-    scale_input: false
+    weight_factorization: true
 
 # Scale charges
 scale_NN_q: true
