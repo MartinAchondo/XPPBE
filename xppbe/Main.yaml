@@ -41,7 +41,7 @@ losses:
     - Id
     - K2
 weights:
-    E2: 1e-10
+    E2: 0.00000000001
 
 # Weights adapting algorithm inputs
 adapt_weights: true

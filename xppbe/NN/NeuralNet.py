@@ -240,7 +240,6 @@ class CustomActivation(tf.keras.layers.Layer):
                                 shape=(self.units,),
                                 initializer='ones',
                                 trainable=self.adaptative_activation)
-        super(CustomActivation, self).build(input_shape)
 
     def call(self, inputs):
         a_expanded = tf.expand_dims(self.a, axis=0) 
@@ -277,10 +276,3 @@ class CustomDenseLayer(tf.keras.layers.Layer):
             outputs = self.activation(outputs)
         return outputs
 
-
-
-if __name__=='__main__':
-    nn = NeuralNet(weight_factorization=True,adaptative_activation=True)
-    nn.build_Net()
-    nn(tf.constant([[1.0,2.0,-5]], dtype='float32'))
-    nn.save_weights('test')
