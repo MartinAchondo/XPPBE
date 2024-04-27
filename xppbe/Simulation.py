@@ -12,96 +12,16 @@ from xppbe.NN.XPINN import XPINN
 class Simulation():
        
     def __init__(self, yaml_path, molecule_path=None, results_path=None, load_results=False):
-            
-        self.equation = 'standard'
-        self.pbe_model = 'linear'
-        
-        self.domain_properties = {
-            'molecule': 'born_ion',
-            'epsilon_1':  1,
-            'epsilon_2': 80,
-            'kappa': 0.125,
-            'T' : 300 
-            }
-            
-        self.mesh_properties = {
-            'vol_max_interior': 0.04,
-            'vol_max_exterior': 0.1,
-            'density_mol': 40,
-            'density_border': 4,
-            'dx_experimental': 2,
-            'N_pq': 100,
-            'G_sigma': 0.04,
-            'mesh_generator': 'msms',
-            'dR_exterior': 8,
-            'force_field': 'AMBER'
-            }
-
-        self.sample_method='random_sample'
-
-        self.losses = ['R1','R2','D2','I','K1','K2']
-
-        self.weights = {'E2': 10**-10}
-
-        self.adapt_weights = True,
-        self.adapt_w_iter = 1000
-        self.adapt_w_method = 'gradients'
-        self.alpha_w = 0.7
-
-        self.G_solve_iter=1000
-
-        self.network = 'xpinn'
-
-        self.hyperparameters_in = {
-                            'input_shape': (None,3),
-                            'num_hidden_layers': 4,
-                            'num_neurons_per_layer': 200,
-                            'output_dim': 1,
-                            'activation': 'tanh',
-                            'adaptative_activation': True,
-                            'architecture_Net': 'FCNN',
-                            'fourier_features': True,
-                            'num_fourier_features': 256
-                        }
-
-        self.hyperparameters_out = {
-                        'input_shape': (None,3),
-                        'num_hidden_layers': 4,
-                        'num_neurons_per_layer': 200,
-                        'output_dim': 1,
-                        'activation': 'tanh',
-                        'adaptative_activation': True,
-                        'architecture_Net': 'FCNN',
-                        'fourier_features': True,
-                        'num_fourier_features': 256
-                    }   
-
-        self.scale_NN_q = False
-
-        self.optimizer = 'Adam'
-        self.lr = {'method': 'exponential_decay',
-                   'initial_learning_rate': 0.001,
-                   'decay_steps': 2000,
-                   'decay_rate': 0.9,
-                   'staircase': True}
-
-        self.optimizer2 = 'L-BFGS-B'
-        self.options_optimizer2 = {
-                'maxiter': 100,
-                'maxfun': 5000,
-                'maxcor': 50,
-                'maxls': 50}
-
-        self.N_iters = 10000
-        self.N_steps_2 = 0
-
-        self.iters_save_model = 1000
 
         self.simulation_name, self.results_path, molecule_path, self.main_path,self.logger = self.get_simulation_paths(yaml_path,molecule_path,results_path,not load_results)
 
+        with open(os.path.join(self.main_path,'Simulation.yaml'), 'r') as yaml_file:
+            yaml_data = yaml.safe_load(yaml_file)
+        for key, value in yaml_data.items():
+            setattr(self, key, value)
+
         with open(yaml_path, 'r') as yaml_file:
             yaml_data = yaml.safe_load(yaml_file)
-
         for key, value in yaml_data.items():
             setattr(self, key, value)
 
@@ -210,7 +130,7 @@ class Simulation():
             )
         
 
-    def postprocessing(self, jupyter=False, mesh=True):
+    def postprocessing(self, jupyter=False, mesh=True, pbj=True):
           
         if self.domain_properties['molecule'] == 'born_ion':
             from xppbe.Post.Postcode import Born_Ion_Postprocessing as Postprocessing
@@ -269,13 +189,16 @@ class Simulation():
         else:
             if 'sphere' in self.domain_properties['molecule']:
                 method = 'Spherical_Harmonics'
+                plot_aprox = True
             elif self.domain_properties['molecule'] in ('methanol','arg'):
                 method = 'PBJ'
+                plot_aprox = pbj
              
-            self.Post.plot_G_solv_history(known=True,method=method);
-            self.Post.plot_phi_line_aprox_known(method, value='react',theta=0, phi=np.pi/2)
-            self.Post.plot_phi_line_aprox_known(method, value='react',theta=np.pi/2, phi=np.pi/2)
-            self.Post.plot_phi_line_aprox_known(method, value='react', theta=np.pi/2, phi=np.pi)
+            if plot_aprox:
+                self.Post.plot_G_solv_history(known=True,method=method);
+                self.Post.plot_phi_line_aprox_known(method, value='react',theta=0, phi=np.pi/2)
+                self.Post.plot_phi_line_aprox_known(method, value='react',theta=np.pi/2, phi=np.pi/2)
+                self.Post.plot_phi_line_aprox_known(method, value='react', theta=np.pi/2, phi=np.pi)
 
         self.Post.save_values_file();
         self.Post.save_model_summary();
@@ -350,5 +273,5 @@ if __name__=='__main__':
     sim.create_simulation()
     sim.adapt_model()
     sim.solve_model()
-    sim.postprocessing()
+    sim.postprocessing(mesh=False, pbj=True)
 

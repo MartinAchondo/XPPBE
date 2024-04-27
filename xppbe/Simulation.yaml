@@ -16,11 +16,11 @@ domain_properties:
 
 # Mesh properties
 mesh_properties:
-    vol_max_interior: 1.1
-    vol_max_exterior: 2.5
-    density_mol: 1.5
+    vol_max_interior: 0.04
+    vol_max_exterior: 0.4
+    density_mol: 40
     density_border: 3
-    dx_experimental: 2
+    dx_experimental: 0.8
     N_pq: 100
     G_sigma: 0.04
     mesh_generator: msms
@@ -30,7 +30,7 @@ mesh_properties:
 sample_method: random_sample
 
 # Frequency of solvation energy calculation
-G_solve_iter: 2
+G_solve_iter: 100
 
 # Losses to add, and initial weights
 losses:
@@ -41,11 +41,12 @@ losses:
     - Id
     - K2
 weights:
-    E2: 0.00000000001
+    E2: 1e-10
+    G: 1e-10
 
 # Weights adapting algorithm inputs
 adapt_weights: true
-adapt_w_iter: 500
+adapt_w_iter: 1000
 adapt_w_method: gradients
 alpha_w: 0.7
 
@@ -54,28 +55,28 @@ network: xpinn
 
 hyperparameters_in:
     input_shape: [null, 3]
-    num_hidden_layers: 3
-    num_neurons_per_layer: 100
+    num_hidden_layers: 4
+    num_neurons_per_layer: 200
     output_dim: 1
     activation: tanh
     adaptative_activation: true
-    architecture_Net: ResNet
+    architecture_Net: FCNN
     fourier_features: true
     weight_factorization: true
 
 hyperparameters_out:
     input_shape: [null, 3]
-    num_hidden_layers: 3
-    num_neurons_per_layer: 100
+    num_hidden_layers: 4
+    num_neurons_per_layer: 200
     output_dim: 1
     activation: tanh
     adaptative_activation: true
-    architecture_Net: ResNet
+    architecture_Net: FCNN
     fourier_features: true
     weight_factorization: true
 
 # Scale charges
-scale_NN_q: true
+scale_NN_q: false
 
 # Optimizer properties
 optimizer: Adam
@@ -88,14 +89,14 @@ lr:
 
 optimizer2: L-BFGS-B
 options_optimizer2:
-    maxiter: 15
+    maxiter: 200
     maxfun: 5000
     maxcor: 50
     maxls: 50
     ftol: 0.0000000000002
     
 # Solve parameters
-N_iters: 5
+N_iters: 20000
 N_steps_2: 0
 
 

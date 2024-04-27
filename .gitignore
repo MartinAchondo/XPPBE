@@ -5,14 +5,8 @@
 /.vscode
 
 # Results and test directories
-xppbe/*
-!xppbe/*/
-!xppbe/Main.py
-!xppbe/Simulation.py
-!xppbe/Main.yaml
-!xppbe/Allclean
-!xppbe/Allrun
-!xppbe/__init__.py
+xppbe/Test.yaml
+xppbe/Test.py
 
 xppbe/results
 /.results
