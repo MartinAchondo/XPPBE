@@ -52,8 +52,6 @@ elif [ "$1" = "Sims" ]; then
         mkdir "$current_directory/results/$base_name"
         python "$current_directory/Simulation.py" "$script_name"
 
-        cp "$current_directory/Post/Post_Template.ipynb" "$current_directory/results/$base_name/Post.ipynb"
-
         echo "Ending Simulation $sims_count : $script_name"
         echo ""
     done

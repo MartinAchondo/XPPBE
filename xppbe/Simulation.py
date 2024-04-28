@@ -142,6 +142,8 @@ class Simulation():
         if jupyter:
              return self.Post
         
+        shutil.copy(os.path.join(self.main_path,'Post','Post_Template.ipynb'),os.path.join(self.results_path,'Post.ipynb'))
+
         self.Post.plot_loss_history(domain=1);
         self.Post.plot_loss_history(domain=2);
         self.Post.plot_loss_history(domain=1, plot_w=True);
