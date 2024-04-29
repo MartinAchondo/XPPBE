@@ -294,8 +294,12 @@ class Domain_Mesh():
                 with open(os.path.join(self.molecule_path,file),'r') as f:
                     L_phi = dict()
                     for line in f:
-                        res_n, phi = line.strip().split()
-                        L_phi[str(res_n)] = float(phi)
+                        num, phi = line.strip().split()
+                        L_phi[str(num)] = float(phi)
+
+                L_names = ['H']
+                if self.molecule in 'sphere' or self.molecule == 'born_ion':
+                    L_names = ['I']
 
                 X_exp = list()
                 X_exp_values = list()
@@ -303,23 +307,21 @@ class Domain_Mesh():
                 mesh_length = self.R_exterior*2
                 mesh_dx = self.dx_experimental
                 N = int(mesh_length / mesh_dx)
-                x = np.linspace(-mesh_length / 2, mesh_length / 2, num=N) + self.centroid[0]
-                y = np.linspace(-mesh_length / 2, mesh_length / 2, num=N) + self.centroid[1]
-                z = np.linspace(-mesh_length / 2, mesh_length / 2, num=N) + self.centroid[2]
+                ctr = self.centroid
+                x = np.linspace(ctr[0]-mesh_length / 2, ctr[0]+mesh_length / 2, num=N) 
+                y = np.linspace(ctr[1]-mesh_length / 2, ctr[1]+mesh_length / 2, num=N) 
+                z = np.linspace(ctr[2]-mesh_length / 2, ctr[2]+mesh_length / 2, num=N) 
 
                 X, Y, Z = np.meshgrid(x, y, z)
                 pos_mesh = np.stack((X.flatten(), Y.flatten(), Z.flatten()), axis=0)
 
                 for q_check in q_list:
-
-                    x_diff, y_diff, z_diff = q_check.x_q[:, np.newaxis] - pos_mesh
-                    r_q_mesh = np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
+                    r_q_mesh = np.linalg.norm(q_check.x_q[:, np.newaxis] - pos_mesh, axis=0)
                     explode_local_index = np.nonzero(r_q_mesh >= q_check.r_explode)[0]
                     pos_mesh = pos_mesh[:, explode_local_index]
 
                 explode_points = pos_mesh.transpose()
-                interior_points_bool = self.mol_mesh.contains(explode_points)
-                exterior_points_bool = ~interior_points_bool  
+                exterior_points_bool = ~self.mol_mesh.contains(explode_points)
                 exterior_points = explode_points[exterior_points_bool]
 
                 exterior_distances = np.linalg.norm(exterior_points, axis=1)
@@ -328,11 +330,14 @@ class Domain_Mesh():
                 X_out = tf.constant(exterior_points, dtype=self.DTYPE)
                 X_exp.append(X_out)
                 
+                j = 1
                 for q in q_list:
-                    if q.atom_name == 'H' and str(q.res_num) in L_phi:
-                        phi_ens = tf.constant(L_phi[str(q.res_num)] , dtype=self.DTYPE)
-                        xq = tf.reshape(tf.constant(q.x_q, dtype=self.DTYPE), (1,3))
-                        X_exp_values.append((xq,phi_ens))
+                    if q.atom_name in L_names:
+                        if str(j) in L_phi:
+                            phi_ens = tf.constant(L_phi[str(j)] , dtype=self.DTYPE)
+                            xq = tf.reshape(tf.constant(q.x_q, dtype=self.DTYPE), (1,3))
+                            X_exp_values.append((xq,phi_ens))
+                        j += 1
 
                 X_exp.append(X_exp_values)
                 self.domain_mesh_names.add(type_b)

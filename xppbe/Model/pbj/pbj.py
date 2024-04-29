@@ -1,6 +1,6 @@
 
-from xppbe.Model.pbj.electrostatics.solute import Solute
-from xppbe.Model.pbj.electrostatics.simulation import Simulation
+from pbj.implicit_solvent.solute import Solute
+from pbj.implicit_solvent.simulation import Simulation
 
 class pbj():
 

@@ -60,10 +60,12 @@ class Postprocessing():
         return tuple(dphi*self.to_V for dphi in self.PDE.get_dphi_interface(*args,**kwargs))
 
     def get_solvation_energy(self,*args,**kwargs):
-        return self.PDE.get_solvation_energy(*args,**kwargs)
+        return self.PDE.get_solvation_energy(self.model)
     
     def get_phi_ens(self,*args,**kwargs):
-        return self.PDE.get_phi_ens(*args,**kwargs)
+        ((X,X_values),flag) = self.mesh.domain_mesh_data['E2']
+        x_q_L,_ = zip(*X_values)
+        return self.PDE.get_phi_ens(self.model,(X,flag),x_q_L)
     
 
     def plot_loss_history(self, domain=1, plot_w=False, loss='all'):
