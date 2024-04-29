@@ -49,6 +49,7 @@ xppbe/pbj/*/
 xppbe/Model/pbj/*
 xppbe/Model/pbj/*/
 !xppbe/Model/pbj/pbj.py
+!xppbe/Model/pbj/__init__.py
 .pbj/
 tutorials/results/
 xppbe/Molecules/mesh_files/
