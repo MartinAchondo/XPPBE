@@ -20,7 +20,7 @@ class XPINN(XPINN_utils):
         return loss,L
 
     def get_grad_loss(self,X_batch, model, trainable_variables, w):
-        with tf.GradientTape(persistent=True) as tape:
+        with tf.GradientTape(persistent=True, watch_accessed_variables=False) as tape:
             tape.watch(trainable_variables)
             loss,L = self.get_loss(X_batch, model, w)
         g = tape.gradient(loss, trainable_variables)
@@ -111,7 +111,7 @@ class XPINN(XPINN_utils):
         self.train_sgd(X_d, X_v)
 
         if self.use_optimizer_2:
-            self.train_newton(X_d,X_v)   
+            self.train_newton(X_d,X_v)
 
 
     def complete_callback(self, L,L_v):

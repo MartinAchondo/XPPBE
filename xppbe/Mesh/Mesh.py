@@ -131,15 +131,15 @@ class Domain_Mesh():
         
     
     def read_create_meshes(self):
-        sys.stdout = open(os.path.join(self.result_path,'logfile2.log'), 'w')
+        #sys.stdout = open(os.path.join(self.result_path,'logfile2.log'), 'w')
         self.create_molecule_mesh()
         self.create_sphere_mesh()
         self.create_interior_mesh()
         self.create_exterior_mesh()
         self.create_charges_mesh()
         self.create_mesh_obj()
-        sys.stdout.close()
-        sys.stdout = sys.__stdout__
+        #sys.stdout.close()
+        #sys.stdout = sys.__stdout__
         print("Mesh initialization ready")
 
 
@@ -298,7 +298,7 @@ class Domain_Mesh():
                         L_phi[str(num)] = float(phi)
 
                 L_names = ['H']
-                if self.molecule in 'sphere' or self.molecule == 'born_ion':
+                if 'sphere' in self.molecule  or self.molecule == 'born_ion':
                     L_names = ['I']
 
                 X_exp = list()

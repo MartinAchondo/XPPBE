@@ -938,17 +938,19 @@ class Born_Ion_Postprocessing(Postprocessing):
             ax.plot(theta_bl, du2, c='g', label='Analytic', linestyle='--')
         
         if plot=='u':
+            unit = 'V'
             if value == 'phi':
                 text_l = r'$\phi$'
             else:
                 text_l = r'$\phi_{react}$'
         elif plot=='du':
+            unit = r'V/$\AA$'
             if value == 'phi':
                 text_l = r'$\partial_n\phi$'
             else:
                 text_l = r'$\partial_n\phi_{react}$'  
         ax.set_xlabel(r'$\beta$ [rad]', fontsize='11')
-        ax.set_ylabel(f'{text_l} [V]', fontsize='11')
+        ax.set_ylabel(f'{text_l} [{unit}]', fontsize='11')
         text_n = r'$n$'
         # ax.set_title(f'Solution {text_l} of PBE at Interface;  ({text_n}=[{np.format_float_positional(nn[0], unique=False, precision=1)},{np.format_float_positional(nn[1], unique=False, precision=1)},{np.format_float_positional(nn[2], unique=False, precision=1)}])')
 

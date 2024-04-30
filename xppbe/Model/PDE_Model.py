@@ -219,24 +219,29 @@ class PBE(Solution_utils):
 
     def laplacian(self,mesh,model,X,flag,value='phi'):
         x,y,z = X
-        with tf.GradientTape(persistent=True) as tape:
+        with tf.GradientTape(persistent=True, watch_accessed_variables=False) as tape:
             tape.watch(x)
             tape.watch(y)
             tape.watch(z)
-            R = mesh.stack_X(x,y,z)
-            u = self.get_phi(R,flag,model,value)
-            u_x = tape.gradient(u,x)
-            u_y = tape.gradient(u,y)
-            u_z = tape.gradient(u,z)
+            with tf.GradientTape(persistent=True, watch_accessed_variables=False) as tape2:
+                tape2.watch(x)
+                tape2.watch(y)
+                tape2.watch(z)
+                R = mesh.stack_X(x,y,z)
+                u = self.get_phi(R,flag,model,value)
+            u_x = tape2.gradient(u,x)
+            u_y = tape2.gradient(u,y)
+            u_z = tape2.gradient(u,z)
         u_xx = tape.gradient(u_x,x)
         u_yy = tape.gradient(u_y,y)
         u_zz = tape.gradient(u_z,z)
         del tape
+        del tape2
         return u_xx + u_yy + u_zz
 
     def gradient(self,mesh,model,X,flag,value='phi'):
         x,y,z = X
-        with tf.GradientTape(persistent=True,watch_accessed_variables=False) as tape:
+        with tf.GradientTape(persistent=True, watch_accessed_variables=False) as tape:
             tape.watch(x)
             tape.watch(y)
             tape.watch(z)
