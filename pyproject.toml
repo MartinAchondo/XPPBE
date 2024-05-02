@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "Physics Informed Neural Network for Poisson-Boltzmann equation"
 authors = [{name = "martinachondo", email = "martin.achondom@gmail.com"}]
 readme = "README.md"
-license = {file = "LICENCE"}
+license = {file = "LICENSE"}
 keywords = [
     "Deep learning",
     "Neural networks",
@@ -29,9 +29,7 @@ dependencies = [
     "pdb2pqr==3.6.2",
     "matplotlib==3.6.1",
     "plotly==5.14.1",
-    "pydotplus==2.0.2",
     "pandas==2.0.2",
-    "xlsxwriter==3.1.9",
     "tqdm==4.64.1",
     "ipykernel==6.16.0",
     "pyyaml==6.0.1"
@@ -39,6 +37,8 @@ dependencies = [
 
 [project.optional-dependencies]
 optional = [
+    "xlsxwriter==3.1.9",
+    "pydotplus==2.0.2",
     "graphviz@git+https://gitlab.com/graphviz/graphviz/",
     "pbj@git+https://github.com/bem4solvation/pbj",
 ]
