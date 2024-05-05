@@ -65,7 +65,7 @@ class PBE(Solution_utils):
         return du_prom.numpy(),du_1.numpy(),du_2.numpy()
     
     
-    def get_phi_ens(self,model,X_mesh,X_q):
+    def get_phi_ens(self,model,X_mesh,X_q, method='exponential'):
         
         kT = self.kb*self.T
         C = self.qe/kT                
@@ -74,13 +74,17 @@ class PBE(Solution_utils):
         phi_ens_L = list()
 
         for x_q in X_q:
+            phi = self.get_phi(X_out,flag, model) * self.to_V
 
-            C_phi2 = self.get_phi(X_out,flag, model) * self.to_V * C
-            r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
-            G2_p = tf.math.reduce_sum(self.aprox_exp(-C_phi2)/r2**6)
-            G2_m = tf.math.reduce_sum(self.aprox_exp(C_phi2)/r2**6)
+            if method=='exponential':
+                r2 = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_out), axis=1, keepdims=True))
+                G2_p = tf.math.reduce_sum(self.aprox_exp(-phi*C)/r2**6)
+                G2_m = tf.math.reduce_sum(self.aprox_exp(phi*C)/r2**6)
+                phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000  
+            
+            elif method=='mean':
+                phi_ens_pred = tf.reduce_mean(phi) * 1000 
 
-            phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m) * 1000  # to_mV
             phi_ens_L.append(phi_ens_pred)
 
         return phi_ens_L    
