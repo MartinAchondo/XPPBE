@@ -164,7 +164,7 @@ class Postprocessing():
         if known:
             G_known = self.PDE.solvation_energy_phi_qs(self.to_V**-1*self.phi_known(method,'react',tf.constant(self.PDE.x_qs, dtype=self.DTYPE),'molecule'))
             G_known = np.ones(len(self.XPINN.G_solv_hist))*G_known
-            label = method.replace('_','') if 'Born' not in method else 'Analytic'
+            label = method.replace('_',' ') if 'Born' not in method else 'Analytic'
             ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'{label}')
         ax.legend()
         n_label = r'$n$'
