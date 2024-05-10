@@ -64,8 +64,8 @@ class Postprocessing():
     
     def get_phi_ens(self,*args,**kwargs):
         ((X,X_values),flag) = self.mesh.domain_mesh_data['E2']
-        x_q_L,_ = zip(*X_values)
-        return self.PDE.get_phi_ens(self.model,(X,flag),x_q_L)
+        q_L,_ = zip(*X_values)
+        return self.PDE.get_phi_ens(self.model,(X,flag),q_L, **kwargs)
     
 
     def plot_loss_history(self, domain=1, plot_w=False, loss='all'):

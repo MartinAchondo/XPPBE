@@ -65,7 +65,7 @@ class PBE(Solution_utils):
         return du_prom.numpy(),du_1.numpy(),du_2.numpy()
     
     
-    def get_phi_ens(self,model,X_mesh,q_L, method='mean'):
+    def get_phi_ens(self,model,X_mesh,q_L, method='mean', pinn=True, known_method=False):
         
         kT = self.kb*self.T
         C = self.qe/kT                
@@ -75,9 +75,11 @@ class PBE(Solution_utils):
 
         for x_q,r_q in q_L:
             
-
             if method=='exponential':
-                phi = self.get_phi(X_solv,flag, model) * self.to_V
+                if pinn: 
+                    phi = self.get_phi(X_solv,flag, model) * self.to_V
+                else: 
+                    phi = self.phi_known(known_method,'phi',tf.constant(X_solv),'solvent').reshape(-1,1)*self.to_V
                 r_H = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_solv), axis=1, keepdims=True))
                 G2_p = tf.math.reduce_sum(self.aprox_exp(-phi*C)/r_H**6)
                 G2_m = tf.math.reduce_sum(self.aprox_exp(phi*C)/r_H**6)
@@ -86,7 +88,10 @@ class PBE(Solution_utils):
             elif method=='mean':
                 r_H = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_solv), axis=1))
                 X_ens = tf.boolean_mask(X_solv, r_H < (r_q + self.mesh.dR_exterior))
-                phi = self.get_phi(X_ens,flag, model) * self.to_V
+                if pinn: 
+                    phi = self.get_phi(X_ens,flag, model) * self.to_V
+                else: 
+                    phi = self.phi_known(known_method,'phi',tf.constant(X_ens),'solvent').reshape(-1,1)*self.to_V
                 phi_ens_pred = tf.reduce_mean(phi)
 
             phi_ens_L.append(phi_ens_pred * 1000)
@@ -219,7 +224,8 @@ class PBE(Solution_utils):
         sum *= normalizer
         return (-1/self.epsilon_1)*sum
 
-    def aprox_exp(self,x):
+    @staticmethod
+    def aprox_exp(x):
         aprox = 1.0 + x + x**2/2.0 + x**3/6.0 + x**4/24.0
         return aprox
 
