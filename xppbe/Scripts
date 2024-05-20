@@ -90,7 +90,7 @@ EOF
                         fi
                     fi
                 done
-                percentage=$(echo "scale=1; ($max_iter / $iterations) * 100")
+                percentage=$(echo "scale=1; ($max_iter*100 / $iterations)" | bc)
                 printf "%-20s %-10s\n" "$base_name" "$percentage"
             else
                 printf "%-20s %-10s\n" "$base_name" "0.0"
