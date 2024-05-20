@@ -1,0 +1,108 @@
+#!/bin/sh
+
+main_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$main_dir"
+
+
+function Allclean() {
+    filepath_results="results"
+    if [ -d "${filepath_results}" ]; then
+        rm -r "${filepath_results}"
+    fi
+    mkdir "${filepath_results}"
+
+    filepath_temp_meshes="Mesh/Temp"
+    if [ -d "${filepath_temp_meshes}" ]; then
+        rm -r "${filepath_temp_meshes}"
+    fi
+    mkdir "${filepath_temp_meshes}"
+}
+
+function Allrun() {
+    $Allclean
+    num_simulations=$(ls "$main_dir/$sims_folder"/*.yaml | wc -l)
+    if [ "$num_simulations" -eq 0 ]; then
+        echo "No YAML files found in $sims_folder. Exiting."
+        exit 1
+    fi
+
+    sims_folder="simulations_list"
+    cd "$main_dir/$sims_folder"
+    sims_count=0
+    for script_name in *.yaml
+    do
+        ((sims_count++))
+        echo ""
+        base_name="${script_name%.yaml}"
+        echo "Running Simulation $sims_count : $script_name"
+
+        mkdir "$main_dir/results/$base_name"
+        python "$main_dir/Simulation.py" "$script_name"
+
+        echo "Ending Simulation $sims_count : $script_name"
+        echo ""
+    done
+}
+
+
+function PrintSims() {
+    sims_folder="simulations_list"
+    cd "$main_dir/$sims_folder"
+    ls -p | grep -v /
+}
+
+
+function SimsStatus() {
+
+    sims_folder="simulations_list"
+    cd "$main_dir/$sims_folder"
+
+    printf "\n%-20s %-10s\n" "Simulation" "Progress (%)"
+    printf "%-20s %-10s\n" "----------" "------------"
+
+    for script_name in *.yaml
+    do
+        base_name="${script_name%.yaml}"
+        
+        dir="$main_dir/results/$base_name"
+        if [ -d "$dir" ]; then
+            read_yaml() {
+                python - <<EOF
+import sys
+import yaml
+with open('$script_name', 'r') as file:
+    simulation = yaml.safe_load(file)
+print(f"iterations={simulation['N_iters']}")
+EOF
+            }
+            eval $(read_yaml)
+            dir2="$dir/iterations"
+            if [ -d "$dir2" ]; then
+                max_iter=0
+                for dir in "$dir2"/iter_*; do
+                    if [ -d "$dir" ]; then
+                        iter_num=${dir##*_} 
+                        
+                        if [[ "$iter_num" =~ ^[0-9]+$ ]]; then
+                            if (( iter_num > max_iter )); then
+                                max_iter=$iter_num
+                            fi
+                        fi
+                    fi
+                done
+                percentage=$(echo "scale=1; ($max_iter / $iterations) * 100")
+                printf "%-20s %-10s\n" "$base_name" "$percentage"
+            else
+                printf "%-20s %-10s\n" "$base_name" "0.0"
+            fi
+        else
+            printf "%-20s %-10s\n" "$base_name" "0.0"
+        fi
+    done
+    echo ""
+}
+
+
+if [[ $# -gt 0 ]]; then
+    "$@"
+fi

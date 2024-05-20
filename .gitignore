@@ -7,6 +7,7 @@
 # Results and test directories
 xppbe/Test.yaml
 xppbe/Test.py
+xppbe/Test/
 
 xppbe/results
 /.results
