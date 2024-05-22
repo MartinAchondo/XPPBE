@@ -19,7 +19,6 @@ function Allclean() {
 }
 
 function Allrun() {
-    $Allclean
     num_simulations=$(ls "$main_dir/$sims_folder"/*.yaml | wc -l)
     if [ "$num_simulations" -eq 0 ]; then
         echo "No YAML files found in $sims_folder. Exiting."
@@ -104,5 +103,7 @@ EOF
 
 
 if [[ $# -gt 0 ]]; then
-    "$@"
+    for arg in "$@"; do
+        "$arg"
+    done
 fi
