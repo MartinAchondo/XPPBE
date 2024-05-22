@@ -35,7 +35,7 @@ def generate_nanoshaper_mesh(
     output_name,
     density,
     probe_radius=1.4,
-    save_mesh_build_files=False,
+    save_mesh_build_files=True,
 ):
     path = os.path.join(output_dir, f'{output_name}_d{density}')
     nanoshaper_dir = os.path.join(

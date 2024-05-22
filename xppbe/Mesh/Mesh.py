@@ -1,5 +1,5 @@
 import os
-import sys
+import shutil
 import numpy as np
 import tensorflow as tf
 import trimesh
@@ -118,7 +118,8 @@ class Domain_Mesh():
         self.molecule_path = os.path.join(self.main_path,'Molecules',molecule) if molecule_path=='' else molecule_path
 
         self.path_files = os.path.join(self.main_path,'Mesh','Temp')
-        os.makedirs(self.path_files, exist_ok=True)
+        shutil.rmtree(self.path_files)
+        os.makedirs(self.path_files)
         self.path_pqr = os.path.join(self.molecule_path,self.molecule+'.pqr')
         self.path_xyzr = os.path.join(self.molecule_path,self.molecule+'.xyzr')
         self.path_pdb = os.path.join(self.molecule_path,self.molecule+'.pdb')
@@ -131,15 +132,12 @@ class Domain_Mesh():
         
     
     def read_create_meshes(self):
-        #sys.stdout = open(os.path.join(self.result_path,'logfile2.log'), 'w')
         self.create_molecule_mesh()
         self.create_sphere_mesh()
         self.create_interior_mesh()
         self.create_exterior_mesh()
         self.create_charges_mesh()
         self.create_mesh_obj()
-        #sys.stdout.close()
-        #sys.stdout = sys.__stdout__
         print("Mesh initialization ready")
 
 
