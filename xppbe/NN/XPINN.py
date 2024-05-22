@@ -102,9 +102,12 @@ class XPINN(XPINN_utils):
         N_total = self.N_iters + self.N_iters_2
         self.pbar = log_progress(range(N_total))
         self.pbar.update(self.iter)
+        self.pbar.refresh()
 
         if self.starting_point == 'new':
             self.create_losses_arrays(N_total)
+        if N_total > len(self.losses['TL']):
+            self.extend_losses_arrays(N_total)
             
         self.optimizer = self.create_optimizer(self.starting_point)
         
@@ -173,14 +176,10 @@ class XPINN(XPINN_utils):
         self.save_model_iter = save_model if save_model != 0 else N
         self.G_solv_iter = G_solve_iter
         t0 = time()
-
-        if N == self.iter:
-            print('Already Solved!')
-            return 
         
         self.main_loop(N,N2)
 
         logger = logging.getLogger(__name__)
         logger.info(f' Iterations: {self.iter}')
-        logger.info(" Loss: {:6.4e}".format(self.current_loss))
+        logger.info(" Loss: {:6.4e}".format(self.losses['TL'][self.iter-1]))
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))

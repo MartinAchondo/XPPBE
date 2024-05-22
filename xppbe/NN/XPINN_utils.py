@@ -88,9 +88,18 @@ class XPINN_utils():
             self.losses[t] = np.zeros(N, dtype=self.DTYPE)
         for t in self.validation_names:
             self.validation_losses[t] = np.zeros(N, dtype=self.DTYPE)
-
         for t in self.w:
             self.w_hist[t] = np.zeros(N, dtype=self.DTYPE)
+
+    def extend_losses_arrays(self, N):
+        N_extend = N - len(self.losses['TL'])
+        for t in self.losses_names:
+            self.losses[t] = np.concatenate((self.losses[t],np.zeros(N_extend, dtype=self.DTYPE)))
+        for t in self.validation_names:
+            self.validation_losses[t] = np.concatenate((self.validation_losses[t],np.zeros(N_extend, dtype=self.DTYPE)))
+        for t in self.w:
+            self.w_hist[t] = np.concatenate((self.w_hist[t],np.zeros(N_extend, dtype=self.DTYPE)))
+
 
     ##############################################################################################
                 
@@ -296,5 +305,5 @@ class XPINN_utils():
         with open(path_save, "w") as json_file:
             json.dump({'Molecule_NN': self.hyperparameters[0], 'Solvent_NN': self.hyperparameters[1]}, json_file, indent=4)     
 
-        np.save(os.path.join(dir_save, 'optimizer'), self.optimizer.get_weights())
+        np.save(os.path.join(dir_save, 'optimizer'), np.array(self.optimizer.get_weights(), dtype=object))
 
