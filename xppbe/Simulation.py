@@ -11,9 +11,9 @@ from xppbe.NN.XPINN import XPINN
 
 class Simulation():
        
-    def __init__(self, yaml_path, molecule_path=None, results_path=None, load_results=False):
+    def __init__(self, yaml_path, molecule_path=None, results_path=None):
 
-        self.simulation_name, self.results_path, molecule_path, self.main_path,self.logger = self.get_simulation_paths(yaml_path,molecule_path,results_path,not load_results)
+        self.simulation_name, self.results_path, molecule_path, self.main_path,self.logger = self.get_simulation_paths(yaml_path,molecule_path,results_path)
 
         with open(os.path.join(self.main_path,'Simulation.yaml'), 'r') as yaml_file:
             yaml_data = yaml.safe_load(yaml_file)
@@ -101,23 +101,31 @@ class Simulation():
                 adapt_w_iter = self.adapt_w_iter,
                 adapt_w_method = self.adapt_w_method,
                 alpha_w = self.alpha_w
-                )             
+                )       
+        self.XPINN_solver.adapt_optimizer(self.optimizer,self.lr, self.optimizer2,self.options_optimizer2) 
+        self.XPINN_solver.set_points_methods(sample_method=self.sample_method)
 
-        self.hyperparameters_in['scale'] = self.XPINN_solver.mesh.scale_1
-        self.hyperparameters_out['scale'] = self.XPINN_solver.mesh.scale_2
-
-        if self.scale_NN_q:
-            self.hyperparameters_in['scale_NN'] = self.PBE_model.scale_q_factor
-            self.hyperparameters_out['scale_NN'] = self.PBE_model.scale_q_factor 
-                
         if self.network == 'xpinn':
             from xppbe.NN.NeuralNet import XPINN_NeuralNet as NeuralNet
         elif self.network == 'pinn':
-            from xppbe.NN.NeuralNet import PINN_NeuralNet as NeuralNet
+            from xppbe.NN.NeuralNet import PINN_NeuralNet as NeuralNet     
 
-        self.XPINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out])
-        self.XPINN_solver.set_points_methods(sample_method=self.sample_method)
-        self.XPINN_solver.adapt_optimizer(self.optimizer,self.lr, self.optimizer2,self.options_optimizer2)
+
+        if self.starting_point == 'new':
+            
+            self.hyperparameters_in['scale'] = self.XPINN_solver.mesh.scale_1
+            self.hyperparameters_out['scale'] = self.XPINN_solver.mesh.scale_2
+
+            if self.scale_NN_q:
+                self.hyperparameters_in['scale_NN'] = self.PBE_model.scale_q_factor
+                self.hyperparameters_out['scale_NN'] = self.PBE_model.scale_q_factor 
+
+            self.XPINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out])
+        
+        elif self.starting_point == 'continue':
+            self.XPINN_solver.load_NeuralNet(NeuralNet,self.results_path,f'iter_{self.continue_iteration}',self.continue_iteration)
+        
+        self.XPINN_solver.starting_point = self.starting_point
 
 
     def solve_model(self):
@@ -210,7 +218,7 @@ class Simulation():
         return self.Post
 
 
-    def load_model(self,Iter,save=False):
+    def load_model_for_Post(self,Iter,save=False):
 
         if self.network == 'xpinn':
             from xppbe.NN.NeuralNet import XPINN_NeuralNet as NeuralNet
@@ -218,8 +226,8 @@ class Simulation():
             from xppbe.NN.NeuralNet import PINN_NeuralNet as NeuralNet
 
         self.XPINN_solver.results_path = self.results_path
-        self.XPINN_solver.load_NeuralNet(NeuralNet,self.results_path,f'iter_{Iter}')
-        self.XPINN_solver.N_iters = self.XPINN_solver.iter
+        self.XPINN_solver.load_NeuralNet(NeuralNet,self.results_path,f'iter_{Iter}',Iter)
+        self.XPINN_solver.N_iters = self.N_iters
          
         if self.domain_properties['molecule'] == 'born_ion':
             from xppbe.Post.Postcode import Born_Ion_Postprocessing as Postprocessing
@@ -229,8 +237,7 @@ class Simulation():
         self.Post = Postprocessing(self.XPINN_solver, save=save, directory=self.results_path)
 
 
-    @staticmethod
-    def get_simulation_paths(yaml_path, molecule_path=None, results_path=None, clean_results=True):
+    def get_simulation_paths(self,yaml_path, molecule_path=None, results_path=None):
     
         from xppbe import xppbe_path
         main_path = xppbe_path
@@ -249,11 +256,20 @@ class Simulation():
         else:
             molecule_path = os.path.join(molecule_path)
 
-        if clean_results:
-            if os.path.exists(results_path):
-                    shutil.rmtree(results_path)
+        # if clean_results:
+        #     if os.path.exists(results_path):
+        #             shutil.rmtree(results_path)
         os.makedirs(results_path, exist_ok=True)
-
+            
+        self.starting_point = 'new'
+        if os.path.exists(os.path.join(results_path,'iterations')):
+            if os.listdir(os.path.join(results_path,'iterations')):
+                self.starting_point = 'continue'
+                folder_path = os.path.join(results_path,'iterations')
+                subdirectories = [d for d in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, d))]
+                iteration_numbers = [int(d.split('_')[1]) for d in subdirectories if d.startswith('iter_')]
+                self.continue_iteration = max(iteration_numbers)
+                
         try:
             shutil.copy(yaml_path,os.path.join(results_path))
         except shutil.SameFileError:

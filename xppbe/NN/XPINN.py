@@ -30,12 +30,10 @@ class XPINN(XPINN_utils):
 
     def train_sgd(self, X_d, X_v):
 
-        optimizer = self.create_optimizer()
-
         @tf.function
         def train_step(X_batch, ws):
             loss, L_loss, grad_theta = self.get_grad_loss(X_batch, self.model, self.model.trainable_variables, ws)
-            optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
+            self.optimizer.apply_gradients(zip(grad_theta, self.model.trainable_variables))
             del grad_theta
             L = [loss,L_loss]
             return L
@@ -46,7 +44,7 @@ class XPINN(XPINN_utils):
             L = [loss,L_loss]
             return L
 
-        for i in range(self.N_iters):
+        for i in range(self.N_iters-self.iter):
 
             if self.sample_method == 'random_sample':
                 X_d = self.get_batches(self.sample_method)
@@ -103,8 +101,13 @@ class XPINN(XPINN_utils):
 
         N_total = self.N_iters + self.N_iters_2
         self.pbar = log_progress(range(N_total))
+        self.pbar.update(self.iter)
 
-        self.create_losses_arrays(N_total)
+        if self.starting_point == 'new':
+            self.create_losses_arrays(N_total)
+            
+        self.optimizer = self.create_optimizer(self.starting_point)
+        
         X_v = self.get_batches('full_batch', validation=True)
         X_d = self.get_batches(self.sample_method)
 
@@ -114,7 +117,7 @@ class XPINN(XPINN_utils):
             self.train_newton(X_d,X_v)
 
 
-    def complete_callback(self, L,L_v):
+    def complete_callback(self,L,L_v):
 
         self.iter+=1
         self.checkers_iterations()
@@ -171,6 +174,10 @@ class XPINN(XPINN_utils):
         self.G_solv_iter = G_solve_iter
         t0 = time()
 
+        if N == self.iter:
+            print('Already Solved!')
+            return 
+        
         self.main_loop(N,N2)
 
         logger = logging.getLogger(__name__)

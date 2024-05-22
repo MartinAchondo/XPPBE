@@ -94,11 +94,19 @@ class XPINN_utils():
 
     ##############################################################################################
                 
-    def create_optimizer(self):
-        if self.optimizer_name == 'Adam':
-            optim = tf.keras.optimizers.Adam(learning_rate=self.lr)
-            return optim
+    def create_optimizer(self, starting_point):
         
+        if self.optimizer_name == 'Adam':
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.lr)
+            
+        if starting_point == 'continue':
+            zero_grads = [tf.zeros_like(w) for w in self.model.trainable_variables]
+            saved_vars = [tf.identity(w) for w in self.model.trainable_variables]
+            optimizer.apply_gradients(zip(zero_grads, self.model.trainable_variables))
+            [x.assign(y) for x,y in zip(self.model.trainable_variables, saved_vars)]
+            optimizer.set_weights(self.loaded_opt_weights)
+            
+        return optimizer
 
     def get_batches(self, sample_method='random_sample', validation=False):
 
@@ -223,7 +231,7 @@ class XPINN_utils():
 
     ##############################################################################################
 
-    def load_NeuralNet(self,NN_class,dir_load,iter_path):   
+    def load_NeuralNet(self,NN_class,dir_load,iter_path,Iter):   
 
         path = os.path.join(dir_load,'iterations',iter_path)
 
@@ -233,19 +241,19 @@ class XPINN_utils():
         self.create_NeuralNet(NN_class, hyperparameters)
 
         self.model.load_weights(os.path.join(path,'weights'))
+        self.iter = Iter
         
         path_load = os.path.join(path,'w_hist.csv')
         df = pd.read_csv(path_load)
         self.w_hist,self.w = dict(),dict()
         for t in self.w_names:
-            self.w_hist[t] = np.array(df[t])
-            self.w[t] = self.w_hist[t][-1]
+            self.w_hist[t] = np.array(df[t], dtype=self.DTYPE)
+            self.w[t] = self.w_hist[t][self.iter-1]
        
         path_load = os.path.join(path,'loss.csv')
         df = pd.read_csv(path_load)
         for t in self.losses_names:
             self.losses[t] = np.array(df[t])
-        self.iter = len(self.losses['TL']) 
 
         path_load = os.path.join(path,'loss_validation.csv')
         df = pd.read_csv(path_load)
@@ -256,6 +264,9 @@ class XPINN_utils():
         df_2 = pd.read_csv(path_load)
         for iters,G_solv in zip(list(df_2['iter']),list(df_2['G_solv'])):
             self.G_solv_hist[str(iters)] = G_solv
+
+        path_load = os.path.join(path, 'optimizer.npy')
+        self.loaded_opt_weights = np.load(path_load, allow_pickle=True)
 
 
     def save_model(self,dir_save):
@@ -284,3 +295,6 @@ class XPINN_utils():
         path_save = os.path.join(dir_save,'hyperparameters.json')
         with open(path_save, "w") as json_file:
             json.dump({'Molecule_NN': self.hyperparameters[0], 'Solvent_NN': self.hyperparameters[1]}, json_file, indent=4)     
+
+        np.save(os.path.join(dir_save, 'optimizer'), self.optimizer.get_weights())
+
