@@ -11,11 +11,6 @@ function Allclean() {
     fi
     mkdir "${filepath_results}"
 
-    filepath_temp_meshes="Mesh/Temp"
-    if [ -d "${filepath_temp_meshes}" ]; then
-        rm -r "${filepath_temp_meshes}"
-    fi
-    mkdir "${filepath_temp_meshes}"
 }
 
 function Allrun() {
