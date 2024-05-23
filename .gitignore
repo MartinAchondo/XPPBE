@@ -63,3 +63,5 @@ xppbe/Molecules/mesh_files/
 
 /xppbe.egg-info
 build/
+
+.pytest_cache
