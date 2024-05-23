@@ -1,6 +1,12 @@
 
 # XPINN Solver for 3D Poisson-Boltzmann Equation 
 
+![XPPBE](https://img.shields.io/badge/dynamic/toml?label=XPPBE&url=https%3A%2F%2Fraw.githubusercontent.com%2FMartinAchondo%2FXPPBE%2Fmaster%2Fpyproject.toml&query=%24.project.version&prefix=version%20&color=blue)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/MartinAchondo/XPPBE/.github%2Fworkflows%2FCI.yml)
+![GitHub top language](https://img.shields.io/github/languages/top/MartinAchondo/XPPBE?logo=python&color=lightblue)
+![GitHub Repo stars](https://img.shields.io/github/stars/MartinAchondo/XPPBE)
+
+
 Simple Python Poisson-Boltzmann equation solver for real macromolecules in a polarizable media, using Extended Physics Informed Neural Networks. 
 
 $$\nabla^2 \phi_1 = -\frac{1}{\epsilon_1}\sum_k q_k\delta(x_k) \quad x \in \Omega_1 $$

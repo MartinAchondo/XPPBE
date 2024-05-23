@@ -47,7 +47,7 @@ optional = [
 packages = ["xppbe"]
 
 [project.urls]
-repository = "https://github.com/MartinAchondo/XPINN-for-PBE-Simulation"
+repository = "https://github.com/MartinAchondo/XPPBE"
 
 [build-system]
 requires = ["setuptools >= 61.0"]
