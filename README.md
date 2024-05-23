@@ -164,6 +164,6 @@ If you find this project useful for your research or work, please consider citin
   title     = {XPINN Solver for 3D Poisson-Boltzmann Equation},
   howpublished = {GitHub repository},
   year      = {2024},
-  url       = {https://github.com/MartinAchondo/XPINN-for-PBE-Simulation},
+  url       = {https://github.com/MartinAchondo/XPPBE},
 }
 ```
