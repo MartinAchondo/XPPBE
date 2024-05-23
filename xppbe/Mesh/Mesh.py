@@ -118,7 +118,8 @@ class Domain_Mesh():
         self.molecule_path = os.path.join(self.main_path,'Molecules',molecule) if molecule_path=='' else molecule_path
 
         self.path_files = os.path.join(self.main_path,'Mesh','Temp')
-        shutil.rmtree(self.path_files)
+        if os.path.exists(self.path_files):
+            shutil.rmtree(self.path_files)
         os.makedirs(self.path_files)
         self.path_pqr = os.path.join(self.molecule_path,self.molecule+'.pqr')
         self.path_xyzr = os.path.join(self.molecule_path,self.molecule+'.xyzr')
