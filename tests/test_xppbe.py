@@ -44,13 +44,15 @@ def test_xppbe_solver(molecule):
         for file_name in ['optimizer.npy', 'weights.index', 'w_hist.csv', 'checkpoint', 'loss.csv', 'hyperparameters.json', 'G_solv.csv', 'loss_validation.csv', 'weights.data-00000-of-00001']:
             assert file_name in listdir_last_iteration
 
-        for file_name in ['loss.csv','loss_validation.csv','w_hist.csv']:
+        for file_name in ['loss.csv','loss_validation.csv','w_hist.csv','G_solv.csv']:
             file = os.path.join(last_iteration,file_name)
             with open(file, 'r') as csvfile:
                 reader = csv.reader(csvfile)
                 lines = list(reader)
                 assert len(lines) == sim.N_iters + 1
 
+                last_line = lines[-1]
+                assert not '' in last_line
 
 def test_iteration_continuation():
 
@@ -81,9 +83,12 @@ def test_iteration_continuation():
 
         last_iteration = os.path.join(iterations_path,f'iter_{sim_2.N_iters}')
 
-        for file_name in ['loss.csv','loss_validation.csv','w_hist.csv']:
+        for file_name in ['loss.csv','loss_validation.csv','w_hist.csv','G_solv.csv']:
             file = os.path.join(last_iteration,file_name)
             with open(file, 'r') as csvfile:
                 reader = csv.reader(csvfile)
                 lines = list(reader)
                 assert len(lines) == sim_2.N_iters + 1
+
+                last_line = lines[-1]
+                assert not '' in last_line

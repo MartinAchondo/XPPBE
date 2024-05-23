@@ -1,10 +1,11 @@
 
 # XPINN Solver for 3D Poisson-Boltzmann Equation 
 
-![XPPBE](https://img.shields.io/badge/dynamic/toml?label=XPPBE&url=https%3A%2F%2Fraw.githubusercontent.com%2FMartinAchondo%2FXPPBE%2Fmaster%2Fpyproject.toml&query=%24.project.version&prefix=version%20&color=blue)
+![XPPBE](https://img.shields.io/badge/dynamic/toml?label=XPPBE&url=https%3A%2F%2Fraw.githubusercontent.com%2FMartinAchondo%2FXPPBE%2Fmaster%2Fpyproject.toml&query=%24.project.version&prefix=version%20&color=blue&logo=moleculer&logoColor=white)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/MartinAchondo/XPPBE/.github%2Fworkflows%2FCI.yml)
-![GitHub top language](https://img.shields.io/github/languages/top/MartinAchondo/XPPBE?logo=python&color=lightblue)
-![GitHub Repo stars](https://img.shields.io/github/stars/MartinAchondo/XPPBE)
+![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FMartinAchondo%2FXPPBE%2Fmaster%2Fpyproject.toml&query=%24.project%5B'requires-python'%5D&logo=python&label=python&color=lightgrey)
+
+
 
 
 Simple Python Poisson-Boltzmann equation solver for real macromolecules in a polarizable media, using Extended Physics Informed Neural Networks. 
