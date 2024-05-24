@@ -30,7 +30,7 @@ class PBE_Std(PBE):
             return phi 
 
         if value == 'react':
-            G_val = tf.stop_gradient(self.G(*self.mesh.get_X(X)))
+            G_val = tf.stop_gradient(self.G(X))
             if flag != 'interface':
                 phi_r = phi - G_val
             elif flag =='interface':
@@ -43,7 +43,7 @@ class PBE_Std(PBE):
         du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='phi')
         du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='phi')
         if value=='react':
-            dG_dn = tf.stop_gradient(self.dG_n(*x,Nv))
+            dG_dn = tf.stop_gradient(self.dG_n(X,Nv))
             du_1 -= dG_dn
             du_2 -= dG_dn
         return du_1,du_2
@@ -92,7 +92,7 @@ class PBE_Reg_1(PBE):
             return phi_r
         
         if value == 'phi':
-            G_val = tf.stop_gradient(self.G(*self.mesh.get_X(X)))
+            G_val = tf.stop_gradient(self.G(X))
             if flag != 'interface':
                 phi = phi_r + G_val
             elif flag =='interface':
@@ -105,7 +105,7 @@ class PBE_Reg_1(PBE):
         du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='react')
         du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='react')
         if value=='phi':
-            dG_dn = tf.stop_gradient(self.dG_n(*x,Nv))
+            dG_dn = tf.stop_gradient(self.dG_n(X,Nv))
             du_1 += dG_dn
             du_2 += dG_dn
         return du_1,du_2
@@ -134,17 +134,17 @@ class PBE_Reg_2(PBE):
         if flag=='molecule':
             phi_r = tf.reshape(model(X,flag)[:,0], (-1,1)) 
         elif flag=='solvent':
-            phi_r = tf.reshape(model(X,flag)[:,1], (-1,1)) - tf.stop_gradient(self.G(*self.mesh.get_X(X)))
+            phi_r = tf.reshape(model(X,flag)[:,1], (-1,1)) - tf.stop_gradient(self.G(X))
         elif flag=='interface':
             phi_t = model(X,flag)
-            G_val = tf.stop_gradient(self.G(*self.mesh.get_X(X)))
+            G_val = tf.stop_gradient(self.G(X))
             phi_r = tf.stack([tf.reshape(phi_t[:,0],(-1,1)),tf.reshape(phi_t[:,1],(-1,1))-G_val], axis=1)
 
         if value =='react':
             return phi_r
         
         if value == 'phi':
-            G_val = tf.stop_gradient(self.G(*self.mesh.get_X(X)))
+            G_val = tf.stop_gradient(self.G(X))
             if flag != 'interface':
                 phi = phi_r + G_val
             elif flag =='interface':
@@ -156,7 +156,7 @@ class PBE_Reg_2(PBE):
         nv = self.mesh.get_X(Nv)
         du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='react')
         du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='phi')
-        dG_dn = tf.stop_gradient(self.dG_n(*x,Nv))
+        dG_dn = tf.stop_gradient(self.dG_n(X,Nv))
         if value=='phi':
             du_1 += dG_dn
         elif value =='react':
@@ -211,7 +211,7 @@ class Poisson(Equations_utils):
 
     def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
-        source = self.PBE.source(x,y,z) if SU==None else SU
+        source = self.PBE.source(mesh.stack_X(x,y,z)) if SU==None else SU
         r = self.PBE.laplacian(mesh,model,X,flag, value=self.field) - source   
         return r
 

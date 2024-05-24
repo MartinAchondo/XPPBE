@@ -355,12 +355,11 @@ class Domain_Mesh():
         fun = bl['fun'] if 'fun' in bl else None
         file = bl['file'] if 'file' in bl else None
 
-        if X != None:
-            x,y,z = self.get_X(X)
         if value != None:
+            x,y,z = self.get_X(X)
             U = self.value_u_b(x, y, z, value=value)
         elif fun != None:
-            U = fun(x, y, z)
+            U = fun(X)
         elif file != None:
             X,U = self.read_file_data(file,bl['domain'])
             noise = bl['noise'] if 'noise' in bl else False

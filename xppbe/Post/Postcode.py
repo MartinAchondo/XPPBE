@@ -832,7 +832,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         ax.plot(r_out[r_out<0],u_out[r_out<0], label='XPINN', c='b')
         ax.plot(r_out[r_out>0],u_out[r_out>0], c='b')
 
-        u_in_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_in, dtype=self.DTYPE),'mmolecule')
+        u_in_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_in, dtype=self.DTYPE),'molecule')
         u_out_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_out, dtype=self.DTYPE),'solvent')
 
         ax.plot(r_in[np.abs(r_in) > 0.05],u_in_an[np.abs(r_in) > 0.05], c='r', linestyle='--')
