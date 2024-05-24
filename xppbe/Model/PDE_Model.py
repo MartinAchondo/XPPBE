@@ -211,18 +211,7 @@ class PBE(Solution_utils):
         loss += tf.reduce_mean(tf.square(integral - self.total_charge))
 
         return loss
-    
 
-    def source(self,x,y,z):
-        sum = 0
-        for q_obj in self.q_list:
-            qk = q_obj.q
-            xk,yk,zk = q_obj.x_q
-            deltak = tf.exp((-1/(2*self.sigma**2))*((x-xk)**2+(y-yk)**2+(z-zk)**2))
-            sum += qk*deltak
-        normalizer = (1/((2*self.pi)**(3.0/2)*self.sigma**3))
-        sum *= normalizer
-        return (-1/self.epsilon_1)*sum
 
     @staticmethod
     def aprox_exp(x):

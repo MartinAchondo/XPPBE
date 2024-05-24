@@ -41,16 +41,6 @@ class Solution_utils():
         elif field == 'phi':
             return np.array(phi_values + self.G(x,y,z))
 
-
-    def G_Yukawa(self,x,y,z):
-        sum = 0
-        for q_obj in self.q_list:
-            qk = q_obj.q
-            xk,yk,zk = q_obj.x_q
-            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
-            sum += qk*tf.exp(-self.kappa*r)/r
-        return (1/(4*self.pi*self.epsilon_2))*sum
-
     def G(self,x,y,z):
         sum = tf.constant(0, dtype=self.DTYPE)
         for q_obj in self.q_list:
@@ -74,6 +64,26 @@ class Solution_utils():
             dz += dg_dr * 2*(z-zk)
         dg_dn = n[:,0]*dx[:,0] + n[:,1]*dy[:,0] + n[:,2]*dz[:,0]
         return tf.reshape(dg_dn, (-1,1))
+    
+    def source(self,x,y,z):
+        sum = 0
+        for q_obj in self.q_list:
+            qk = q_obj.q
+            xk,yk,zk = q_obj.x_q
+            deltak = tf.exp((-1/(2*self.sigma**2))*((x-xk)**2+(y-yk)**2+(z-zk)**2))
+            sum += qk*deltak
+        normalizer = (1/((2*self.pi)**(3.0/2)*self.sigma**3))
+        sum *= normalizer
+        return (-1/self.epsilon_1)*sum
+
+    def G_Yukawa(self,x,y,z):
+        sum = 0
+        for q_obj in self.q_list:
+            qk = q_obj.q
+            xk,yk,zk = q_obj.x_q
+            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
+            sum += qk*tf.exp(-self.kappa*r)/r
+        return (1/(4*self.pi*self.epsilon_2))*sum
 
     def analytic_Born_Ion(self,r, R=None):
         if R is None:

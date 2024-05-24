@@ -30,10 +30,10 @@ class PBE_Std(PBE):
             return phi 
 
         if value == 'react':
+            G_val = tf.stop_gradient(self.G(*self.mesh.get_X(X)))
             if flag != 'interface':
-                phi_r = phi - self.G(*self.mesh.get_X(X))
+                phi_r = phi - G_val
             elif flag =='interface':
-                G_val = self.G(*self.mesh.get_X(X))
                 phi_r = tf.stack([tf.reshape(phi[:,0],(-1,1))-G_val,tf.reshape(phi[:,1],(-1,1))-G_val], axis=1)
         return phi_r
 
@@ -43,8 +43,9 @@ class PBE_Std(PBE):
         du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='phi')
         du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='phi')
         if value=='react':
-            du_1 -= self.dG_n(*x,Nv)
-            du_2 -= self.dG_n(*x,Nv)
+            dG_dn = tf.stop_gradient(self.dG_n(*x,Nv))
+            du_1 -= dG_dn
+            du_2 -= dG_dn
         return du_1,du_2
 
     def get_solvation_energy(self,model):
@@ -90,10 +91,10 @@ class PBE_Reg_1(PBE):
             return phi_r
         
         if value == 'phi':
+            G_val = tf.stop_gradient(self.G(*self.mesh.get_X(X)))
             if flag != 'interface':
-                phi = phi_r + self.G(*self.mesh.get_X(X))
+                phi = phi_r + G_val
             elif flag =='interface':
-                G_val = self.G(*self.mesh.get_X(X))
                 phi = tf.stack([tf.reshape(phi_r[:,0],(-1,1))+G_val,tf.reshape(phi_r[:,1],(-1,1))+G_val], axis=1)
         return phi 
 
@@ -103,8 +104,9 @@ class PBE_Reg_1(PBE):
         du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='react')
         du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='react')
         if value=='phi':
-            du_1 += self.dG_n(*x,Nv)
-            du_2 += self.dG_n(*x,Nv)
+            dG_dn = tf.stop_gradient(self.dG_n(*x,Nv))
+            du_1 += dG_dn
+            du_2 += dG_dn
         return du_1,du_2
 
     def get_solvation_energy(self,model):
@@ -131,20 +133,20 @@ class PBE_Reg_2(PBE):
         if flag=='molecule':
             phi_r = tf.reshape(model(X,flag)[:,0], (-1,1)) 
         elif flag=='solvent':
-            phi_r = tf.reshape(model(X,flag)[:,1], (-1,1)) - self.G(*self.mesh.get_X(X))
+            phi_r = tf.reshape(model(X,flag)[:,1], (-1,1)) - tf.stop_gradient(self.G(*self.mesh.get_X(X)))
         elif flag=='interface':
             phi_t = model(X,flag)
-            G_val = self.G(*self.mesh.get_X(X))
+            G_val = tf.stop_gradient(self.G(*self.mesh.get_X(X)))
             phi_r = tf.stack([tf.reshape(phi_t[:,0],(-1,1)),tf.reshape(phi_t[:,1],(-1,1))-G_val], axis=1)
 
         if value =='react':
             return phi_r
         
         if value == 'phi':
+            G_val = tf.stop_gradient(self.G(*self.mesh.get_X(X)))
             if flag != 'interface':
-                phi = phi_r + self.G(*self.mesh.get_X(X))
+                phi = phi_r + G_val
             elif flag =='interface':
-                G_val = self.G(*self.mesh.get_X(X))
                 phi = tf.stack([tf.reshape(phi_r[:,0],(-1,1))+G_val,tf.reshape(phi_r[:,1],(-1,1))+G_val], axis=1)
         return phi 
 
@@ -153,10 +155,11 @@ class PBE_Reg_2(PBE):
         nv = self.mesh.get_X(Nv)
         du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='react')
         du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='phi')
+        dG_dn = tf.stop_gradient(self.dG_n(*x,Nv))
         if value=='phi':
-            du_1 += self.dG_n(*x,Nv)
+            du_1 += dG_dn
         elif value =='react':
-            du_2 -= self.dG_n(*x,Nv)
+            du_2 -= dG_dn
         return du_1,du_2
     
     def get_solvation_energy(self,model):

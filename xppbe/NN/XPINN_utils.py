@@ -64,9 +64,9 @@ class XPINN_utils():
         self.w = dict()
         for w_name in self.w_names:
             if not w_name in weights:
-                self.w[w_name] = 1.0
+                self.w[w_name] = tf.constant(1.0, dtype=self.DTYPE)
             else:
-                self.w[w_name] = weights[w_name]
+                self.w[w_name] = tf.constant(weights[w_name], dtype=self.DTYPE)
 
         self.w_hist = dict()
 
@@ -257,7 +257,7 @@ class XPINN_utils():
         self.w_hist,self.w = dict(),dict()
         for t in self.w_names:
             self.w_hist[t] = np.array(df[t], dtype=self.DTYPE)
-            self.w[t] = float(self.w_hist[t][self.iter-1])
+            self.w[t] = tf.constant(self.w_hist[t][self.iter-1], dtype=self.DTYPE)
        
         path_load = os.path.join(path,'loss.csv')
         df = pd.read_csv(path_load)
