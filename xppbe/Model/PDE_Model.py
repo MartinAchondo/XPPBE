@@ -8,15 +8,16 @@ from xppbe.Model.Solutions_utils import Solution_utils
 
 class PBE(Solution_utils):
 
-    qe = 1.60217663e-19
-    eps0 = 8.8541878128e-12     
-    kb = 1.380649e-23              
-    Na = 6.02214076e23
-    ang_to_m = 1e-10
-    to_V = qe/(eps0 * ang_to_m)  
-    cal2j = 4.184
-
     DTYPE = 'float32'
+
+    qe = tf.constant(1.60217663e-19, dtype=DTYPE)
+    eps0 = tf.constant(8.8541878128e-12, dtype=DTYPE)     
+    kb = tf.constant(1.380649e-23, dtype=DTYPE)              
+    Na = tf.constant(6.02214076e23, dtype=DTYPE)
+    ang_to_m = tf.constant(1e-10, dtype=DTYPE)
+    cal2j = tf.constant(4.184, dtype=DTYPE)
+    to_V = qe/(eps0 * ang_to_m)  
+
     pi = tf.constant(np.pi, dtype=DTYPE)
 
     def __init__(self, domain_properties, mesh, equation, main_path, molecule_path):      
@@ -38,7 +39,10 @@ class PBE(Solution_utils):
         for key in self.domain_properties:
             if key in domain_properties:
                 self.domain_properties[key] = domain_properties[key]
-            setattr(self, key, self.domain_properties[key])
+            if key != 'molecule':
+                setattr(self, key, tf.constant(self.domain_properties[key], dtype=self.DTYPE))
+            else:
+                setattr(self, key, self.domain_properties[key])
 
         self.get_charges()
         if self.scheme == 'standard':
@@ -55,14 +59,14 @@ class PBE(Solution_utils):
         verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)
         u = self.get_phi(verts,'interface',model,**kwargs)
         u_mean = (u[:,0]+u[:,1])/2
-        return u_mean.numpy(),u[:,0].numpy(),u[:,1].numpy()
+        return u_mean,u[:,0],u[:,1]
     
     def get_dphi_interface(self,model, value='phi'): 
         verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)     
         N_v = self.mesh.mol_verts_normal
         du_1,du_2 = self.get_dphi(verts,N_v,'',model,value)
         du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
-        return du_prom.numpy(),du_1.numpy(),du_2.numpy()
+        return du_prom,du_1,du_2
     
     
     def get_phi_ens(self,model,X_mesh,q_L, method='mean', pinn=True, known_method=False):
@@ -99,7 +103,7 @@ class PBE(Solution_utils):
         return phi_ens_L    
     
     def solvation_energy_phi_qs(self,phi_q):
-        G_solv = 0.5*np.sum(self.qs * phi_q)
+        G_solv = 0.5*tf.reduce_sum(self.qs * phi_q)
         G_solv *= self.to_V*self.qe*self.Na*(10**-3/self.cal2j)   
         return G_solv
 
@@ -276,8 +280,10 @@ class PBE(Solution_utils):
         for i,q in enumerate(self.q_list):
             self.qs[i] = q.q
             self.x_qs[i,:] = q.x_q
-        self.total_charge = np.sum(self.qs)
-
+        
+        self.total_charge = tf.constant(np.sum(self.qs), dtype=self.DTYPE)
+        self.qs = tf.constant(self.qs, dtype=self.DTYPE)
+        self.x_qs = tf.constant(self.x_qs, dtype=self.DTYPE)
 
     def get_integral_operators(self):
         elements = self.mesh.mol_faces
@@ -287,8 +293,8 @@ class PBE(Solution_utils):
         self.dirichl_space = self.space
         self.neumann_space = self.space
 
-        self.slp_q = bempp.api.operators.potential.laplace.single_layer(self.neumann_space, self.x_qs.transpose())
-        self.dlp_q = bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, self.x_qs.transpose())
+        self.slp_q = bempp.api.operators.potential.laplace.single_layer(self.neumann_space, self.x_qs.numpy().transpose())
+        self.dlp_q = bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, self.x_qs.numpy().transpose())
     
     @classmethod
     def create_L(cls):

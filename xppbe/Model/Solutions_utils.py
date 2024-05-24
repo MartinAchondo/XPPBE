@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from scipy import special as sp
-
+import numba as nb
 
 class Solution_utils(): 
 
@@ -48,6 +48,7 @@ class Solution_utils():
             xk,yk,zk = q_obj.x_q
             r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
             sum += qk/r
+            break
         return (1/(self.epsilon_1*4*self.pi))*sum
     
     def dG_n(self,x,y,z,n):
@@ -62,6 +63,7 @@ class Solution_utils():
             dx += dg_dr * 2*(x-xk)
             dy += dg_dr * 2*(y-yk)
             dz += dg_dr * 2*(z-zk)
+            break
         dg_dn = n[:,0]*dx[:,0] + n[:,1]*dy[:,0] + n[:,2]*dz[:,0]
         return tf.reshape(dg_dn, (-1,1))
     
@@ -83,6 +85,7 @@ class Solution_utils():
             xk,yk,zk = q_obj.x_q
             r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
             sum += qk*tf.exp(-self.kappa*r)/r
+            break
         return (1/(4*self.pi*self.epsilon_2))*sum
 
     def analytic_Born_Ion(self,r, R=None):

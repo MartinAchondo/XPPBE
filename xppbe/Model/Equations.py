@@ -51,11 +51,12 @@ class PBE_Std(PBE):
     def get_solvation_energy(self,model):
 
         u_interface,_,_ = self.get_phi_interface(model)
-        u_interface = u_interface.flatten()
+        u_interface = u_interface.numpy().flatten()
         _,du_1,du_2 = self.get_dphi_interface(model)
-        du_1 = du_1.flatten()
-        du_2 = du_2.flatten()
+        du_1 = du_1.numpy().flatten()
+        du_2 = du_2.numpy().flatten()
         du_1_interface = (du_1+du_2*self.PDE_out.epsilon/self.PDE_in.epsilon)/2
+        du_1_interface = du_1_interface.numpy()
 
         phi = bempp.api.GridFunction(self.space, coefficients=u_interface)
         dphi = bempp.api.GridFunction(self.space, coefficients=du_1_interface)
@@ -173,12 +174,17 @@ class PBE_Reg_2(PBE):
 # Residuals
 class Equations_utils():
 
+    DTYPE = 'float32'
+
     def __init__(self, PBE, domain_properties, field):
         
         self.PBE = PBE
         self.field = field
         for key, value in domain_properties.items():
-            setattr(self, key, value)
+            if key != 'molecule':
+                setattr(self, key, tf.constant(value, dtype=self.DTYPE))
+            else:
+                setattr(self, key, value)
 
     def residual_loss(self,mesh,model,X,SU,flag):
         r = self.get_r(mesh,model,X,SU,flag)     
@@ -220,7 +226,7 @@ class Helmholtz(Equations_utils):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         u = self.PBE.get_phi(R,flag,model,value=self.field)
-        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*u      
+        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*u  
         return r  
 
 

@@ -256,7 +256,7 @@ class XPINN_utils():
         df = pd.read_csv(path_load)
         self.w_hist,self.w = dict(),dict()
         for t in self.w_names:
-            self.w_hist[t] = np.array(df[t], dtype=self.DTYPE)
+            self.w_hist[t] = np.array(df[t])
             self.w[t] = tf.constant(self.w_hist[t][self.iter-1], dtype=self.DTYPE)
        
         path_load = os.path.join(path,'loss.csv')
