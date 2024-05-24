@@ -17,7 +17,7 @@ def test_xppbe_solver(molecule):
 
     with tempfile.TemporaryDirectory() as temp_dir:
         
-        yaml_path = os.path.join(os.path.dirname(__file__),f'test_{molecule}.yaml')
+        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',f'test_{molecule}.yaml')
         sim = Simulation(yaml_path, results_path=temp_dir)
         sim.create_simulation()
         sim.adapt_model()
@@ -50,7 +50,6 @@ def test_xppbe_solver(molecule):
                 reader = csv.reader(csvfile)
                 lines = list(reader)
                 assert len(lines) == sim.N_iters + 1
-
                 last_line = lines[-1]
                 assert not '' in last_line
 
@@ -58,7 +57,7 @@ def test_iteration_continuation():
 
     with tempfile.TemporaryDirectory() as temp_dir:
         
-        yaml_path = os.path.join(os.path.dirname(__file__),'test_born_ion.yaml')
+        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
         sim = Simulation(yaml_path, results_path=temp_dir)
         sim.create_simulation()
         sim.adapt_model()
@@ -70,7 +69,6 @@ def test_iteration_continuation():
         assert len(os.listdir(results_path)) > 0
 
         results_path = os.path.join(results_path,'test_born_ion')
-
         iterations_path = os.path.join(results_path,'iterations')
         assert len(os.listdir(iterations_path)) == 1
 
@@ -88,7 +86,6 @@ def test_iteration_continuation():
             with open(file, 'r') as csvfile:
                 reader = csv.reader(csvfile)
                 lines = list(reader)
-                assert len(lines) == sim_2.N_iters + 1
-
+                assert len(lines) == sim.N_iters*2 + 1
                 last_line = lines[-1]
                 assert not '' in last_line
