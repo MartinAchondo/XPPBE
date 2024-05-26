@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
 from scipy import special as sp
-import numba as nb
 
 class Solution_utils(): 
 

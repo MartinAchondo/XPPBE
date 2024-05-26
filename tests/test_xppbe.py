@@ -2,6 +2,7 @@ import os
 import tempfile
 import pytest
 import csv
+import shutil
 from xppbe.Simulation import Simulation
 
 
@@ -70,12 +71,36 @@ def test_xppbe_solver(molecule):
 )
 def test_additional_losses(loss):
     with tempfile.TemporaryDirectory() as temp_dir:
-        sim_name = f'test_born_ion'
+        sim_name = f'test_{loss}'
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
+        yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
+        shutil.copy(yaml_prev_path,yaml_path)
         sim = Simulation(yaml_path, results_path=temp_dir)
         sim.losses.append(loss)
         if loss == 'E2':
             sim.mesh_properties['dR_exterior'] = 5
+        sim.create_simulation()
+        sim.adapt_model()
+        sim.solve_model()
+        sim.postprocessing(mesh=False, pbj=False)
+        run_checkers(sim,sim_name,temp_dir)
+
+
+@pytest.mark.parametrize(
+ ('arch'),
+ (
+     ('ModMLP'),
+     ('ResNet')
+ )       
+)
+def test_other_architectures(arch):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        sim_name = f'test_{arch}'
+        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
+        yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
+        shutil.copy(yaml_prev_path,yaml_path)
+        sim = Simulation(yaml_path, results_path=temp_dir)
+        sim.hyperparameters_in['architecture_Net'] = arch
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()
@@ -93,8 +118,10 @@ def test_additional_losses(loss):
 )
 def test_non_linear_and_schemes(model,scheme):
     with tempfile.TemporaryDirectory() as temp_dir:
-        sim_name = f'test_born_ion'
+        sim_name = f'test_{model}_{scheme}'
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
+        yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
+        shutil.copy(yaml_prev_path,yaml_path)
         sim = Simulation(yaml_path, results_path=temp_dir)
         sim.pbe_model = model
         sim.equation = scheme
@@ -105,9 +132,26 @@ def test_non_linear_and_schemes(model,scheme):
         run_checkers(sim,sim_name,temp_dir)
 
 
+def test_mesh_post():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        sim_name = f'test_mesh_post'
+        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
+        yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
+        shutil.copy(yaml_prev_path,yaml_path)
+        sim = Simulation(yaml_path, results_path=temp_dir)
+        sim.create_simulation()
+        sim.adapt_model()
+        sim.solve_model()
+        sim.postprocessing(mesh=True, pbj=False)
+        run_checkers(sim,sim_name,temp_dir)
+
+
 def test_iteration_continuation():
     with tempfile.TemporaryDirectory() as temp_dir:
-        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
+        sim_name = f'test_iteration'
+        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
+        yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
+        shutil.copy(yaml_prev_path,yaml_path)
         sim = Simulation(yaml_path, results_path=temp_dir)
         sim.create_simulation()
         sim.adapt_model()

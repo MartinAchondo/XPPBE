@@ -1,0 +1,65 @@
+
+
+# Domain properties
+domain_properties:
+    molecule: born_ion
+
+# Mesh properties
+mesh_properties:
+    vol_max_interior: 0.9
+    vol_max_exterior: 9
+    density_mol: 4.8
+    density_border: 1
+    mesh_generator: msms
+    dR_exterior: 1
+
+# Frequency of solvation energy calculation
+G_solve_iter: 1
+
+# Losses to add, and initial weights
+losses:
+    - R1
+    - R2
+    - D2
+    - Iu
+    - Id
+
+
+# Weights adapting algorithm inputs
+adapt_weights: true
+adapt_w_iter: 8
+adapt_w_method: gradients
+alpha_w: 0.7
+
+# Architecture
+network: xpinn
+
+hyperparameters_in:
+    input_shape: [null, 3]
+    num_hidden_layers: 2
+    num_neurons_per_layer: 20
+    output_dim: 1
+    activation: tanh
+    adaptative_activation: true
+    architecture_Net: FCNN
+    fourier_features: true
+    weight_factorization: true
+
+hyperparameters_out:
+    input_shape: [null, 3]
+    num_hidden_layers: 2
+    num_neurons_per_layer: 20
+    output_dim: 1
+    activation: tanh
+    adaptative_activation: true
+    architecture_Net: FCNN
+    fourier_features: true
+    weight_factorization: true
+
+    
+# Solve parameters
+N_iters: 10
+N_steps_2: 0
+
+
+iters_save_model: 0
