@@ -149,7 +149,7 @@ def test_mesh_post():
 
 def test_iteration_continuation():
     with tempfile.TemporaryDirectory() as temp_dir:
-        sim_name = f'test_iteration'
+        sim_name = 'test_iteration'
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
         yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
         shutil.copy(yaml_prev_path,yaml_path)
@@ -163,7 +163,7 @@ def test_iteration_continuation():
         assert os.path.isdir(results_path)
         assert len(os.listdir(results_path)) > 0
 
-        results_path = os.path.join(results_path,'test_born_ion')
+        results_path = os.path.join(results_path,sim_name)
         iterations_path = os.path.join(results_path,'iterations')
         assert len(os.listdir(iterations_path)) == 1
 
