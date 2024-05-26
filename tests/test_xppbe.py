@@ -65,7 +65,7 @@ def test_xppbe_solver(molecule):
      ('K2'),
      ('E2'),
      ('G'),
-     ('IR')
+     ('Ir')
  )       
 )
 def test_additional_losses(loss):
