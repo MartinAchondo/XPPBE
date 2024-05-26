@@ -2,7 +2,7 @@
 
 # Domain properties
 domain_properties:
-    molecule: born_ion
+    molecule: sphere_+1-1
 
 # Mesh properties
 mesh_properties:
