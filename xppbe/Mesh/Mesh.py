@@ -289,6 +289,7 @@ class Domain_Mesh():
 
             elif type_b[0] in ('E'):
                 file = bl['file']
+                ens_method = bl['method']
 
                 with open(os.path.join(self.molecule_path,file),'r') as f:
                     L_phi = dict()
@@ -341,7 +342,7 @@ class Domain_Mesh():
 
                 X_exp.append(X_exp_values)
                 self.domain_mesh_names.add(type_b)
-                self.domain_mesh_data[type_b] = (X_exp,flag)
+                self.domain_mesh_data[type_b] = (X_exp,flag,ens_method)
 
                 if self.save_points:
                     X_plot = dict()

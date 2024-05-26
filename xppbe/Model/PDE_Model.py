@@ -194,9 +194,9 @@ class PBE(Solution_utils):
 
         loss = tf.constant(0.0, dtype=self.DTYPE)
         n = len(X_exp)
-        ((X,X_values),flag) = X_exp
+        ((X,X_values),flag,method) = X_exp
         q_L,phi_ens_exp_L = zip(*X_values)
-        phi_ens_pred_L = self.get_phi_ens(model,(X,flag),q_L)
+        phi_ens_pred_L = self.get_phi_ens(model,(X,flag),q_L,method)
 
         for phi_pred,phi_exp in zip(phi_ens_pred_L,phi_ens_exp_L):
             loss += tf.square(phi_pred - phi_exp)

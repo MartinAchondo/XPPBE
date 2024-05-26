@@ -75,7 +75,7 @@ class Simulation():
 
         meshes_domain['K1'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known.dat'}
         meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known.dat'}
-        meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': 'data_experimental.dat'}
+        meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': 'data_experimental.dat', 'method': self.experimental_method}
 
         if self.network=='xpinn':
                 meshes_domain['Iu'] = {'domain':'interface', 'type':'Iu'}

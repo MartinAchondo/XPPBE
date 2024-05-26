@@ -26,6 +26,9 @@ mesh_properties:
     mesh_generator: msms
     dR_exterior: 3
 
+# Phi ENS method
+experimental_method: mean
+
 # Sampling method
 sample_method: random_sample
 
