@@ -404,15 +404,11 @@ class Domain_Mesh():
 
     @staticmethod
     def get_X(X):
-        R = list()
-        for i in range(X.shape[1]):
-            R.append(X[:,i:i+1])
-        return R
+        return tf.split(X, num_or_size_splits=X.shape[1], axis=1)
 
     @staticmethod
     def stack_X(x,y,z):
-        R = tf.stack([x[:,0], y[:,0], z[:,0]], axis=1)
-        return R
+        return tf.stack([tf.squeeze(x, axis=1), tf.squeeze(y, axis=1), tf.squeeze(z, axis=1)], axis=1)
     
     @classmethod
     def value_u_b(cls,x, y, z, value):
