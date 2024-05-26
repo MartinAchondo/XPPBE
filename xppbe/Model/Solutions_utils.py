@@ -41,53 +41,53 @@ class Solution_utils():
             return np.array(phi_values + self.G(X)[:,0])
 
     def G(self,X):
-        r_vec_expanded = tf.expand_dims(X, axis=1)  # Shape (M, 1, 3)
-        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)  # Shape (1, N, 3)
-        r_diff = r_vec_expanded - x_qs_expanded  # Shape (M, N, 3)
-        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))  # Shape (M, N)
-        q_over_r = self.qs / r  # Shape (N,) / (M, N) -> (M, N)
-        total_sum = tf.reduce_sum(q_over_r, axis=1)  # Shape (M,)
-        result = (1 / (self.epsilon_1 * 4 * self.pi)) * total_sum  # Shape (M,)
-        result = tf.expand_dims(result, axis=1)  # Shape (M, 1)
+        r_vec_expanded = tf.expand_dims(X, axis=1)
+        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
+        r_diff = r_vec_expanded - x_qs_expanded
+        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))
+        q_over_r = self.qs / r
+        total_sum = tf.reduce_sum(q_over_r, axis=1)
+        result = (1 / (self.epsilon_1 * 4 * self.pi)) * total_sum
+        result = tf.expand_dims(result, axis=1)
         return result
     
     def dG_n(self,X,n):
-        r_vec_expanded = tf.expand_dims(X, axis=1)  # Shape (M, 1, 3)
-        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)  # Shape (1, N, 3)
-        r_diff = r_vec_expanded - x_qs_expanded  # Shape (M, N, 3)
-        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))  # Shape (M, N)
-        dg_dr = self.qs / (r**3) * (-1 / (self.epsilon_1 * 4 * self.pi)) * (1/2)  # Shape (N,) / (M, N) -> (M, N)
-        dx = dg_dr * 2*r_diff[:, :, 0]  # Shape (M, N)
-        dy = dg_dr * 2*r_diff[:, :, 1]  # Shape (M, N)
-        dz = dg_dr * 2*r_diff[:, :, 2]  # Shape (M, N)
-        dx_sum = tf.reduce_sum(dx, axis=1)  # Shape (M,)
-        dy_sum = tf.reduce_sum(dy, axis=1)  # Shape (M,)
-        dz_sum = tf.reduce_sum(dz, axis=1)  # Shape (M,)
-        dg_dn = n[:, 0] * dx_sum + n[:, 1] * dy_sum + n[:, 2] * dz_sum  # Shape (M,)
-        return tf.reshape(dg_dn, (-1, 1))  # Shape (M, 1)
+        r_vec_expanded = tf.expand_dims(X, axis=1)
+        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
+        r_diff = r_vec_expanded - x_qs_expanded
+        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))
+        dg_dr = self.qs / (r**3) * (-1 / (self.epsilon_1 * 4 * self.pi)) * (1/2)
+        dx = dg_dr * 2*r_diff[:, :, 0]
+        dy = dg_dr * 2*r_diff[:, :, 1]
+        dz = dg_dr * 2*r_diff[:, :, 2]
+        dx_sum = tf.reduce_sum(dx, axis=1)
+        dy_sum = tf.reduce_sum(dy, axis=1)
+        dz_sum = tf.reduce_sum(dz, axis=1)
+        dg_dn = n[:, 0] * dx_sum + n[:, 1] * dy_sum + n[:, 2] * dz_sum
+        return tf.reshape(dg_dn, (-1, 1))
     
     def source(self,X):
-        r_vec_expanded = tf.expand_dims(X, axis=1)  # Shape (M, 1, 3)
-        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)  # Shape (1, N, 3)
-        r_diff = r_vec_expanded - x_qs_expanded  # Shape (M, N, 3)
-        r2 = tf.reduce_sum(tf.square(r_diff), axis=2) # Shape (M, N)
+        r_vec_expanded = tf.expand_dims(X, axis=1)
+        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
+        r_diff = r_vec_expanded - x_qs_expanded
+        r2 = tf.reduce_sum(tf.square(r_diff), axis=2)
         delta = tf.exp((-1/(2*self.sigma**2))*r2)
-        q_times_delta = self.qs*delta  # Shape (N,) / (M, N) -> (M, N)
-        total_sum = tf.reduce_sum(q_times_delta, axis=1)  # Shape (M,)
+        q_times_delta = self.qs*delta
+        total_sum = tf.reduce_sum(q_times_delta, axis=1)
         normalizer = (1/((2*self.pi)**(3.0/2)*self.sigma**3))
-        result = (-1/self.epsilon_1)*normalizer * total_sum  # Shape (M,)
-        result = tf.expand_dims(result, axis=1)  # Shape (M, 1)
+        result = (-1/self.epsilon_1)*normalizer * total_sum
+        result = tf.expand_dims(result, axis=1)
         return result
         
     def G_Yukawa(self,X):
-        r_vec_expanded = tf.expand_dims(X, axis=1)  # Shape (M, 1, 3)
-        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)  # Shape (1, N, 3)
-        r_diff = r_vec_expanded - x_qs_expanded  # Shape (M, N, 3)
-        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))  # Shape (M, N)
-        q_over_r = self.qs*tf.exp(-self.kappa*r) / r  # Shape (N,) / (M, N) -> (M, N)
-        total_sum = tf.reduce_sum(q_over_r, axis=1)  # Shape (M,)
-        result = (1 / (self.epsilon_2 * 4 * self.pi)) * total_sum  # Shape (M,)
-        result = tf.expand_dims(result, axis=1)  # Shape (M, 1)
+        r_vec_expanded = tf.expand_dims(X, axis=1)
+        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
+        r_diff = r_vec_expanded - x_qs_expanded
+        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))
+        q_over_r = self.qs*tf.exp(-self.kappa*r) / r
+        total_sum = tf.reduce_sum(q_over_r, axis=1)
+        result = (1 / (self.epsilon_2 * 4 * self.pi)) * total_sum
+        result = tf.expand_dims(result, axis=1)
         return result
         
     def analytic_Born_Ion(self,r, R=None):
