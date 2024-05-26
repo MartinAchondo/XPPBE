@@ -44,7 +44,7 @@ def run_checkers(sim,sim_name,temp_dir):
  ('molecule'),
  (
      ('born_ion'),
-     ('sphere_+1-1')
+     ('sphere_+1-1'),
      ('methanol'),
      ('arg')
  )       
