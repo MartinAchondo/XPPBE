@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from scipy import special as sp
-
+import numba as nb
 
 class Solution_utils(): 
 
@@ -19,62 +19,77 @@ class Solution_utils():
     pbj_mesh_density = 5
     pbj_mesh_generator = 'msms'
 
-    def phi_known(self,function,field,X,flag,R=None,N=20):  
-        x, y, z = X[:,0], X[:,1], X[:,2]
+    def phi_known(self,function,field,X,flag,R=None,N=20):
         r = np.linalg.norm(X, axis=1)   
            
         if function == 'Spherical_Harmonics':
             phi_values = self.Spherical_Harmonics(X, flag, R,N=N)
             if flag=='solvent':
-                phi_values -= self.G(x,y,z)
+                phi_values -= self.G(X)[:,0]
         elif function == 'G_Yukawa':
-            phi_values = self.G_Yukawa(x,y,z) - self.G(x,y,z)
+            phi_values = self.G_Yukawa(X)[:,0] - self.G(X)[:,0]
         elif function == 'analytic_Born_Ion':
             phi_values = self.analytic_Born_Ion(r, R)
         elif function == 'PBJ':
             phi_values = self.pbj(X, flag)
             if flag=='solvent':
-                phi_values -= self.G(x,y,z)
+                phi_values -= self.G(X)[:,0]
         
         if field == 'react':
             return np.array(phi_values)
         elif field == 'phi':
-            return np.array(phi_values + self.G(x,y,z))
+            return np.array(phi_values + self.G(X)[:,0])
 
-
-    def G_Yukawa(self,x,y,z):
-        sum = 0
-        for q_obj in self.q_list:
-            qk = q_obj.q
-            xk,yk,zk = q_obj.x_q
-            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
-            sum += qk*tf.exp(-self.kappa*r)/r
-        return (1/(4*self.pi*self.epsilon_2))*sum
-
-    def G(self,x,y,z):
-        sum = tf.constant(0, dtype=self.DTYPE)
-        for q_obj in self.q_list:
-            qk = q_obj.q
-            xk,yk,zk = q_obj.x_q
-            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
-            sum += qk/r
-        return (1/(self.epsilon_1*4*self.pi))*sum
+    def G(self,X):
+        r_vec_expanded = tf.expand_dims(X, axis=1)
+        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
+        r_diff = r_vec_expanded - x_qs_expanded
+        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))
+        q_over_r = self.qs / r
+        total_sum = tf.reduce_sum(q_over_r, axis=1)
+        result = (1 / (self.epsilon_1 * 4 * self.pi)) * total_sum
+        result = tf.expand_dims(result, axis=1)
+        return result
     
-    def dG_n(self,x,y,z,n):
-        dx = 0
-        dy = 0
-        dz = 0
-        for q_obj in self.q_list:
-            qk = q_obj.q
-            xk,yk,zk = q_obj.x_q
-            r = tf.sqrt((x-xk)**2+(y-yk)**2+(z-zk)**2)
-            dg_dr = qk/(r**3) * (-1/(self.epsilon_1*4*self.pi)) * (1/2)
-            dx += dg_dr * 2*(x-xk)
-            dy += dg_dr * 2*(y-yk)
-            dz += dg_dr * 2*(z-zk)
-        dg_dn = n[:,0]*dx[:,0] + n[:,1]*dy[:,0] + n[:,2]*dz[:,0]
-        return tf.reshape(dg_dn, (-1,1))
-
+    def dG_n(self,X,n):
+        r_vec_expanded = tf.expand_dims(X, axis=1)
+        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
+        r_diff = r_vec_expanded - x_qs_expanded
+        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))
+        dg_dr = self.qs / (r**3) * (-1 / (self.epsilon_1 * 4 * self.pi)) * (1/2)
+        dx = dg_dr * 2*r_diff[:, :, 0]
+        dy = dg_dr * 2*r_diff[:, :, 1]
+        dz = dg_dr * 2*r_diff[:, :, 2]
+        dx_sum = tf.reduce_sum(dx, axis=1)
+        dy_sum = tf.reduce_sum(dy, axis=1)
+        dz_sum = tf.reduce_sum(dz, axis=1)
+        dg_dn = n[:, 0] * dx_sum + n[:, 1] * dy_sum + n[:, 2] * dz_sum
+        return tf.reshape(dg_dn, (-1, 1))
+    
+    def source(self,X):
+        r_vec_expanded = tf.expand_dims(X, axis=1)
+        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
+        r_diff = r_vec_expanded - x_qs_expanded
+        r2 = tf.reduce_sum(tf.square(r_diff), axis=2)
+        delta = tf.exp((-1/(2*self.sigma**2))*r2)
+        q_times_delta = self.qs*delta
+        total_sum = tf.reduce_sum(q_times_delta, axis=1)
+        normalizer = (1/((2*self.pi)**(3.0/2)*self.sigma**3))
+        result = (-1/self.epsilon_1)*normalizer * total_sum
+        result = tf.expand_dims(result, axis=1)
+        return result
+        
+    def G_Yukawa(self,X):
+        r_vec_expanded = tf.expand_dims(X, axis=1)
+        x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
+        r_diff = r_vec_expanded - x_qs_expanded
+        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))
+        q_over_r = self.qs*tf.exp(-self.kappa*r) / r
+        total_sum = tf.reduce_sum(q_over_r, axis=1)
+        result = (1 / (self.epsilon_2 * 4 * self.pi)) * total_sum
+        result = tf.expand_dims(result, axis=1)
+        return result
+        
     def analytic_Born_Ion(self,r, R=None):
         if R is None:
             R = self.mesh.R_mol
@@ -107,11 +122,11 @@ class Solution_utils():
 
     def Spherical_Harmonics(self, x, flag, R=None, N=20):
 
-        q = self.qs
-        xq = self.x_qs
-        E_1 = self.epsilon_1
-        E_2 = self.epsilon_2
-        kappa = self.kappa
+        q = self.qs.numpy()
+        xq = self.x_qs.numpy()
+        E_1 = self.epsilon_1.numpy()
+        E_2 = self.epsilon_2.numpy()
+        kappa = self.kappa.numpy()
         if R is None:
             R = self.mesh.R_max_dist
 

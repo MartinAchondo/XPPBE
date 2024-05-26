@@ -23,4 +23,4 @@ jobs:
         pip install pytest
 
     - name: Run tests
-      run: pytest -c tests/pytest.ini
+      run: pytest -vv -c tests/pytest.ini

@@ -168,7 +168,7 @@ class XPINN(XPINN_utils):
     def calculate_G_solv(self,calc_now):
         if calc_now:
             G_solv = self.PDE.get_solvation_energy(self.model)
-            self.G_solv_hist[str(self.iter)] = G_solv   
+            self.G_solv_hist[str(self.iter)] = G_solv.numpy()   
 
 
     def solve(self,N=1000, N2=0, save_model=0, G_solve_iter=100):

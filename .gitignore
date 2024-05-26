@@ -65,3 +65,4 @@ xppbe/Molecules/mesh_files/
 build/
 
 .pytest_cache
+/.Lab

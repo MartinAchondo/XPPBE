@@ -172,7 +172,7 @@ class Postprocessing():
         text_l = r'$\Delta G_{solv}$'
         ax.set_ylabel(f'{text_l} [kcal/mol]', fontsize='11')
         max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
-        Gsolv_value = np.format_float_positional(self.XPINN.G_solv_hist[str(max_iter)], unique=False, precision=2)
+        #Gsolv_value = np.format_float_positional(self.XPINN.G_solv_hist[str(max_iter)], unique=False, precision=2)
         # ax.set_title(f'Solution {text_l} of PBE')
         ax.grid()
 
@@ -326,11 +326,11 @@ class Postprocessing():
             text_l = r'dphi' if value == 'phi' else r'dphi_react'
 
         if domain =='interface':
-            values = values.flatten()
+            values = values.numpy().flatten()
         elif domain =='molecule':
-            values = values_1.flatten()
+            values = values_1.numpy().flatten()
         elif domain =='solvent':
-            values = values_2.flatten()
+            values = values_2.numpy().flatten()
 
         fig = go.Figure()
         fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
@@ -832,7 +832,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         ax.plot(r_out[r_out<0],u_out[r_out<0], label='XPINN', c='b')
         ax.plot(r_out[r_out>0],u_out[r_out>0], c='b')
 
-        u_in_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_in, dtype=self.DTYPE),'mmolecule')
+        u_in_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_in, dtype=self.DTYPE),'molecule')
         u_out_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_out, dtype=self.DTYPE),'solvent')
 
         ax.plot(r_in[np.abs(r_in) > 0.05],u_in_an[np.abs(r_in) > 0.05], c='r', linestyle='--')
