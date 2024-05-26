@@ -138,7 +138,7 @@ class Simulation():
             )
         
 
-    def postprocessing(self, jupyter=False, mesh=True, pbj=True):
+    def postprocessing(self, jupyter=False, mesh=True, pbj=False):
           
         if self.domain_properties['molecule'] == 'born_ion':
             from xppbe.Post.Postcode import Born_Ion_Postprocessing as Postprocessing
