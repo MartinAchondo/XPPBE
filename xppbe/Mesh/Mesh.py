@@ -5,6 +5,7 @@ import tensorflow as tf
 import trimesh
 import pygamer
 import logging
+import contextlib
 
 from .Charges_utils import import_charges_from_pqr, convert_pqr2xyzr, convert_pdb2pqr
 from .Mesh_utils  import generate_msms_mesh,generate_nanoshaper_mesh
@@ -206,7 +207,9 @@ class Domain_Mesh():
         gInfo.ishole = False   
 
         meshes = [self.mesh_molecule_pyg] 
-        self.int_tetmesh = pygamer.makeTetMesh(meshes, f'pq1.2a{self.vol_max_interior}YAO2/3Q')  
+        with open('/dev/null', 'w') as null_file: 
+            with contextlib.redirect_stdout(null_file):
+                self.int_tetmesh = pygamer.makeTetMesh(meshes, f'pq1.2a{self.vol_max_interior}YAO2/3Q')  
         self.region_meshes['R1'] = Region_Mesh('tetmesh',self.int_tetmesh)
 
     def create_exterior_mesh(self):
@@ -223,8 +226,10 @@ class Domain_Mesh():
         gInfo = self.mesh_sphere_pyg.getRoot() 
         gInfo.ishole = False
 
-        meshes = [self.mesh_molecule_pyg_2,self.mesh_sphere_pyg] 
-        self.ext_tetmesh = pygamer.makeTetMesh(meshes, f'pq1.2a{self.vol_max_exterior}YAO2/3Q') 
+        meshes = [self.mesh_molecule_pyg_2,self.mesh_sphere_pyg]
+        with open('/dev/null', 'w') as null_file: 
+            with contextlib.redirect_stdout(null_file):
+                self.ext_tetmesh = pygamer.makeTetMesh(meshes, f'pq1.2a{self.vol_max_exterior}YAO2/3Q') 
         self.region_meshes['R2'] = Region_Mesh('tetmesh',self.ext_tetmesh)
 
     def create_charges_mesh(self):

@@ -104,3 +104,7 @@ N_steps_2: 0
 
 
 iters_save_model: 5000
+
+partition_simulation: false
+num_iters_per_step: 5000
+total_N_iters: 20000

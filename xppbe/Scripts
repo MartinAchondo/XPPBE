@@ -10,7 +10,6 @@ function Allclean() {
         rm -r "${filepath_results}"
     fi
     mkdir "${filepath_results}"
-
 }
 
 function Allrun() {
@@ -26,12 +25,45 @@ function Allrun() {
     for script_name in *.yaml
     do
         ((sims_count++))
+
         echo ""
         base_name="${script_name%.yaml}"
         echo "Running Simulation $sims_count : $script_name"
 
-        mkdir "$main_dir/results/$base_name"
-        python "$main_dir/Simulation.py" "$script_name"
+        if [ ! -d "$main_dir/results/$base_name" ]; then
+            mkdir "$main_dir/results/$base_name"
+        fi
+
+        partition_simulation=$(yq '.partition_simulation' "$script_name")
+        if [ "$partition_simulation" = true ] && [ "$partition_simulation" != "null" ]; then
+            num_iters_per_step=$(yq '.num_iters_per_step' "$script_name")
+            total_N_iters=$(yq '.total_N_iters' "$script_name")
+            num_steps=$(echo "($total_N_iters / $num_iters_per_step)" | bc)
+            first_step=1
+
+            dir="$main_dir/results/$base_name/iterations"
+            if [ -d "$dir" ]; then
+                max_iter=0
+                for dir in "$dir"/iter_*; do
+                    iter_num=${dir##*_} 
+                    if (( iter_num > max_iter )); then
+                        max_iter=$iter_num
+                        first_step=$(echo "( $max_iter/$num_iters_per_step) + 1" | bc)
+                    fi
+                done
+            fi
+
+            for (( i=first_step; i<=$num_steps; i++ ))
+            do
+                echo "Running step: $i" 
+                new_iters=$(echo "( $num_iters_per_step*$i)" | bc)
+                sed -i "s/^N_iters: [0-9]\+/N_iters: $new_iters/" $script_name
+                python "$main_dir/Simulation.py" "$script_name"
+            done
+            
+        else
+            python "$main_dir/Simulation.py" "$script_name"
+        fi
 
         echo "Ending Simulation $sims_count : $script_name"
         echo ""
@@ -60,16 +92,7 @@ function SimsStatus() {
         
         dir="$main_dir/results/$base_name"
         if [ -d "$dir" ]; then
-            read_yaml() {
-                python - <<EOF
-import sys
-import yaml
-with open('$script_name', 'r') as file:
-    simulation = yaml.safe_load(file)
-print(f"iterations={simulation['N_iters']}")
-EOF
-            }
-            eval $(read_yaml)
+            iterations=$(yq '.N_iters' "$script_name")
             dir2="$dir/iterations"
             if [ -d "$dir2" ]; then
                 max_iter=0

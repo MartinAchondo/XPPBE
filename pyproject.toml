@@ -37,10 +37,11 @@ dependencies = [
 
 [project.optional-dependencies]
 optional = [
+    "yq==3.4.3",
     "xlsxwriter==3.1.9",
     "pydotplus==2.0.2",
     "graphviz@git+https://gitlab.com/graphviz/graphviz/",
-    "pbj@git+https://github.com/bem4solvation/pbj",
+    "pbj@git+https://github.com/bem4solvation/pbj"
 ]
 
 [tool.setuptools]
