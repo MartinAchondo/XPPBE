@@ -1,8 +1,7 @@
 import tensorflow as tf
 import bempp.api
-import numpy as np
 
-from xppbe.Model.PDE_Model import PBE
+from .PDE_Model import PBE
 
 # PBE Equations and schemes 
 

@@ -63,7 +63,7 @@ To use this project, start by following the [Tutorial.ipynb](./tutorials/tutoria
 
 1. Import the simulation object, the YAML file, and initialize it:
     ```py
-    from xppbe.Simulation import Simulation
+    from xppbe import Simulation
     simulation = Simulation('Main.yaml')
     ```
 2. Run the simulation:
@@ -164,7 +164,7 @@ The Simulation object import a YAML file with all the problem definitions. An ex
 If you find this project useful for your research or work, please consider citing it. Here is an example BibTeX entry:
 
 ```bibtex
-@misc{XPINN-for-PBE,
+@misc{XPPBE,
   author    = {Martín Achondo},
   title     = {XPINN Solver for 3D Poisson-Boltzmann Equation},
   howpublished = {GitHub repository},

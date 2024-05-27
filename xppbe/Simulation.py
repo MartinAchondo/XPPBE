@@ -5,9 +5,6 @@ import logging
 import shutil
 import numpy as np
 
-from xppbe.Mesh.Mesh import Domain_Mesh
-from xppbe.NN.XPINN import XPINN
-
 
 class Simulation():
        
@@ -33,6 +30,7 @@ class Simulation():
         self.logger.info(f"Solving PBE {self.equation}, in {self.pbe_model} form")
         self.logger.info(f"Molecule: {self.domain_properties['molecule']}")
 
+        from xppbe.Mesh.Mesh import Domain_Mesh
         self.Mol_mesh = Domain_Mesh(self.domain_properties['molecule'], 
                         mesh_properties=self.mesh_properties, 
                         save_points=True,
@@ -89,6 +87,7 @@ class Simulation():
 
         self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
 
+        from xppbe.NN.XPINN import XPINN
         self.XPINN_solver = XPINN(results_path=self.results_path)
         self.XPINN_solver.adapt_PDE(self.PBE_model)
 

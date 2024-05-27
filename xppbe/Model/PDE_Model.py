@@ -4,7 +4,7 @@ import bempp.api
 import tensorflow as tf
 
 from xppbe.Mesh.Charges_utils import get_charges_list
-from xppbe.Model.Solutions_utils import Solution_utils
+from .Solutions_utils import Solution_utils
 
 class PBE(Solution_utils):
 

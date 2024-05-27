@@ -5,7 +5,7 @@ from time import time
 import logging
 from tqdm import tqdm as log_progress
 
-from xppbe.NN.XPINN_utils import XPINN_utils
+from .XPINN_utils import XPINN_utils
 
 class XPINN(XPINN_utils):
     
@@ -39,7 +39,7 @@ class XPINN(XPINN_utils):
             return L
         
         @tf.function
-        def caclulate_validation_loss(X_v):
+        def calculate_validation_loss(X_v):
             loss,L_loss = self.get_loss(X_v,self.model,self.w, validation=True)
             L = [loss,L_loss]
             return L
@@ -50,7 +50,7 @@ class XPINN(XPINN_utils):
                 X_d = self.get_batches(self.sample_method)
 
             L = train_step(X_d, ws=self.w) 
-            L_v = caclulate_validation_loss(X_v)
+            L_v = calculate_validation_loss(X_v)
             self.complete_callback(L,L_v)
 
 

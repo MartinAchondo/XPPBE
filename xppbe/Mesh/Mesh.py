@@ -6,8 +6,8 @@ import trimesh
 import pygamer
 import logging
 
-from xppbe.Mesh.Charges_utils import import_charges_from_pqr, convert_pqr2xyzr, convert_pdb2pqr
-from xppbe.Mesh.Mesh_utils  import generate_msms_mesh,generate_nanoshaper_mesh
+from .Charges_utils import import_charges_from_pqr, convert_pqr2xyzr, convert_pdb2pqr
+from .Mesh_utils  import generate_msms_mesh,generate_nanoshaper_mesh
 
 class Region_Mesh():
 
