@@ -199,7 +199,7 @@ class Simulation():
             if 'sphere' in self.domain_properties['molecule']:
                 method = 'Spherical_Harmonics'
                 plot_aprox = True
-            elif self.domain_properties['molecule'] in ('methanol','arg'):
+            else:
                 method = 'PBJ'
                 plot_aprox = pbj
              
