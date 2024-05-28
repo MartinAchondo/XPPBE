@@ -166,6 +166,8 @@ class Simulation():
         self.Post.plot_weights_history(domain=1);
         self.Post.plot_weights_history(domain=2);
 
+        self.Post.save_values_file();
+
         if mesh:
             self.Post.plot_collocation_points_3D();
             self.Post.plot_vol_mesh_3D();
@@ -209,7 +211,6 @@ class Simulation():
                 self.Post.plot_phi_line_aprox_known(method, value='react',theta=np.pi/2, phi=np.pi/2)
                 self.Post.plot_phi_line_aprox_known(method, value='react', theta=np.pi/2, phi=np.pi)
 
-        self.Post.save_values_file();
         self.Post.save_model_summary();
         self.Post.plot_architecture(domain=1);
         self.Post.plot_architecture(domain=2);
