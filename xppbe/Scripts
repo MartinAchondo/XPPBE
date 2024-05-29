@@ -2,8 +2,6 @@
 
 current_dir=$(pwd)
 main_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$main_dir"
-
 
 function Allclean() {
     if [ -d "$results_path" ]; then
@@ -19,7 +17,6 @@ function Allrun() {
         exit 1
     fi
 
-    cd "$sims_path"
     sims_count=0
     for script_name in "$sims_path"/*.yaml
     do
@@ -66,8 +63,7 @@ function Allrun() {
 
 
 function PrintSims() {
-    cd "$sims_path"
-    for script_name in *.yaml
+    for script_name in "$sims_path/"*.yaml
     do
         echo $(basename "$script_name")
     done
@@ -75,8 +71,6 @@ function PrintSims() {
 
 
 function SimsStatus() {
-
-    cd "$sims_path"
 
     printf "\n%-20s %-16s %-10s\n" "Simulation" "Iterations" "Progress (%)"
     printf "%-20s %-16s %-10s\n" "--------------" "-------------" "------------"
@@ -150,3 +144,4 @@ if [[ ${#remaining_args[@]} -gt 0 ]]; then
        "$cmd"
     done
 fi
+

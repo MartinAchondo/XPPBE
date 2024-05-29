@@ -23,11 +23,5 @@ jobs:
         pip install .[pbe-standard]
         pip install pytest
 
-    - name: Check PYTHONPATH
-      run: echo $PYTHONPATH
-
-    - name: List installed packages
-      run: pip list
-
     - name: Run tests
       run: pytest -vv -c tests/pytest.ini
