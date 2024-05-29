@@ -60,11 +60,9 @@ function Allrun() {
                 sed -i "s/^N_iters: [0-9]\+/N_iters: $new_iters/" $script_name
                 python "$main_dir/Simulation.py" "$script_name"
             done
-            
-        else
-            python "$main_dir/Simulation.py" "$script_name"
         fi
-
+        python "$main_dir/Simulation.py" "$script_name" "--pbj"
+        
         echo "Ending Simulation $sims_count : $script_name"
         echo ""
     done
@@ -83,37 +81,37 @@ function SimsStatus() {
     sims_folder="simulations_list"
     cd "$main_dir/$sims_folder"
 
-    printf "\n%-20s %-10s\n" "Simulation" "Progress (%)"
-    printf "%-20s %-10s\n" "----------" "------------"
+    printf "\n%-20s %-16s %-10s\n" "Simulation" "Iterations" "Progress (%)"
+    printf "%-20s %-16s %-10s\n" "--------------" "-------------" "------------"
 
     for script_name in *.yaml
     do
         base_name="${script_name%.yaml}"
         
-        dir="$main_dir/results/$base_name"
-        if [ -d "$dir" ]; then
+        partition_simulation=$(yq '.partition_simulation' "$script_name")
+        if [ "$partition_simulation" = true ] && [ "$partition_simulation" != "null" ]; then
+            iterations=$(yq '.total_N_iters' "$script_name")
+        else
             iterations=$(yq '.N_iters' "$script_name")
-            dir2="$dir/iterations"
-            if [ -d "$dir2" ]; then
-                max_iter=0
-                for dir in "$dir2"/iter_*; do
-                    if [ -d "$dir" ]; then
-                        iter_num=${dir##*_} 
-                        
-                        if [[ "$iter_num" =~ ^[0-9]+$ ]]; then
-                            if (( iter_num > max_iter )); then
-                                max_iter=$iter_num
-                            fi
+        fi
+        
+        max_iter=0
+        dir="$main_dir/results/$base_name/iterations"
+        if [ -d "$dir" ]; then
+            for dir in "$dir"/iter_*; do
+                if [ -d "$dir" ]; then
+                    iter_num=${dir##*_} 
+                    if [[ "$iter_num" =~ ^[0-9]+$ ]]; then
+                        if (( iter_num > max_iter )); then
+                            max_iter=$iter_num
                         fi
                     fi
-                done
-                percentage=$(echo "scale=1; ($max_iter*100 / $iterations)" | bc)
-                printf "%-20s %-10s\n" "$base_name" "$percentage"
-            else
-                printf "%-20s %-10s\n" "$base_name" "0.0"
-            fi
+                fi
+            done
+            percentage=$(echo "scale=1; ($max_iter*100 / $iterations)" | bc)
+            printf "%-20s %-16s %-10s\n" "$base_name" "$max_iter/$iterations" "$percentage"
         else
-            printf "%-20s %-10s\n" "$base_name" "0.0"
+            printf "%-20s %-16s %-10s\n" "$base_name" "$max_iter/$iterations" "0.0"
         fi
     done
     echo ""

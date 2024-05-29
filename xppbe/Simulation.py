@@ -288,9 +288,11 @@ if __name__=='__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     yaml_path = os.path.abspath(sys.argv[1])
     results_path = os.path.dirname(__file__)
+    run_pbj = '--pbj' in sys.argv
+    plot_mesh = '--mesh' in sys.argv
     sim = Simulation(yaml_path, results_path=results_path)
     sim.create_simulation()
     sim.adapt_model()
     sim.solve_model()
-    sim.postprocessing(mesh=False, pbj=True)
+    sim.postprocessing(mesh=plot_mesh, pbj=run_pbj)
 
