@@ -18,7 +18,7 @@ function Allrun() {
     fi
 
     sims_count=0
-    for script_name in "$sims_path"/*.yaml
+    for script_path in "$sims_path"/*.yaml
     do
         ((sims_count++))
 
@@ -27,10 +27,10 @@ function Allrun() {
         base_name="${script_name%.yaml}"
         echo "Running Simulation $sims_count : $script_name"
 
-        partition_simulation=$(yq '.partition_simulation' "$script_name")
+        partition_simulation=$(yq '.partition_simulation' "$script_path")
         if [ "$partition_simulation" = true ] && [ "$partition_simulation" != "null" ]; then
-            num_iters_per_step=$(yq '.num_iters_per_step' "$script_name")
-            total_N_iters=$(yq '.total_N_iters' "$script_name")
+            num_iters_per_step=$(yq '.num_iters_per_step' "$script_path")
+            total_N_iters=$(yq '.total_N_iters' "$script_path")
             num_steps=$(echo "($total_N_iters / $num_iters_per_step)" | bc)
             first_step=1
 
@@ -50,11 +50,11 @@ function Allrun() {
             do
                 echo "Running step: $i" 
                 new_iters=$(echo "( $num_iters_per_step*$i)" | bc)
-                sed -i "s/^N_iters: [0-9]\+/N_iters: $new_iters/" $script_name
-                python "$main_dir/Simulation.py" "$script_name" "--results-path=${results_path%/results}"
+                sed -i "s/^N_iters: [0-9]\+/N_iters: $new_iters/" $script_path
+                python "$main_dir/Simulation.py" "$script_path" "--results-path=${results_path%/results}"
             done
         fi
-        python "$main_dir/Simulation.py" "$script_name" "--results-path=${results_path%/results}" "$pbj_flag" "$mesh_flag"
+        python "$main_dir/Simulation.py" "$script_path" "--results-path=${results_path%/results}" "$pbj_flag" "$mesh_flag"
 
         echo "Ending Simulation $sims_count : $script_name"
         echo ""
