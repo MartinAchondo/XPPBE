@@ -6,10 +6,10 @@ cd "$main_dir"
 
 
 function Allclean() {
-    if [ -d "${$results_path}" ]; then
-        rm -r "${$results_path}"
+    if [ -d "$results_path" ]; then
+        rm -r "$results_path"
     fi
-    mkdir "${$results_path}"
+    mkdir "$results_path"
 }
 
 function Allrun() {

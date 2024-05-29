@@ -4,7 +4,7 @@ import pytest
 import csv
 import shutil
 from xppbe.Simulation import Simulation
-
+from xppbe import Allrun,Allclean
 
 def run_checkers(sim,sim_name,temp_dir):
 
@@ -44,11 +44,14 @@ def test_scripts():
     with tempfile.TemporaryDirectory() as temp_dir:
         sim_name = f'test_born_ion'
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
-        shutil.copy(yaml_path,temp_dir)
-        from xppbe import Allrun
-        Allrun(sims_path=temp_dir, results_path=temp_dir)
+        sims_path = os.path.join(temp_dir,'sims')
+        os.mkdir(sims_path)
+        shutil.copy(yaml_path,os.path.join(sims_path,sim_name+'.yaml'))
+        Allrun(sims_path=sims_path, results_path=temp_dir)
         sim = Simulation(yaml_path, results_path=temp_dir)
         run_checkers(sim,sim_name,temp_dir)
+        Allclean(results_path=temp_dir)
+        assert len(os.listdir(os.path.join(temp_dir,'results'))) == 0
 
 
 @pytest.mark.parametrize(
