@@ -127,7 +127,7 @@ for arg in "$@"; do
         shift
         ;;
         --results-path=*)
-        results_path="${arg#*=}"
+        results_path="${arg#*=}/results"
         shift 
         ;;
         *)
