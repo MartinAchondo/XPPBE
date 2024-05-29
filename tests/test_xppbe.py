@@ -15,6 +15,13 @@ def test_bash():
     #print("\n\n\n")
     #subprocess.Popen("pip list")
 
+def test_bash_2():
+    sims_path = os.path.abspath(xppbe.xppbe_path)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        results_path = temp_dir
+        command = f"bash {xppbe.scripts_path} Allrun --sims-path={sims_path} --results-path={results_path}"
+        os.system(command)
+
 
 def run_checkers(sim,sim_name,temp_dir):
 

@@ -23,7 +23,7 @@ function Allrun() {
         ((sims_count++))
 
         echo ""
-        script_name=$(basename "$script_name")
+        script_name=$(basename "$script_path")
         base_name="${script_name%.yaml}"
         echo "Running Simulation $sims_count : $script_name"
 
@@ -63,9 +63,9 @@ function Allrun() {
 
 
 function PrintSims() {
-    for script_name in "$sims_path/"*.yaml
+    for script_path in "$sims_path/"*.yaml
     do
-        echo $(basename "$script_name")
+        echo $(basename "$script_path")
     done
 }
 
@@ -75,16 +75,16 @@ function SimsStatus() {
     printf "\n%-20s %-16s %-10s\n" "Simulation" "Iterations" "Progress (%)"
     printf "%-20s %-16s %-10s\n" "--------------" "-------------" "------------"
 
-    for script_name in "$sims_path"/*.yaml
+    for script_path in "$sims_path"/*.yaml
     do
-        script_name=$(basename "$script_name")
+        script_name=$(basename "$script_path")
         base_name="${script_name%.yaml}"
         
-        partition_simulation=$(yq '.partition_simulation' "$script_name")
+        partition_simulation=$(yq '.partition_simulation' "$script_path")
         if [ "$partition_simulation" = true ] && [ "$partition_simulation" != "null" ]; then
-            iterations=$(yq '.total_N_iters' "$script_name")
+            iterations=$(yq '.total_N_iters' "$script_path")
         else
-            iterations=$(yq '.N_iters' "$script_name")
+            iterations=$(yq '.N_iters' "$script_path")
         fi
         
         max_iter=0
