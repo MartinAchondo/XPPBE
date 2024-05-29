@@ -66,22 +66,14 @@ def import_charges_from_pqr(pqr_path):
 
 def convert_pqr2xyzr(mesh_pqr_path, mesh_xyzr_path,for_mesh=False):
     
-    with open(mesh_pqr_path, "r") as pqr_file:
-        pqr_data = pqr_file.read().split("\n")
-    
-    cont = 0
     with open(mesh_xyzr_path, "w") as xyzr_file:
-        for line in pqr_data:
-            line = line.split()
-            if len(line) == 0 or line[0] != "ATOM":
-                continue
+        _,x_q,r_q,_,_,_ = import_charges_from_pqr(mesh_pqr_path)
+        for cont in range(len(r_q)):
             nn = '\n' if cont != 0 else ''
-            _,_,_,_,_,x,y,z,_,r = line
-            xyzr_file.write(f'{nn}{float(x):9.4f} {float(y):9.4f} {float(z):9.4f} {float(r):9.4f}')
-            cont += 1
+            xyzr_file.write(f'{nn}{float(x_q[cont,0]):9.4f} {float(x_q[cont,1]):9.4f} {float(x_q[cont,2]):9.4f} {float(r_q[cont]):9.4f}')
         
-        if for_mesh and cont==1:
-            xyzr_file.write(f'\n{float(x):9.4f} {float(y)+0.001:9.4f} {float(z)*1.001:9.4f} {float(r)*0.01:9.4f}')
+        if for_mesh and cont==0:
+            xyzr_file.write(f'\n{float(x_q[cont,0]):9.4f} {float(x_q[cont,1])+0.00001:9.4f} {float(x_q[cont,2])*1.00001:9.4f} {float(r_q[cont])*0.00001:9.4f}')
 
 def convert_pdb2pqr(mesh_pdb_path, mesh_pqr_path, force_field, str_flag=""):
 
@@ -100,7 +92,6 @@ def center_molecule_pqr(pqr_path):
     q, x_q, r_q, atom_name, res_name, res_num = import_charges_from_pqr(pqr_path)
     center = np.mean(np.vstack((np.max(x_q+np.reshape(r_q,(-1,1)), axis=0), np.min(x_q-np.reshape(r_q,(-1,1)), axis=0))), axis=0)
     x_q -= center
-    print(center)
 
     with open(pqr_path, "w") as pqr_file:
         for cont in range(len(q)):
@@ -111,6 +102,6 @@ def center_molecule_pqr(pqr_path):
 
 if __name__=='__main__':
     from xppbe import xppbe_path
-    molecule = 'hpal'
+    molecule = '9ant'
     path_molecule = os.path.join(xppbe_path,'Molecules',molecule,molecule+'.pqr')
     center_molecule_pqr(path_molecule)

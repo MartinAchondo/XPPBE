@@ -7,7 +7,7 @@ import pygamer
 import logging
 import contextlib
 
-from .Charges_utils import import_charges_from_pqr, convert_pqr2xyzr, convert_pdb2pqr
+from .Charges_utils import import_charges_from_pqr, convert_pqr2xyzr, convert_pdb2pqr, center_molecule_pqr
 from .Mesh_utils  import generate_msms_mesh,generate_nanoshaper_mesh
 
 class Region_Mesh():
@@ -147,7 +147,8 @@ class Domain_Mesh():
 
         if not os.path.exists(self.path_pqr):
             convert_pdb2pqr(self.path_pdb,self.path_pqr,self.force_field)
-
+        
+        center_molecule_pqr(self.path_pqr)
         convert_pqr2xyzr(self.path_pqr,self.path_xyzr,for_mesh=True)
 
         if self.mesh_generator == 'msms':
