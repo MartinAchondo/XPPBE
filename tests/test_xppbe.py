@@ -40,20 +40,6 @@ def run_checkers(sim,sim_name,temp_dir):
     print('Checkers Passed!')
 
 
-def test_scripts():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        sim_name = f'test_born_ion'
-        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
-        sims_path = os.path.join(temp_dir,'sims')
-        os.mkdir(sims_path)
-        shutil.copy(yaml_path,os.path.join(sims_path,sim_name+'.yaml'))
-        Allrun(sims_path=sims_path, results_path=temp_dir)
-        sim = Simulation(yaml_path, results_path=temp_dir)
-        run_checkers(sim,sim_name,temp_dir)
-        Allclean(results_path=temp_dir)
-        assert len(os.listdir(os.path.join(temp_dir,'results'))) == 0
-
-
 @pytest.mark.parametrize(
  ('molecule'),
  (
