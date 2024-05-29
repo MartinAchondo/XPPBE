@@ -1,5 +1,4 @@
 import tensorflow as tf
-import bempp.api
 
 from .PDE_Model import PBE
 
@@ -57,8 +56,8 @@ class PBE_Std(PBE):
         du_1_interface = (du_1+du_2*self.PDE_out.epsilon/self.PDE_in.epsilon)/2
         du_1_interface = du_1_interface.numpy()
 
-        phi = bempp.api.GridFunction(self.space, coefficients=u_interface)
-        dphi = bempp.api.GridFunction(self.space, coefficients=du_1_interface)
+        phi = self.bempp.GridFunction(self.space, coefficients=u_interface)
+        dphi = self.bempp.GridFunction(self.space, coefficients=du_1_interface)
 
         phi_q = self.slp_q * dphi - self.dlp_q * phi
         

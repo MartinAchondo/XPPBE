@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import bempp.api
 import tensorflow as tf
 
 from xppbe.Mesh.Charges_utils import get_charges_list
@@ -46,6 +45,7 @@ class PBE(Solution_utils):
 
         self.get_charges()
         if self.scheme == 'standard':
+            self.bempp = None
             self.get_integral_operators()
 
         super().__init__()
@@ -286,10 +286,13 @@ class PBE(Solution_utils):
         self.x_qs = tf.constant(self.x_qs, dtype=self.DTYPE)
 
     def get_integral_operators(self):
+        if self.bempp == None:
+            import bempp.api
+            self.bempp = bempp.api
         elements = self.mesh.mol_faces
         vertices = self.mesh.mol_verts
-        self.grid = bempp.api.Grid(vertices.transpose(), elements.transpose())
-        self.space = bempp.api.function_space(self.grid, "P", 1)
+        self.grid = self.bempp.Grid(vertices.transpose(), elements.transpose())
+        self.space = self.bempp.function_space(self.grid, "P", 1)
         self.dirichl_space = self.space
         self.neumann_space = self.space
 

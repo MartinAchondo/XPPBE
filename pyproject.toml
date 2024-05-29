@@ -21,27 +21,35 @@ dependencies = [
     "scipy==1.10.1",
     "trimesh==3.23.5",
     "pygamer==2.0.7",
-    "rtree==1.0.1",
-    "numba==0.57.0",
-    "meshio==5.3.4",
-    "gmsh==4.11.1",
-    "bempp-cl==0.3.0",
-    "pdb2pqr==3.6.2",
     "matplotlib==3.6.1",
     "plotly==5.14.1",
     "pandas==2.0.2",
     "tqdm==4.64.1",
     "ipykernel==6.16.0",
-    "pyyaml==6.0.1"
+    "pyyaml==6.0.1",
+    "yq==3.4.3"
 ]
 
 [project.optional-dependencies]
-optional = [
-    "yq==3.4.3",
-    "xlsxwriter==3.1.9",
-    "pydotplus==2.0.2",
-    "graphviz@git+https://gitlab.com/graphviz/graphviz/",
+pbe-standard = [
+    "rtree==1.0.1",
+    "numba==0.57.0",
+    "meshio==5.3.4",
+    "gmsh==4.11.1",
+    "bempp-cl==0.3.0"
+]
+pdb-molecule = [
+    "pdb2pqr==3.6.2",
+]
+pbj = [
     "pbj@git+https://github.com/bem4solvation/pbj"
+]
+model-visualization = [
+    "pydotplus==2.0.2",
+    "graphviz@git+https://gitlab.com/graphviz/graphviz/"
+]
+data-processing = [
+    "xlsxwriter==3.1.9"
 ]
 
 [tool.setuptools]
