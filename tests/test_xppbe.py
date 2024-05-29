@@ -40,6 +40,7 @@ def run_checkers(sim,sim_name,temp_dir):
     print('Checkers Passed!')
 
 
+
 @pytest.mark.parametrize(
  ('molecule'),
  (
