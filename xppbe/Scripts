@@ -1,5 +1,6 @@
 #!/bin/sh
 
+current_dir=$(pwd)
 main_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$main_dir"
 
@@ -20,17 +21,14 @@ function Allrun() {
 
     cd "$sims_path"
     sims_count=0
-    for script_name in *.yaml
+    for script_name in "$sims_path"/*.yaml
     do
         ((sims_count++))
 
         echo ""
+        script_name=$(basename "$script_name")
         base_name="${script_name%.yaml}"
         echo "Running Simulation $sims_count : $script_name"
-
-        if [ ! -d "$results_path/$base_name" ]; then
-            mkdir "$results_path/$base_name"
-        fi
 
         partition_simulation=$(yq '.partition_simulation' "$script_name")
         if [ "$partition_simulation" = true ] && [ "$partition_simulation" != "null" ]; then
@@ -56,10 +54,10 @@ function Allrun() {
                 echo "Running step: $i" 
                 new_iters=$(echo "( $num_iters_per_step*$i)" | bc)
                 sed -i "s/^N_iters: [0-9]\+/N_iters: $new_iters/" $script_name
-                python "$main_dir/Simulation.py" "$script_name"
+                python "$main_dir/Simulation.py" "$script_name" "--results-path=${results_path%/results}"
             done
         fi
-        python "$main_dir/Simulation.py" "$script_name" "--pbj"
+        python "$main_dir/Simulation.py" "$script_name" "--results-path=${results_path%/results}" "$pbj_flag" "$mesh_flag"
 
         echo "Ending Simulation $sims_count : $script_name"
         echo ""
@@ -71,7 +69,7 @@ function PrintSims() {
     cd "$sims_path"
     for script_name in *.yaml
     do
-        echo $script_name
+        echo $(basename "$script_name")
     done
 }
 
@@ -83,8 +81,9 @@ function SimsStatus() {
     printf "\n%-20s %-16s %-10s\n" "Simulation" "Iterations" "Progress (%)"
     printf "%-20s %-16s %-10s\n" "--------------" "-------------" "------------"
 
-    for script_name in *.yaml
+    for script_name in "$sims_path"/*.yaml
     do
+        script_name=$(basename "$script_name")
         base_name="${script_name%.yaml}"
         
         partition_simulation=$(yq '.partition_simulation' "$script_name")
@@ -116,9 +115,11 @@ function SimsStatus() {
     echo ""
 }
 
-
-sims_path="$main_dir/simulations_list"
-results_path="$main_dir/results"
+if [[ "$current_dir" == "$main_dir" ]]; then
+    sims_path="$main_dir/simulations_list"
+    results_path="$main_dir/results"
+    pbj_flag='--pbj'
+fi
 
 for arg in "$@"; do
     case $arg in
@@ -127,8 +128,16 @@ for arg in "$@"; do
         shift
         ;;
         --results-path=*)
-        results_path="${arg#*=}"
+        results_path="${arg#*=}/results"
         shift 
+        ;;
+        --pbj)
+        pbj_flag="--pbj"
+        shift
+        ;;
+        --mesh)
+        mesh_flag="--mesh"
+        shift
         ;;
         *)
         remaining_args+=("$arg")
