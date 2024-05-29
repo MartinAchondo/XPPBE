@@ -103,7 +103,8 @@ class Domain_Mesh():
             'mesh_generator': 'msms',
             'probe_radius': 1.4,
             'dR_exterior': 6,
-            'force_field': 'AMBER'
+            'force_field': 'AMBER',
+            'center_pqr': False
             }
         
         for key in self.mesh_properties:
@@ -148,7 +149,9 @@ class Domain_Mesh():
         if not os.path.exists(self.path_pqr):
             convert_pdb2pqr(self.path_pdb,self.path_pqr,self.force_field)
         
-        center_molecule_pqr(self.path_pqr)
+        if self.center_pqr:
+            center_molecule_pqr(self.path_pqr)
+
         convert_pqr2xyzr(self.path_pqr,self.path_xyzr,for_mesh=True)
 
         if self.mesh_generator == 'msms':

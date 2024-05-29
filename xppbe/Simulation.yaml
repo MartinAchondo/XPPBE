@@ -25,6 +25,7 @@ mesh_properties:
     G_sigma: 0.04
     mesh_generator: msms
     dR_exterior: 3
+    center_pqr: false
 
 # Phi ENS method
 experimental_method: mean
