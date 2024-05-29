@@ -47,8 +47,8 @@ def test_scripts():
         sims_path = os.path.join(temp_dir,'sims')
         os.mkdir(sims_path)
         shutil.copy(yaml_path,os.path.join(sims_path,sim_name+'.yaml'))
-        Allrun(sims_path=sims_path, results_path=temp_dir)
         sim = Simulation(yaml_path, results_path=temp_dir)
+        Allrun(sims_path=sims_path, results_path=temp_dir)
         run_checkers(sim,sim_name,temp_dir)
         Allclean(results_path=temp_dir)
         assert len(os.listdir(os.path.join(temp_dir,'results'))) == 0
