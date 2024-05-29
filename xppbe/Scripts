@@ -5,22 +5,20 @@ cd "$main_dir"
 
 
 function Allclean() {
-    filepath_results="results"
-    if [ -d "${filepath_results}" ]; then
-        rm -r "${filepath_results}"
+    if [ -d "${$results_path}" ]; then
+        rm -r "${$results_path}"
     fi
-    mkdir "${filepath_results}"
+    mkdir "${$results_path}"
 }
 
 function Allrun() {
-    num_simulations=$(ls "$main_dir/$sims_folder"/*.yaml | wc -l)
+    num_simulations=$(ls "$sims_path"/*.yaml | wc -l)
     if [ "$num_simulations" -eq 0 ]; then
         echo "No YAML files found in $sims_folder. Exiting."
         exit 1
     fi
 
-    sims_folder="simulations_list"
-    cd "$main_dir/$sims_folder"
+    cd "$sims_path"
     sims_count=0
     for script_name in *.yaml
     do
@@ -30,8 +28,8 @@ function Allrun() {
         base_name="${script_name%.yaml}"
         echo "Running Simulation $sims_count : $script_name"
 
-        if [ ! -d "$main_dir/results/$base_name" ]; then
-            mkdir "$main_dir/results/$base_name"
+        if [ ! -d "$results_path/$base_name" ]; then
+            mkdir "$results_path/$base_name"
         fi
 
         partition_simulation=$(yq '.partition_simulation' "$script_name")
@@ -41,7 +39,7 @@ function Allrun() {
             num_steps=$(echo "($total_N_iters / $num_iters_per_step)" | bc)
             first_step=1
 
-            dir="$main_dir/results/$base_name/iterations"
+            dir="$results_path/$base_name/iterations"
             if [ -d "$dir" ]; then
                 max_iter=0
                 for dir in "$dir"/iter_*; do
@@ -62,7 +60,7 @@ function Allrun() {
             done
         fi
         python "$main_dir/Simulation.py" "$script_name" "--pbj"
-        
+
         echo "Ending Simulation $sims_count : $script_name"
         echo ""
     done
@@ -70,16 +68,17 @@ function Allrun() {
 
 
 function PrintSims() {
-    sims_folder="simulations_list"
-    cd "$main_dir/$sims_folder"
-    ls -p | grep -v /
+    cd "$sims_path"
+    for script_name in *.yaml
+    do
+        echo $script_name
+    done
 }
 
 
 function SimsStatus() {
 
-    sims_folder="simulations_list"
-    cd "$main_dir/$sims_folder"
+    cd "$sims_path"
 
     printf "\n%-20s %-16s %-10s\n" "Simulation" "Iterations" "Progress (%)"
     printf "%-20s %-16s %-10s\n" "--------------" "-------------" "------------"
@@ -96,7 +95,7 @@ function SimsStatus() {
         fi
         
         max_iter=0
-        dir="$main_dir/results/$base_name/iterations"
+        dir="$results_path/$base_name/iterations"
         if [ -d "$dir" ]; then
             for dir in "$dir"/iter_*; do
                 if [ -d "$dir" ]; then
@@ -118,8 +117,27 @@ function SimsStatus() {
 }
 
 
-if [[ $# -gt 0 ]]; then
-    for arg in "$@"; do
-        "$arg"
+sims_path="$main_dir/simulations_list"
+results_path="$main_dir/results"
+
+for arg in "$@"; do
+    case $arg in
+        --sims-path=*)
+        sims_path="${arg#*=}"
+        shift
+        ;;
+        --results-path=*)
+        results_path="${arg#*=}"
+        shift 
+        ;;
+        *)
+        remaining_args+=("$arg")
+        ;;
+    esac
+done
+
+if [[ ${#remaining_args[@]} -gt 0 ]]; then
+    for cmd in "${remaining_args[@]}"; do
+       "$cmd"
     done
 fi
