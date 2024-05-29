@@ -28,8 +28,9 @@ def SimsStatus(sims_path,results_path):
 
 
 from xppbe.Simulation import Simulation
-import xppbe.Molecules
+
 import xppbe.Model
 import xppbe.Mesh
 import xppbe.NN
 import xppbe.Post
+import xppbe.Molecules
