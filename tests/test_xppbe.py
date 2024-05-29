@@ -12,6 +12,6 @@ import xppbe
 def test_bash():
     print(xppbe.Molecules)
     os.system("pip list")
-    os.system("python sim.py")
+    os.system(f"bash sims.bash")
     #print("\n\n\n")
     #subprocess.Popen("pip list")
