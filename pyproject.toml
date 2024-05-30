@@ -14,18 +14,18 @@ keywords = [
     "Poisson-Boltzmann equation",
     "Macromolecules in polarizable media"
 ]
-requires-python = "==3.8.18"
+requires-python = ">=3.8,<3.10"
 dependencies = [
-    "numpy==1.21.0",
+    "numpy==1.23.5",
     "tensorflow==2.10.0",
-    "scipy==1.10.1",
+    "scipy==1.13.1",
     "trimesh==3.23.5",
     "pygamer==2.0.7",
-    "matplotlib==3.6.1",
-    "plotly==5.14.1",
-    "pandas==2.0.2",
+    "matplotlib==3.5.1",
+    "plotly==5.7.0",
+    "pandas==2.2.0",
     "tqdm==4.64.1",
-    "ipykernel==6.16.0",
+    "ipykernel==6.22.0",
     "pyyaml==6.0.1",
     "yq==3.4.3"
 ]
@@ -33,16 +33,16 @@ dependencies = [
 [project.optional-dependencies]
 pbe-standard = [
     "rtree==1.0.1",
-    "numba==0.57.0",
+    "numba==0.59.1",
     "meshio==5.3.4",
-    "gmsh==4.11.1",
+    "gmsh==4.9.5",
     "bempp-cl==0.3.0"
 ]
 pdb-molecule = [
-    "pdb2pqr==3.6.2",
+    "pdb2pqr==3.4.1",
 ]
 pbj = [
-    "pbj@git+https://github.com/bem4solvation/pbj"
+    "pbj@git+https://github.com/bem4solvation/pbj@main#d99f3b4"
 ]
 model-visualization = [
     "pydotplus==2.0.2",
