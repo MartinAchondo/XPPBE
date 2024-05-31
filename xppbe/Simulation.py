@@ -285,7 +285,7 @@ class Simulation():
 
 
 if __name__=='__main__':
-    import xppbe
+
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     yaml_path = os.path.abspath(sys.argv[1])
 
