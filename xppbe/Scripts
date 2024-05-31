@@ -24,8 +24,8 @@ from xppbe import Simulation
 
 yaml_path = os.path.abspath(sys.argv[1])
 
-results_path = '$results_path'
-
+results_path = '${results_path%/results}'
+print(results_path)
 plot_pbj = '--pbj' in sys.argv
 plot_mesh = '--mesh' in sys.argv
 
