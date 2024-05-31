@@ -5,7 +5,6 @@ import csv
 import shutil
 from xppbe import Simulation
 from xppbe import Allrun,Allclean
-import subprocess
 
 import xppbe
 

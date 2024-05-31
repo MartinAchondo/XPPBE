@@ -16,9 +16,9 @@ domain_properties:
 
 # Mesh properties
 mesh_properties:
-    vol_max_interior: 0.04
-    vol_max_exterior: 0.4
-    density_mol: 40
+    vol_max_interior: 0.4
+    vol_max_exterior: 0.8
+    density_mol: 15
     density_border: 3
     dx_experimental: 0.8
     N_pq: 100
@@ -59,8 +59,8 @@ network: xpinn
 
 hyperparameters_in:
     input_shape: [null, 3]
-    num_hidden_layers: 4
-    num_neurons_per_layer: 200
+    num_hidden_layers: 2
+    num_neurons_per_layer: 20
     output_dim: 1
     activation: tanh
     adaptative_activation: true
@@ -70,8 +70,8 @@ hyperparameters_in:
 
 hyperparameters_out:
     input_shape: [null, 3]
-    num_hidden_layers: 4
-    num_neurons_per_layer: 200
+    num_hidden_layers: 2
+    num_neurons_per_layer: 20
     output_dim: 1
     activation: tanh
     adaptative_activation: true
@@ -100,7 +100,7 @@ options_optimizer2:
     ftol: 0.0000000000002
     
 # Solve parameters
-N_iters: 20000
+N_iters: 20
 N_steps_2: 0
 
 
