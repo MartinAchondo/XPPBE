@@ -18,8 +18,16 @@ def test_bash_2():
     sims_path = os.path.abspath(xppbe.xppbe_path)
     with tempfile.TemporaryDirectory() as temp_dir:
         results_path = temp_dir
+        sim_name = f'test_born_ion'
+        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
+        sims_path = os.path.join(temp_dir,'sims')
+        os.mkdir(sims_path)
+        shutil.copy(yaml_path,os.path.join(sims_path,sim_name+'.yaml'))
+
         command = f"bash {xppbe.scripts_path} Allrun --sims-path={sims_path} --results-path={results_path}"
         os.system(command)
+        sim = Simulation(yaml_path, results_path=temp_dir)
+        run_checkers(sim,sim_name,temp_dir)
 
 
 def run_checkers(sim,sim_name,temp_dir):
