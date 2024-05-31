@@ -2,7 +2,7 @@
 from pbj.implicit_solvent.solute import Solute
 from pbj.implicit_solvent.simulation import Simulation
 
-class pbj():
+class PBJ():
 
     def __init__(self,domain_properties,pqr_path,mesh_density,mesh_generator):
 
