@@ -18,25 +18,22 @@ function Allrun() {
     fi
 
     PYTHON_CODE="
-    import os
-    import sys
-    from xppbe import Simulation
+import os
+import sys
+from xppbe import Simulation
 
-    yaml_path = os.path.abspath(sys.argv[1])
+yaml_path = os.path.abspath(sys.argv[1])
 
-    results_path = os.path.dirname(__file__)
-    for i, arg in enumerate(sys.argv[2:]):
-        if arg.startswith('--results-path='):
-            results_path = sys.argv[i+2].split('=')[1]
-            break
-    plot_pbj = '--pbj' in sys.argv
-    plot_mesh = '--mesh' in sys.argv
+results_path = '$results_path'
 
-    sim = Simulation(yaml_path, results_path=results_path)
-    sim.create_simulation()
-    sim.adapt_model()
-    sim.solve_model()
-    sim.postprocessing(mesh=plot_mesh, pbj=plot_pbj)
+plot_pbj = '--pbj' in sys.argv
+plot_mesh = '--mesh' in sys.argv
+
+sim = Simulation(yaml_path, results_path=results_path)
+sim.create_simulation()
+sim.adapt_model()
+sim.solve_model()
+sim.postprocessing(mesh=plot_mesh, pbj=plot_pbj)
     "
 
 
@@ -76,11 +73,11 @@ function Allrun() {
                 new_iters=$(echo "( $num_iters_per_step*$i)" | bc)
                 sed -i "s/^N_iters: [0-9]\+/N_iters: $new_iters/" $script_path
                 # python "$main_dir/Simulation.py" "$script_path" "--results-path=${results_path%/results}"
-                python -c "$PYTHON_CODE" "$script_path" "--results-path=${results_path%/results}"
+                python -c "$PYTHON_CODE" "$script_path"
             done
         fi
         # python "$main_dir/Simulation.py" "$script_path" "--results-path=${results_path%/results}" "$pbj_flag" "$mesh_flag"
-        python -c "$PYTHON_CODE" "$script_path" "--results-path=${results_path%/results}" "$pbj_flag" "$mesh_flag"
+        python -c "$PYTHON_CODE" "$script_path" "$pbj_flag" "$mesh_flag"
 
         echo "Ending Simulation $sims_count : $script_name"
         echo ""
