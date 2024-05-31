@@ -51,7 +51,7 @@ To install and run this project locally, follow these steps:
    ```
 3. Create a virtual environment
    ```bash
-   conda create --name xppbe python=3.8.18
+   conda create --name xppbe python=3.9
    ```
 4. Install the project
     ```bash
@@ -64,7 +64,7 @@ To use this project, start by following the [Tutorial.ipynb](./tutorials/tutoria
 1. Import the simulation object, the YAML file, and initialize it:
     ```py
     from xppbe import Simulation
-    simulation = Simulation('Main.yaml')
+    simulation = Simulation(yaml_path, molecule_path)
     ```
 2. Run the simulation:
     ```py
@@ -77,7 +77,7 @@ The Simulation object import a YAML file with all the problem definitions. An ex
 
 1. Define the molecule, the properties and the equation to solve:
     ```yaml
-    equation: standard
+    equation: regularized_scheme_2
     pbe_model: linear
 
     domain_properties:
@@ -100,7 +100,6 @@ The Simulation object import a YAML file with all the problem definitions. An ex
         mesh_generator: msms
         probe_radius: 1,4
         dR_exterior: 3
-        force_field: AMBER
     ```
 
 3. Define the different loss terms (solute domain, solvent domain and combination of boths)
@@ -111,7 +110,6 @@ The Simulation object import a YAML file with all the problem definitions. An ex
         - D2
         - Iu
         - Id
-        - K2
     ```
 4. Define the architectures:
     ```yaml
@@ -126,7 +124,7 @@ The Simulation object import a YAML file with all the problem definitions. An ex
         adaptative_activation: true
         architecture_Net: FCNN
         fourier_features: true
-        num_fourier_features: 256
+        weight_factorization: false
 
     hyperparameters_out:
         input_shape: [null, 3]
@@ -137,6 +135,7 @@ The Simulation object import a YAML file with all the problem definitions. An ex
         adaptative_activation: true
         architecture_Net: FCNN
         fourier_features: true
+        weight_factorization: false
     ```
 
 5. Finally, specify the optimization algorithm, the weights algorithm, the batches/samples approach and the number of iterations.

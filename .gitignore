@@ -66,3 +66,5 @@ build/
 
 .pytest_cache
 /.Lab
+
+/thesis
