@@ -30,7 +30,7 @@ class Solution_utils():
         elif function == 'analytic_Born_Ion':
             phi_values = self.analytic_Born_Ion(r, R)
         elif function == 'PBJ':
-            phi_values = self.pbj(X, flag)
+            phi_values = self.pbj_solution(X, flag)
             if flag=='solvent':
                 phi_values -= self.G(X)[:,0]
         
@@ -182,16 +182,16 @@ class Solution_utils():
             )
         return K
 
-    def pbj(self,X,flag):
+    def pbj_solution(self,X,flag):
 
         if not self.pbj_created:
 
-            from xppbe.Model.pbj.pbj import pbj
+            from .pbj_utils.pbj_interface import PBJ
             if hasattr(self, 'mesh'):
                 self.pbj_mesh_density = self.mesh.density_mol
                 self.pbj_mesh_generator = self.mesh.mesh_generator
 
-            self.pbj_obj = pbj(self.domain_properties,self.pqr_path,self.pbj_mesh_density,self.pbj_mesh_generator)
+            self.pbj_obj = PBJ(self.domain_properties,self.pqr_path,self.pbj_mesh_density,self.pbj_mesh_generator)
             self.pbj_phi = self.pbj_obj.simulation.solutes[0].results['phi'].coefficients.reshape(-1,1)
             self.pbj_vertices = np.array(self.pbj_obj.simulation.solutes[0].mesh.vertices).transpose()
             self.pbj_elements = np.array(self.pbj_obj.simulation.solutes[0].mesh.elements).transpose()

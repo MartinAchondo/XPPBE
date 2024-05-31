@@ -1,11 +1,11 @@
 import os
-
 os.environ['TF_RUN_EAGER_OP_AS_FUNCTION']='false'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 xppbe_path = os.path.dirname(os.path.abspath(__file__))
 scripts_path = os.path.join(xppbe_path,'Scripts')
 
-def Allrun(sims_path, results_path, plot_mesh=True, plot_pbj=False):
+def Allrun(sims_path, results_path, plot_mesh=False, plot_pbj=False):
     sims_path = os.path.abspath(sims_path)
     results_path = os.path.abspath(results_path)
     command = f"bash {scripts_path} Allrun --sims-path={sims_path} --results-path={results_path}"
