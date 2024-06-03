@@ -1,10 +1,10 @@
 
-from pbj.implicit_solvent.solute import Solute
-from pbj.implicit_solvent.simulation import Simulation
-
 class PBJ():
 
     def __init__(self,domain_properties,pqr_path,mesh_density,mesh_generator):
+
+        from pbj.implicit_solvent.solute import Solute
+        from pbj.implicit_solvent.simulation import Simulation
 
         mol_object = Solute(pqr_path, mesh_density=mesh_density, mesh_generator=mesh_generator, save_mesh_build_files=False)
         self.simulation = Simulation()
