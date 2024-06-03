@@ -33,4 +33,4 @@ class PBJ():
     
     def calculate_solvation_energy(self):
         self.simulation.calculate_solvation_energy()
-        return self.simulation.solutes[0].results['solvation_energy']
+        return self.simulation.solutes[0].results['electrostatic_solvation_energy']

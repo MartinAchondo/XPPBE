@@ -18,21 +18,15 @@ function Allrun() {
     fi
 
     PYTHON_CODE="
-import os
-import sys
-from xppbe import Simulation
+import os,sys
+from xppbe import RunSimulation
 
 yaml_path = os.path.abspath(sys.argv[1])
-
 results_path = '${results_path%/results}'
 plot_pbj = '--pbj' in sys.argv
 plot_mesh = '--mesh' in sys.argv
 
-sim = Simulation(yaml_path, results_path=results_path)
-sim.create_simulation()
-sim.adapt_model()
-sim.solve_model()
-sim.postprocessing(mesh=plot_mesh, pbj=plot_pbj)
+RunSimulation(yaml_path,results_path,(plot_mesh,plot_pbj))
     "
 
     sims_count=0
@@ -130,7 +124,6 @@ function SimsStatus() {
 if [[ "$current_dir" == "$main_dir" ]]; then
     sims_path="$main_dir/simulations_list"
     results_path="$main_dir/results"
-    pbj_flag='--pbj'
 fi
 
 for arg in "$@"; do
