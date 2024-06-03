@@ -53,8 +53,10 @@ data-processing = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["xppbe*"] 
-namespaces = false
+include = ["xppbe*"]
+
+[tool.setuptools.package-data]
+xppbe = ["*yaml","Mesh/Mesh_softwares/**/*","Molecules/**/*.pqr","Post/*.ipynb"]
 
 [project.urls]
 repository = "https://github.com/MartinAchondo/XPPBE"

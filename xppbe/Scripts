@@ -17,6 +17,18 @@ function Allrun() {
         exit 1
     fi
 
+    PYTHON_CODE="
+import os,sys
+from xppbe import RunSimulation
+
+yaml_path = os.path.abspath(sys.argv[1])
+results_path = '${results_path%/results}'
+plot_pbj = '--pbj' in sys.argv
+plot_mesh = '--mesh' in sys.argv
+
+RunSimulation(yaml_path,results_path,(plot_mesh,plot_pbj))
+    "
+
     sims_count=0
     for script_path in "$sims_path"/*.yaml
     do
@@ -51,10 +63,10 @@ function Allrun() {
                 echo "Running step: $i" 
                 new_iters=$(echo "( $num_iters_per_step*$i)" | bc)
                 sed -i "s/^N_iters: [0-9]\+/N_iters: $new_iters/" $script_path
-                python "$main_dir/Simulation.py" "$script_path" "--results-path=${results_path%/results}"
+                python -c "$PYTHON_CODE" "$script_path"
             done
         fi
-        python "$main_dir/Simulation.py" "$script_path" "--results-path=${results_path%/results}" "$pbj_flag" "$mesh_flag"
+        python -c "$PYTHON_CODE" "$script_path" "$pbj_flag" "$mesh_flag"
 
         echo "Ending Simulation $sims_count : $script_name"
         echo ""
