@@ -296,9 +296,7 @@ if __name__=='__main__':
     plot_pbj = '--pbj' in sys.argv
     plot_mesh = '--mesh' in sys.argv
 
-    sim = Simulation(yaml_path, results_path=results_path)
-    sim.create_simulation()
-    sim.adapt_model()
-    sim.solve_model()
-    sim.postprocessing(mesh=plot_mesh, pbj=plot_pbj)
+    from xppbe import RunSimulation
+    RunSimulation(yaml_path,results_path,(plot_mesh,plot_pbj))
+
 
