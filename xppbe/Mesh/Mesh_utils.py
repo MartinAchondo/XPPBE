@@ -62,6 +62,8 @@ def generate_nanoshaper_mesh(
     config_file.close()
     config_template_file.close()
 
+    original_dir = os.getcwd()
+
     os.chdir(nanoshaper_temp_dir)
     if platform.system() == "Linux":
         execute_command("chmod +x " + nanoshaper_dir + "NanoShaper")
@@ -103,7 +105,7 @@ def generate_nanoshaper_mesh(
         if not save_mesh_build_files:
             shutil.rmtree(nanoshaper_temp_dir)
 
-        os.chdir("..")
+        os.chdir(original_dir)
 
     except (OSError, FileNotFoundError):
         print("The file doesn't exist or it wasn't created by NanoShaper")
