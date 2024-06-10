@@ -165,7 +165,7 @@ If you find this project useful for your research or work, please consider citin
 ```bibtex
 @misc{XPPBE,
   author    = {Martín Achondo},
-  title     = {XPINN Solver for 3D Poisson-Boltzmann Equation},
+  title     = {XPPBE: XPINN for PBE},
   howpublished = {GitHub repository},
   year      = {2024},
   url       = {https://github.com/MartinAchondo/XPPBE},
