@@ -20,11 +20,11 @@ class PBJ():
 
         if domain == 'molecule':
             phir_solute, bools = self.simulation.calculate_reaction_potential_solute(X, units='e_eps0_angs')
-            return phir_solute, bools
+            return phir_solute
 
         elif domain == 'solvent':
             phi_solv, bools = self.simulation.calculate_potential_solvent(X,units='e_eps0_angs')
-            return phi_solv, bools
+            return phi_solv
 
 
     def calculate_potential_ens(self, atom_name = ["H"], mesh_dx = 1.0, mesh_length = 40.):
