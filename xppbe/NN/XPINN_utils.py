@@ -23,6 +23,7 @@ class XPINN_utils():
         self.validation_losses = dict()
 
         self.G_solv_hist = dict()
+        self.current_G_solv = 0.0
         self.G_solv_hist['0'] = 0.0
 
         self.iter = 0

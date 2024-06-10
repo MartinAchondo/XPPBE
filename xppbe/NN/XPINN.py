@@ -131,7 +131,7 @@ class XPINN(XPINN_utils):
         self.pbar.update()
         if self.iter % 2 == 0:
             opt_name = self.optimizer_name if self.iter<=self.N_iters else self.optimizer_2_name
-            self.pbar.set_description("{} loop, Loss: {:6.4e}".format(opt_name, self.current_loss))  
+            self.pbar.set_description("{} loop, G_solv: {:6.3}, Loss: {:6.4e}".format(opt_name, self.current_G_solv, self.current_loss))  
 
 
     def check_adapt_new_weights(self,adapt_now):
@@ -167,8 +167,8 @@ class XPINN(XPINN_utils):
 
     def calculate_G_solv(self,calc_now):
         if calc_now:
-            G_solv = self.PDE.get_solvation_energy(self.model)
-            self.G_solv_hist[str(self.iter)] = G_solv.numpy()   
+            self.current_G_solv = self.PDE.get_solvation_energy(self.model).numpy()
+            self.G_solv_hist[str(self.iter)] = self.current_G_solv   
 
 
     def solve(self,N=1000, N2=0, save_model=0, G_solve_iter=100):
@@ -182,4 +182,5 @@ class XPINN(XPINN_utils):
         logger = logging.getLogger(__name__)
         logger.info(f' Iterations: {self.iter}')
         logger.info(" Loss: {:6.4e}".format(self.losses['TL'][self.iter-1]))
+        print('\nComputation time: {} minutes'.format(int((time()-t0)/60)))
         logger.info('Computation time: {} minutes'.format(int((time()-t0)/60)))
