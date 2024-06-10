@@ -44,6 +44,9 @@ pdb-molecule = [
 pbj = [
     "pbj@git+https://github.com/bem4solvation/pbj@main#d99f3b4"
 ]
+apbs = [
+    "griddata==0.1.0"
+]
 model-visualization = [
     "pydotplus==2.0.2",
     "graphviz@git+https://gitlab.com/graphviz/graphviz/"

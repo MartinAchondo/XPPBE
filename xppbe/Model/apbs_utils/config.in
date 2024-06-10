@@ -1,0 +1,47 @@
+read
+    mol pqr $MOLECULE.pqr
+end
+elec name pbe
+    mg-manual
+    dime 321 321 321
+    grid 0.2 0.2 0.2
+    gcent 0.0 0.0 0.0
+    mol 1
+    $PBE_EQUATION
+    bcfl mdh
+    ion charge 1 conc 0.125 radius 1.4
+    ion charge -1 conc 0.125 radius 1.4
+    pdie $EPSILON_1
+    sdie $EPSILON_2
+    srfm smol
+    chgm spl2
+    sdens 10.00
+    srad 1.40
+    swin 0.30
+    temp $TEMPERATURE
+    calcenergy total
+    calcforce no
+    write pot dx phi_total_$MOLECULE
+end
+elec name vacuum
+    mg-manual
+    dime 321 321 321
+    grid 0.2 0.2 0.2
+    gcent 0.0 0.0 0.0
+    mol 1
+    lpbe
+    bcfl mdh
+    pdie $EPSILON_1
+    sdie $EPSILON_1
+    srfm smol
+    chgm spl2
+    sdens 10.00
+    srad 1.40
+    swin 0.30
+    temp $TEMPERATURE
+    calcenergy total
+    calcforce no
+    write pot dx phi_vacuum_$MOLECULE
+end
+print elecEnergy pbe - vacuum end
+quit

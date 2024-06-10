@@ -10,10 +10,13 @@ class Solution_utils():
     Na = 6.02214076e23
     ang_to_m = 1e-10
     to_V = qe/(eps0 * ang_to_m)  
+    apbs_unit_to = kb/(qe*to_V)
     cal2j = 4.184
+    T = 300
 
     pi = np.pi
 
+    apbs_created = False
     pbj_created = False
     pbj_mesh_density = 5
     pbj_mesh_generator = 'msms'
@@ -33,6 +36,8 @@ class Solution_utils():
             phi_values = self.pbj_solution(X, flag)
             if flag=='solvent':
                 phi_values -= self.G(X)[:,0]
+        elif function == 'APBS':
+            phi_values = self.apbs_solution(X)*self.apbs_unit_to*self.T
         
         if field == 'react':
             return np.array(phi_values)
@@ -197,5 +202,15 @@ class Solution_utils():
             self.pbj_elements = np.array(self.pbj_obj.simulation.solutes[0].mesh.elements).transpose()
             self.pbj_created = True
 
-        phi, _ = self.pbj_obj.calculate_potential(X,flag)
+        phi = self.pbj_obj.calculate_potential(X,flag)
+        return phi
+
+    def apbs_solution(self,X):
+
+        if not self.apbs_created:
+            from .apbs_utils.apbs_interface import APBS
+            self.apbs_obj = APBS(self.domain_properties,self.equation,self.pqr_path)
+            self.apbs_created = True
+
+        phi = self.apbs_obj.calculate_potential(X)
         return phi
