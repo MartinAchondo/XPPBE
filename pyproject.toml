@@ -49,8 +49,7 @@ apbs = [
     "griddata==0.1.0"
 ]
 model-visualization = [
-    "pydotplus==2.0.2",
-    "graphviz@git+https://gitlab.com/graphviz/graphviz"
+    "pydotplus==2.0.2"
 ]
 data-processing = [
     "xlsxwriter==3.1.9"
