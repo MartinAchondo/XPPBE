@@ -50,7 +50,7 @@ apbs = [
 ]
 model-visualization = [
     "pydotplus==2.0.2",
-    "graphviz@git+https://gitlab.com/graphviz/graphviz/"
+    "graphviz@git+https://gitlab.com/graphviz/graphviz"
 ]
 data-processing = [
     "xlsxwriter==3.1.9"
