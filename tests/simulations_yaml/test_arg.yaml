@@ -8,7 +8,7 @@ domain_properties:
 mesh_properties:
     vol_max_interior: 10
     vol_max_exterior: 20
-    density_mol: 4.8
+    density_mol: 5.0
     density_border: 1
     mesh_generator: nanoshaper
     dR_exterior: 1
