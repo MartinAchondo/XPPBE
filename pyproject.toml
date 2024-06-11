@@ -45,7 +45,7 @@ pbj = [
     "pbj@git+https://github.com/bem4solvation/pbj@main#d99f3b4"
 ]
 apbs = [
-    "apbs@git+https://github.com/Electrostatics/apbs"
+    "apbs@git+https://github.com/Electrostatics/apbs",
     "griddata==0.1.0"
 ]
 model-visualization = [
