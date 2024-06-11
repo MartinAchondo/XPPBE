@@ -18,6 +18,7 @@ class APBS():
         elif equation == 'nonlinear':
             equation = 'npbe'
         text = text.replace('$PBE_EQUATION',equation)
+        text = text.replace('$CONCENTRATION',str(float(domain_properties['concentration'])))
         text = text.replace('$EPSILON_1',str(float(domain_properties['epsilon_1'])))
         text = text.replace('$EPSILON_2',str(float(domain_properties['epsilon_2'])))
         text = text.replace('$TEMPERATURE',str(float(domain_properties['T'])))

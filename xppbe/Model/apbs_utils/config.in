@@ -9,8 +9,8 @@ elec name pbe
     mol 1
     $PBE_EQUATION
     bcfl mdh
-    ion charge 1 conc 0.125 radius 1.4
-    ion charge -1 conc 0.125 radius 1.4
+    ion charge 1 conc $CONCENTRATION radius 0.0
+    ion charge -1 conc $CONCENTRATION radius 0.0
     pdie $EPSILON_1
     sdie $EPSILON_2
     srfm smol
