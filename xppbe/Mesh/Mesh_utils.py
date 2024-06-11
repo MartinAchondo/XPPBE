@@ -46,21 +46,15 @@ def generate_nanoshaper_mesh(
     if not os.path.exists(nanoshaper_temp_dir):
         os.makedirs(nanoshaper_temp_dir)
 
-    # Execute NanoShaper
-    config_template_file = open(nanoshaper_dir + "config", "r")
-    config_file = open(nanoshaper_temp_dir + "surfaceConfiguration.prm", "w")
-    for line in config_template_file:
-        if "XYZR_FileName" in line:
-            line = "XYZR_FileName = " + mesh_xyzr_path + " \n"
-        elif "Grid_scale" in line:
-            line = "Grid_scale = {:04.1f} \n".format(density_to_nanoshaper_grid_scale_conversion(density))
-        elif "Probe_Radius" in line:
-            line = "Probe_Radius = {:03.1f} \n".format(probe_radius)
+    with open(nanoshaper_dir + "config", 'r') as config_template_file:
+        text = config_template_file.read()
+    
+    text = text.replace('$GRID_SCALE',str(float(density_to_nanoshaper_grid_scale_conversion(density))))
+    text = text.replace('$XYZR_PATH',mesh_xyzr_path)
+    text = text.replace('$PROBE_RADIUS',str(float(probe_radius)))
 
-        config_file.write(line)
-
-    config_file.close()
-    config_template_file.close()
+    with open(nanoshaper_temp_dir + "surfaceConfiguration.prm", "w") as config_file:
+        config_file.write(text)
 
     original_dir = os.getcwd()
 
@@ -105,10 +99,11 @@ def generate_nanoshaper_mesh(
         if not save_mesh_build_files:
             shutil.rmtree(nanoshaper_temp_dir)
 
-        os.chdir(original_dir)
-
     except (OSError, FileNotFoundError):
         print("The file doesn't exist or it wasn't created by NanoShaper")
+
+    finally:
+        os.chdir(original_dir)
 
 
 def density_to_nanoshaper_grid_scale_conversion(mesh_density):

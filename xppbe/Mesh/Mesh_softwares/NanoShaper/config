@@ -1,6 +1,6 @@
-Grid_scale = 2.0
+Grid_scale = $GRID_SCALE
 Grid_perfil = 90.0 
-XYZR_FileName = /Extra/5pti.xyzr
+XYZR_FileName = $XYZR_PATH
 Build_epsilon_maps = false
 Build_status_map = false
 Save_Mesh_MSMS_Format = true
@@ -11,7 +11,7 @@ Skin_Surface_Parameter = 0.45
 Cavity_Detection_Filling = false
 Conditional_Volume_Filling_Value = 11.4
 Keep_Water_Shaped_Cavities = false
-Probe_Radius = 1.4
+Probe_Radius = $PROBE_RADIUS
 Accurate_Triangulation = true
 Triangulation = true
 Check_duplicated_vertices = true
