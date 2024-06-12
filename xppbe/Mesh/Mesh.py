@@ -202,10 +202,10 @@ class Domain_Mesh():
             s_file.write(f'0.00001 0.0 0.0 {r*0.0001}')
         generate_msms_mesh(os.path.join(self.path_files,'sphere.xyzr'),self.path_files,'sphere_border',self.density_border,1.4)
         
-        with open(os.path.join(self.path_files,'sphere_border'+f'_d{self.density_mol}'+'.face'),'r') as face_f:
+        with open(os.path.join(self.path_files,'sphere_border'+f'_d{self.density_border}'+'.face'),'r') as face_f:
             face = face_f.read()
             sph_faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
-        with open(os.path.join(self.path_files,'sphere_border'+f'_d{self.density_mol}'+'.vert'),'r') as vert_f:
+        with open(os.path.join(self.path_files,'sphere_border'+f'_d{self.density_border}'+'.vert'),'r') as vert_f:
             vert = vert_f.read()
             sph_verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(np.float32)
 
