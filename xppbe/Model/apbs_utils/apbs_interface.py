@@ -42,33 +42,28 @@ class APBS():
         os.chdir(original_dir)
 
 
-    def calculate_potential(self,X):
-        
         from gridData import Grid 
         phi_total = Grid(os.path.join(self.path_files,f"phi_total_{self.molecule}.dx"))
         phi_vacuum = Grid(os.path.join(self.path_files,f"phi_vacuum_{self.molecule}.dx"))
-
-        phi_react = phi_total - phi_vacuum
-
-        phi = phi_react.interpolated(X[:,0],X[:,1],X[:,2])
-
-        return phi
-   
-
-    def calculate_solvation_energy(self):
+        self.phi_react = phi_total - phi_vacuum
 
         import re
         energy_patterns = {
             'phi': re.compile(r'totEnergy\s+(\S+)\s+kJ/mol', re.MULTILINE),
             'vacuum': re.compile(r'totEnergy\s+(\S+)\s+kJ/mol', re.MULTILINE),
         }
-
         with open(os.path.join(self.path_files,'results.txt'), 'r') as file:
             log_content = file.read()
-
-        energies = dict()
         E_total_pbe = float(energy_patterns['phi'].findall(log_content)[0])
         E_vacuum = float(energy_patterns['vacuum'].findall(log_content)[1])
+        self.G_solv = (E_total_pbe - E_vacuum)/4.184
 
-        return (E_total_pbe - E_vacuum)/4.184
+    def calculate_potential(self,X):
+        phi = self.phi_react.interpolated(X[:,0],X[:,1],X[:,2])
+        return phi
+   
+
+    def calculate_solvation_energy(self):
+        return self.G_solv
+
 

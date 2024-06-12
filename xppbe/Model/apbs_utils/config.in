@@ -3,7 +3,7 @@ read
 end
 elec name pbe
     mg-manual
-    dime 321 321 321
+    dime 353 353 353
     grid 0.2 0.2 0.2
     gcent 0.0 0.0 0.0
     mol 1
@@ -25,7 +25,7 @@ elec name pbe
 end
 elec name vacuum
     mg-manual
-    dime 321 321 321
+    dime 353 353 353
     grid 0.2 0.2 0.2
     gcent 0.0 0.0 0.0
     mol 1
