@@ -4,7 +4,7 @@ import shutil
 
 class APBS():
 
-    def __init__(self,domain_properties,equation,pqr_path):
+    def __init__(self,domain_properties,equation,pqr_path, results_path):
 
         self.apbs_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -27,9 +27,7 @@ class APBS():
 
         original_dir = os.getcwd()
 
-        self.path_files = os.path.join(self.apbs_path,'Temp')
-        if os.path.exists(self.path_files):
-            shutil.rmtree(self.path_files)
+        self.path_files = os.path.join(results_path,'temp','apbs_files')
         os.makedirs(self.path_files)
 
         shutil.copy(pqr_path,self.path_files)

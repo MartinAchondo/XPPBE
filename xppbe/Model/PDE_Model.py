@@ -19,12 +19,13 @@ class PBE(Solution_utils):
 
     pi = tf.constant(np.pi, dtype=DTYPE)
 
-    def __init__(self, domain_properties, mesh, equation, main_path, molecule_path):      
+    def __init__(self, domain_properties, mesh, equation, main_path, molecule_path, results_path):      
 
         self.mesh = mesh
         self.main_path = main_path
         self.equation = equation
         self.molecule_path = molecule_path
+        self.results_path = results_path
 
         self.domain_properties = {
                 'molecule': 'born_ion',

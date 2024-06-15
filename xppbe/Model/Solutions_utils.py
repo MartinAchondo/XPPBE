@@ -196,7 +196,7 @@ class Solution_utils():
                 self.pbj_mesh_density = self.mesh.density_mol
                 self.pbj_mesh_generator = self.mesh.mesh_generator
 
-            self.pbj_obj = PBJ(self.domain_properties,self.pqr_path,self.pbj_mesh_density,self.pbj_mesh_generator)
+            self.pbj_obj = PBJ(self.domain_properties,self.pqr_path,self.pbj_mesh_density,self.pbj_mesh_generator,self.results_path)
             self.pbj_phi = self.pbj_obj.simulation.solutes[0].results['phi'].coefficients.reshape(-1,1)
             self.pbj_vertices = np.array(self.pbj_obj.simulation.solutes[0].mesh.vertices).transpose()
             self.pbj_elements = np.array(self.pbj_obj.simulation.solutes[0].mesh.elements).transpose()
@@ -212,7 +212,7 @@ class Solution_utils():
 
             self.domain_properties['concentration'] = (self.kappa/self.ang_to_m)**2*(self.eps0*self.epsilon_2*self.kb*self.T)/(2*self.qe**2*self.Na)/1000
             
-            self.apbs_obj = APBS(self.domain_properties,self.equation,self.pqr_path)
+            self.apbs_obj = APBS(self.domain_properties,self.equation,self.pqr_path,self.results_path)
             self.apbs_created = True
 
         phi = self.apbs_obj.calculate_potential(X)

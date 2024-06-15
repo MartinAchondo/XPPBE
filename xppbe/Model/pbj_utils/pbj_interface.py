@@ -1,12 +1,13 @@
+import os
 
 class PBJ():
 
-    def __init__(self,domain_properties,pqr_path,mesh_density,mesh_generator):
+    def __init__(self,domain_properties,pqr_path,mesh_density,mesh_generator,results_path):
 
         from pbj.implicit_solvent.solute import Solute
         from pbj.implicit_solvent.simulation import Simulation
 
-        mol_object = Solute(pqr_path, mesh_density=mesh_density, mesh_generator=mesh_generator, save_mesh_build_files=False)
+        mol_object = Solute(pqr_path, mesh_density=mesh_density, mesh_generator=mesh_generator, save_mesh_build_files=True, mesh_build_files_dir=os.path.join(results_path,'temp','pbj_temp'))
         self.simulation = Simulation()
         self.simulation.add_solute(mol_object)
 

@@ -36,7 +36,7 @@ class Simulation():
                         save_points=True,
                         path=self.main_path,
                         simulation=self.simulation_name,
-                        result_path=self.results_path,
+                        results_path=self.results_path,
                         molecule_path=self.molecule_path
                         )
 
@@ -51,7 +51,8 @@ class Simulation():
                 mesh=self.Mol_mesh, 
                 equation=self.pbe_model,
                 main_path=self.main_path,
-                molecule_path=self.molecule_path
+                molecule_path=self.molecule_path,
+                results_path=self.results_path
                 ) 
 
         meshes_domain = dict()           
@@ -241,14 +242,14 @@ class Simulation():
     
         from xppbe import xppbe_path
         main_path = xppbe_path
-        simulation_name = os.path.basename(yaml_path).split('.')[0]
+        simulation_name = os.path.basename(yaml_path).replace('.yaml','')
 
         folder_name = simulation_name
         if results_path is None:
             folder_path = os.path.dirname(os.path.abspath(yaml_path))
             results_path = os.path.join(folder_path,'results',folder_name)
         else:
-            results_path = os.path.join(results_path,'results',folder_name)
+            results_path = results_path
 
         if molecule_path is None:
             folder_path = xppbe_path

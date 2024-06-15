@@ -22,7 +22,8 @@ import os,sys
 from xppbe import RunSimulation
 
 yaml_path = os.path.abspath(sys.argv[1])
-results_path = '${results_path%/results}'
+simulation_name = os.path.basename(yaml_path).replace('.yaml','')
+results_path = os.path.join('${results_path}',simulation_name)
 plot_pbj = '--pbj' in sys.argv
 plot_mesh = '--mesh' in sys.argv
 
