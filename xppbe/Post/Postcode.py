@@ -347,11 +347,40 @@ class Postprocessing():
         return fig
 
     @staticmethod
-    def plot_interface_3D_known(phi_known, vertices, elements, jupyter=True):
+    def plot_interface_3D_known(phi_known, vertices, elements, cmin=None,cmax=None, jupyter=True):
+        cmin = np.min(phi_known) if cmin is None else cmin
+        cmax = np.max(phi_known) if cmax is None else cmax
         fig = go.Figure()
         fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
                             i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
-                            intensity=phi_known, colorscale='RdBu_r'))
+                            intensity=phi_known, colorscale='RdBu_r',cmin=cmin,cmax=cmax,
+                            colorbar=dict(title='Phi react [V]')))
+        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
+        if jupyter:
+            fig.show()
+        return fig
+
+    @staticmethod
+    def plot_interface_error(error,vertices,elements,scale='log',jupyter=True):
+
+        fig = go.Figure()
+        if scale=='log':
+            epsilon = 1e-10
+            log_intensity = np.log(np.abs(error) + epsilon)
+            fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
+                                i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
+                                intensity=log_intensity,
+                                colorscale='Plasma',
+                                colorbar=dict(
+                                    title='Error',
+                                    tickvals=np.log(np.array([1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1e0,1e1,1e2,1e3]) + epsilon),
+                                    ticktext=['1e-7','1e-6','1e-5','1e-4','1e-3','1e-2','1e-1','1e0','1e1','1e2','1e3']
+                                )))
+        elif scale=='linear':
+            fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
+                    i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
+                    intensity=np.abs(error), colorscale='Plasma',
+                    colorbar=dict(title='Error')))
         fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
         if jupyter:
             fig.show()
