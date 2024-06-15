@@ -27,7 +27,8 @@ dependencies = [
     "tqdm==4.64.1",
     "ipykernel==6.22.0",
     "pyyaml==6.0.1",
-    "yq==3.4.3"
+    "yq==3.4.3",
+    "pdb2pqr==3.6.2"
 ]
 
 [project.optional-dependencies]
@@ -37,9 +38,6 @@ pbe-standard = [
     "meshio==5.3.4",
     "gmsh==4.9.5",
     "bempp-cl==0.3.0"
-]
-pdb-molecule = [
-    "pdb2pqr==3.4.1",
 ]
 pbj = [
     "pbj@git+https://github.com/bem4solvation/pbj@main#d99f3b4"
