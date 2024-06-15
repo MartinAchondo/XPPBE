@@ -198,7 +198,19 @@ class Domain_Mesh():
 
     def create_sphere_mesh(self):
         r = self.R_max_dist + self.dR_exterior
-        self.sphere_mesh = trimesh.creation.icosphere(radius=r, subdivisions=self.density_border)
+        with open(os.path.join(self.path_files,'sphere.xyzr'),'w') as s_file:
+            s_file.write(f'0.0 0.0 0.0 {r}\n')
+            s_file.write(f'0.00001 0.0 0.0 {r*0.0001}')
+        generate_msms_mesh(os.path.join(self.path_files,'sphere.xyzr'),self.path_files,'sphere_border',self.density_border,1.4)
+        
+        with open(os.path.join(self.path_files,'sphere_border'+f'_d{self.density_border}'+'.face'),'r') as face_f:
+            face = face_f.read()
+            sph_faces = np.vstack(np.char.split(face.split("\n")[0:-1]))[:, :3].astype(int) - 1
+        with open(os.path.join(self.path_files,'sphere_border'+f'_d{self.density_border}'+'.vert'),'r') as vert_f:
+            vert = vert_f.read()
+            sph_verts = np.vstack(np.char.split(vert.split("\n")[0:-1]))[:, :3].astype(np.float32)
+
+        self.sphere_mesh = trimesh.Trimesh(vertices=sph_verts, faces=sph_faces)
         self.sphere_mesh.export(os.path.join(self.path_files,'mesh_sphere'+f'_d{self.density_border}'+'.off'),file_type='off')
         self.region_meshes['D2'] = Region_Mesh('trimesh',self.sphere_mesh)
 
