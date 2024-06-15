@@ -1,5 +1,4 @@
 import os
-import shutil
 import numpy as np
 import tensorflow as tf
 import trimesh
@@ -7,7 +6,7 @@ import pygamer
 import logging
 import contextlib
 
-from .Charges_utils import import_charges_from_pqr, convert_pqr2xyzr, convert_pdb2pqr, center_molecule_pqr
+from .Charges_utils import import_charges_from_pqr, convert_pqr2xyzr, convert_pdb2pqr, center_molecule_pqr, import_pdb
 from .Mesh_utils  import generate_msms_mesh,generate_nanoshaper_mesh
 
 class Region_Mesh():
@@ -90,7 +89,7 @@ class Domain_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, result_path='', molecule_path=''):
+    def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, results_path='', molecule_path=''):
 
         self.mesh_properties = {
             'vol_max_interior': 0.04,
@@ -116,16 +115,15 @@ class Domain_Mesh():
         self.save_points = save_points
         self.main_path = path
         self.simulation_name = simulation
-        self.result_path = self.main_path if result_path=='' else result_path
+        self.results_path = self.main_path if results_path=='' else results_path
         self.molecule_path = os.path.join(self.main_path,'Molecules',molecule) if molecule_path=='' else molecule_path
 
-        self.path_files = os.path.join(self.main_path,'Mesh','Temp')
-        if os.path.exists(self.path_files):
-            shutil.rmtree(self.path_files)
-        os.makedirs(self.path_files)
+        self.path_files = os.path.join(self.results_path,'temp','mesh_files')
+        os.makedirs(self.path_files, exist_ok=True)
+
         self.path_pqr = os.path.join(self.molecule_path,self.molecule+'.pqr')
-        self.path_xyzr = os.path.join(self.molecule_path,self.molecule+'.xyzr')
         self.path_pdb = os.path.join(self.molecule_path,self.molecule+'.pdb')
+        self.path_xyzr = os.path.join(self.path_files,self.molecule+'.xyzr')
 
         self.region_meshes = dict()
         self.domain_mesh_names = set()
@@ -147,7 +145,10 @@ class Domain_Mesh():
     def create_molecule_mesh(self):
 
         if not os.path.exists(self.path_pqr):
-            convert_pdb2pqr(self.path_pdb,self.path_pqr,self.force_field)
+            if not os.path.exists(self.path_pdb):
+                import_pdb(self.molecule,self.molecule_path)
+            convert_pdb2pqr(self.path_pdb,self.path_pqr,self.force_field)             
+            self.center_pqr = True
         
         if self.center_pqr:
             center_molecule_pqr(self.path_pqr)
@@ -425,7 +426,7 @@ class Domain_Mesh():
         return tf.ones((n,1), dtype=cls.DTYPE)*value
 
     def save_data_plot(self,X_plot):
-        path_files = os.path.join(self.result_path,'mesh')
+        path_files = os.path.join(self.results_path,'mesh')
         os.makedirs(path_files, exist_ok=True)
         logger = logging.getLogger(__name__)
 

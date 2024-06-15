@@ -87,7 +87,6 @@ def convert_pdb2pqr(mesh_pdb_path, mesh_pqr_path, force_field, str_flag=""):
     if os.path.exists(base_path+'.log'):
         os.remove(base_path+'.log')
 
-
 def center_molecule_pqr(pqr_path):
     q, x_q, r_q, atom_name, res_name, res_num = import_charges_from_pqr(pqr_path)
     center = np.mean(np.vstack((np.max(x_q+np.reshape(r_q,(-1,1)), axis=0), np.min(x_q-np.reshape(r_q,(-1,1)), axis=0))), axis=0)
@@ -98,10 +97,13 @@ def center_molecule_pqr(pqr_path):
             nn = '\n' if cont != 0 else ''
             pqr_file.write(f'{nn}ATOM     {str(cont+1):6}  {atom_name[cont]:6} {res_name[cont]:5} {res_num[cont]:4} {float(x_q[cont,0]):9.4f} {float(x_q[cont,1]):9.4f} {float(x_q[cont,2]):9.4f} {float(q[cont]):9.4f} {float(r_q[cont]):9.4f}')
 
-    
-
-if __name__=='__main__':
-    from xppbe import xppbe_path
-    molecule = '9ant'
-    path_molecule = os.path.join(xppbe_path,'Molecules',molecule,molecule+'.pqr')
-    center_molecule_pqr(path_molecule)
+def import_pdb(molecule,molecule_path):
+    import urllib.request
+    os.makedirs(molecule_path, exist_ok=True)
+    path_request = f'http://files.rcsb.org/download/{molecule}.pdb'
+    path_pdb = os.path.join(molecule_path,f'{molecule}.pdb')
+    try:
+        urllib.request.urlretrieve(path_request, path_pdb)
+    except Exception as e:
+        print(e)
+        print('Molecule not found')
