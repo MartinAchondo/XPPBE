@@ -54,6 +54,7 @@ xppbe/Model/pbj/*/
 .pbj/
 tutorials/results/
 xppbe/Molecules/mesh_files/
+results/
 
 # Files related to notes
 /.notes
