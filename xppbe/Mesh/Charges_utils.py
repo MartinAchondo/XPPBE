@@ -73,7 +73,7 @@ def convert_pqr2xyzr(mesh_pqr_path, mesh_xyzr_path,for_mesh=False):
             xyzr_file.write(f'{nn}{float(x_q[cont,0]):9.4f} {float(x_q[cont,1]):9.4f} {float(x_q[cont,2]):9.4f} {float(r_q[cont]):9.4f}')
         
         if for_mesh and cont==0:
-            xyzr_file.write(f'\n{float(x_q[cont,0]):9.4f} {float(x_q[cont,1])+0.00001:9.4f} {float(x_q[cont,2])*1.00001:9.4f} {float(r_q[cont])*0.00001:9.4f}')
+            xyzr_file.write(f'\n{float(x_q[cont,0]):9.4f} {float(x_q[cont,1]):9.4f} {float(x_q[cont,2]):9.4f} {float(0.0):9.4f}')
 
 def convert_pdb2pqr(mesh_pdb_path, mesh_pqr_path, force_field, str_flag=""):
 
