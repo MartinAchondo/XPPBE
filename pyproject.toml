@@ -1,7 +1,7 @@
 [project]
 name = "xppbe"
 version = "1.0.0"
-description = "Physics Informed Neural Network for Poisson-Boltzmann equation"
+description = "Physics Informed Neural Network for Poisson-Boltzmann Equation"
 authors = [{name = "martinachondo", email = "martin.achondom@gmail.com"}]
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -9,12 +9,11 @@ keywords = [
     "Deep learning",
     "Neural networks",
     "Physics-informed neural networks",
-    "Scientific computing",
     "Scientific machine learning",
     "Poisson-Boltzmann equation",
     "Macromolecules in polarizable media"
 ]
-requires-python = ">=3.9,<3.10"
+requires-python = "==3.9"
 dependencies = [
     "numpy==1.23.5",
     "tensorflow==2.10.0",
