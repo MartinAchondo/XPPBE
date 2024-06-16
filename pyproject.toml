@@ -13,7 +13,7 @@ keywords = [
     "Poisson-Boltzmann equation",
     "Macromolecules in polarizable media"
 ]
-requires-python = "==3.9"
+requires-python = ">=3.9,<3.10"
 dependencies = [
     "numpy==1.23.5",
     "tensorflow==2.10.0",
