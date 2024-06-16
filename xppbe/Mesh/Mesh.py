@@ -17,6 +17,9 @@ class Region_Mesh():
     def __init__(self,type_m,obj,vertices=None,elements=None,*args,**kwargs):
         self.type_m = type_m
         self.obj = obj
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
         if self.type_m=='trimesh':
             self.vertices = obj.vertices if vertices is None else vertices
             self.elements = obj.faces if elements is None else elements
@@ -35,24 +38,27 @@ class Region_Mesh():
             else:
                 self.vertices = vertices
                 self.elements = elements
+                 
         if self.type_m=='points':
-            for key, value in kwargs.items():
-                setattr(self, key, value)
             self.vertices = self.get_dataset()
             self.elements = None
 
     def get_dataset(self):
         if self.type_m=='trimesh':
-            dataset = self.random_points_in_elements(self.vertices,self.elements,3)
+            dataset = self.random_points_in_elements(self.vertices,self.elements,3,self.percentage_surf_mesh)
         if self.type_m=='tetmesh':
-            dataset = self.random_points_in_elements(self.vertices,self.elements,4)
+            dataset = self.random_points_in_elements(self.vertices,self.elements,4,self.percentage_vol_mesh)
         if self.type_m=='points':
             dataset = self.random_points_near_charges(self.charges[0],self.charges[1])
         return tf.constant(dataset, dtype=self.DTYPE)
     
     @staticmethod
-    def random_points_in_elements(vertices, elements,num_vert_per_elem):
+    def random_points_in_elements(vertices, elements,num_vert_per_elem,percentage_mesh=1.0):
         num_elements = len(elements)
+        if percentage_mesh<1.0:
+            num_elements = int(num_elements*percentage_mesh)
+            random_indices = np.random.choice(len(elements), num_elements, replace=False)
+            elements = elements[random_indices]
         random_coordinates = np.random.uniform(0, 1, size=(num_elements, num_vert_per_elem))
         normalization_factors = np.sum(random_coordinates, axis=1, keepdims=True)
         random_coordinates /= normalization_factors
@@ -92,16 +98,18 @@ class Domain_Mesh():
     def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, results_path='', molecule_path=''):
 
         self.mesh_properties = {
-            'vol_max_interior': 0.04,
-            'vol_max_exterior': 0.1,
             'density_mol': 10,
             'density_border': 4,
+            'percentage_surf_mesh': 1.0,
+            'vol_max_interior': 0.04,
+            'vol_max_exterior': 0.1,
+            'percentage_vol_mesh': 1.0,
             'dx_experimental': 1.0,
-            'N_pq': 100,
+            'N_pq': 1,
             'G_sigma': 0.04,
             'mesh_generator': 'msms',
             'probe_radius': 1.4,
-            'dR_exterior': 6,
+            'dR_exterior': 4,
             'force_field': 'AMBER',
             'center_pqr': False
             }
@@ -172,7 +180,7 @@ class Domain_Mesh():
 
         self.create_calculate_mesh_data()
 
-        self.region_meshes['I'] = Region_Mesh('trimesh',self.mol_mesh,self.mol_verts,self.mol_faces)
+        self.region_meshes['I'] = Region_Mesh('trimesh',self.mol_mesh,self.mol_verts,self.mol_faces,percentage_surf_mesh=self.percentage_surf_mesh)
         self.region_meshes['I'].normals = self.mol_faces_normal 
         self.region_meshes['I'].areas = self.mol_faces_areas
 
@@ -212,7 +220,7 @@ class Domain_Mesh():
 
         self.sphere_mesh = trimesh.Trimesh(vertices=sph_verts, faces=sph_faces)
         self.sphere_mesh.export(os.path.join(self.path_files,'mesh_sphere'+f'_d{self.density_border}'+'.off'),file_type='off')
-        self.region_meshes['D2'] = Region_Mesh('trimesh',self.sphere_mesh)
+        self.region_meshes['D2'] = Region_Mesh('trimesh',self.sphere_mesh,percentage_surf_mesh=self.percentage_surf_mesh)
 
     def create_interior_mesh(self):
         mesh_molecule = pygamer.readOFF(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'))
@@ -227,7 +235,7 @@ class Domain_Mesh():
         with open('/dev/null', 'w') as null_file: 
             with contextlib.redirect_stdout(null_file):
                 self.int_tetmesh = pygamer.makeTetMesh(meshes, f'pq1.2a{self.vol_max_interior}YAO2/3Q')  
-        self.region_meshes['R1'] = Region_Mesh('tetmesh',self.int_tetmesh)
+        self.region_meshes['R1'] = Region_Mesh('tetmesh',self.int_tetmesh,percentage_vol_mesh=self.percentage_vol_mesh)
 
     def create_exterior_mesh(self):
         mesh_molecule = pygamer.readOFF(os.path.join(self.path_files,self.molecule+f'_d{self.density_mol}'+'.off'))
@@ -247,7 +255,7 @@ class Domain_Mesh():
         with open('/dev/null', 'w') as null_file: 
             with contextlib.redirect_stdout(null_file):
                 self.ext_tetmesh = pygamer.makeTetMesh(meshes, f'pq1.2a{self.vol_max_exterior}YAO2/3Q') 
-        self.region_meshes['R2'] = Region_Mesh('tetmesh',self.ext_tetmesh)
+        self.region_meshes['R2'] = Region_Mesh('tetmesh',self.ext_tetmesh,percentage_vol_mesh=self.percentage_vol_mesh)
 
     def create_charges_mesh(self):
 
