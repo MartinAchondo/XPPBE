@@ -12,7 +12,7 @@ def run_checkers(sim,sim_name,temp_dir):
     assert os.path.isdir(results_path)
     assert len(os.listdir(results_path)) > 0
 
-    #results_path = os.path.join(results_path,sim_name)
+    results_path = os.path.join(results_path,sim_name)
     for name in ['iterations','mesh','plots_losses','plots_model','plots_solution','plots_weights','Post.ipynb','results_values.json',f'{sim_name}.yaml']:
         assert name in os.listdir(results_path)
 
@@ -68,7 +68,7 @@ def test_xppbe_solver(molecule):
     with tempfile.TemporaryDirectory() as temp_dir:
         sim_name = f'test_{molecule}'
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
-        results_path = os.path.join(temp_dir,'results')
+        results_path = os.path.join(temp_dir,'results',sim_name)
         sim = Simulation(yaml_path, results_path=results_path)
         sim.create_simulation()
         sim.adapt_model()
@@ -92,7 +92,7 @@ def test_additional_losses(loss):
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
         yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
         shutil.copy(yaml_prev_path,yaml_path)
-        results_path = os.path.join(temp_dir,'results')
+        results_path = os.path.join(temp_dir,'results',sim_name)
         sim = Simulation(yaml_path, results_path=results_path)
         sim.losses.append(loss)
         if loss == 'E2':
@@ -117,7 +117,7 @@ def test_other_architectures(arch):
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
         yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
         shutil.copy(yaml_prev_path,yaml_path)
-        results_path = os.path.join(temp_dir,'results')
+        results_path = os.path.join(temp_dir,'results',sim_name)
         sim = Simulation(yaml_path, results_path=results_path)
         sim.hyperparameters_in['architecture_Net'] = arch
         sim.create_simulation()
@@ -141,7 +141,7 @@ def test_non_linear_and_schemes(model,scheme):
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
         yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
         shutil.copy(yaml_prev_path,yaml_path)
-        results_path = os.path.join(temp_dir,'results')
+        results_path = os.path.join(temp_dir,'results',sim_name)
         sim = Simulation(yaml_path, results_path=results_path)
         sim.pbe_model = model
         sim.equation = scheme
@@ -158,7 +158,7 @@ def test_mesh_post():
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
         yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
         shutil.copy(yaml_prev_path,yaml_path)
-        results_path = os.path.join(temp_dir,'results')
+        results_path = os.path.join(temp_dir,'results',sim_name)
         sim = Simulation(yaml_path, results_path=results_path)
         sim.create_simulation()
         sim.adapt_model()
@@ -173,7 +173,7 @@ def test_iteration_continuation():
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
         yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
         shutil.copy(yaml_prev_path,yaml_path)
-        results_path = os.path.join(temp_dir,'results')
+        results_path = os.path.join(temp_dir,'results',sim_name)
         sim = Simulation(yaml_path, results_path=results_path)
         sim.create_simulation()
         sim.adapt_model()
@@ -186,7 +186,7 @@ def test_iteration_continuation():
         iterations_path = os.path.join(results_path,'iterations')
         assert len(os.listdir(iterations_path)) == 1
 
-        sim_2 = Simulation(yaml_path, results_path=temp_dir)
+        sim_2 = Simulation(yaml_path, results_path=results_path)
         sim_2.N_iters = sim.N_iters*2
         sim_2.create_simulation()
         sim_2.adapt_model()
