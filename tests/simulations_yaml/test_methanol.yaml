@@ -9,7 +9,7 @@ mesh_properties:
     vol_max_interior: 0.9
     vol_max_exterior: 9
     density_mol: 4.8
-    density_border: 1
+    density_border: 0.5
     mesh_generator: msms
     dR_exterior: 1
 
