@@ -46,7 +46,7 @@ def get_results_by_sim(folder_path):
     return None
 
 
-def create_df_excel(results_dir,excel_file_path):
+def create_df_excel(results_dir,excel_file_path=None):
     folders = ['']
     data = dict()
     for folder in folders:
@@ -75,8 +75,9 @@ def create_df_excel(results_dir,excel_file_path):
                     "L2_analytic"]
     df_filtered = df.filter(filter_list)
 
-    with pd.ExcelWriter(excel_file_path, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='DF_complete', index=True)
-        df_filtered.to_excel(writer, sheet_name='DF_Filtered', index=True)
+    if not excel_file_path is None:
+        with pd.ExcelWriter(excel_file_path, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='DF_complete', index=True)
+            df_filtered.to_excel(writer, sheet_name='DF_Filtered', index=True)
 
     return df_filtered
