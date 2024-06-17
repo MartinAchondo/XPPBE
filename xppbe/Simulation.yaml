@@ -16,9 +16,9 @@ domain_properties:
 
 # Mesh properties
 mesh_properties:
-    vol_max_interior: 0.04
-    vol_max_exterior: 0.4
-    density_mol: 40
+    vol_max_interior: 0.06
+    vol_max_exterior: 0.6
+    density_mol: 10
     density_border: 3
     dx_experimental: 0.8
     N_pq: 1
@@ -43,7 +43,7 @@ losses:
     - D2
     - Iu
     - Id
-    - K2
+
 weights:
     E2: 0.00000000001
     G: 0.00000000001
@@ -66,7 +66,7 @@ hyperparameters_in:
     adaptative_activation: true
     architecture_Net: FCNN
     fourier_features: true
-    weight_factorization: true
+    weight_factorization: false
 
 hyperparameters_out:
     input_shape: [null, 3]
@@ -77,7 +77,7 @@ hyperparameters_out:
     adaptative_activation: true
     architecture_Net: FCNN
     fourier_features: true
-    weight_factorization: true
+    weight_factorization: false
 
 # Scale charges
 scale_NN_q: false
