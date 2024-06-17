@@ -39,7 +39,7 @@ pbe-standard = [
     "bempp-cl==0.3.0"
 ]
 pbj = [
-    "pbj@git+https://github.com/bem4solvation/pbj@main#d99f3b4"
+    "pbj@git+https://github.com/bem4solvation/pbj"
 ]
 apbs = [
     "apbs@git+https://github.com/Electrostatics/apbs",
