@@ -99,10 +99,10 @@ class Domain_Mesh():
 
         self.mesh_properties = {
             'density_mol': 10,
-            'density_border': 4,
+            'density_border': 0.5,
             'percentage_surf_mesh': 1.0,
-            'vol_max_interior': 0.04,
-            'vol_max_exterior': 0.1,
+            'vol_max_interior': 0.06,
+            'vol_max_exterior': 0.6,
             'percentage_vol_mesh': 1.0,
             'dx_experimental': 1.0,
             'N_pq': 1,

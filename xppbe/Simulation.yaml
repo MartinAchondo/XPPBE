@@ -19,12 +19,12 @@ mesh_properties:
     vol_max_interior: 0.06
     vol_max_exterior: 0.6
     density_mol: 10
-    density_border: 3
+    density_border: 0.5
     dx_experimental: 0.8
     N_pq: 1
     G_sigma: 0.04
     mesh_generator: msms
-    dR_exterior: 3
+    dR_exterior: 4
     center_pqr: false
 
 # Phi ENS method
