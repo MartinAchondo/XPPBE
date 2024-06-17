@@ -28,7 +28,7 @@ class APBS():
         original_dir = os.getcwd()
 
         self.path_files = os.path.join(results_path,'temp','apbs_files')
-        os.makedirs(self.path_files)
+        os.makedirs(self.path_files, exist_ok=True)
 
         shutil.copy(pqr_path,self.path_files)
         mol_file_name = f'{domain_properties["molecule"]}.in'
