@@ -10,9 +10,9 @@ class Simulation():
        
     def __init__(self, yaml_path, molecule_path=None, results_path=None):
 
-        self.simulation_name, self.results_path, molecule_path, self.main_path,self.logger = self.get_simulation_paths(yaml_path,molecule_path,results_path)
 
-        with open(os.path.join(self.main_path,'Simulation.yaml'), 'r') as yaml_file:
+        from xppbe import xppbe_path
+        with open(os.path.join(xppbe_path,'Simulation.yaml'), 'r') as yaml_file:
             yaml_data = yaml.safe_load(yaml_file)
         for key, value in yaml_data.items():
             setattr(self, key, value)
@@ -22,8 +22,7 @@ class Simulation():
         for key, value in yaml_data.items():
             setattr(self, key, value)
 
-        self.molecule_path = os.path.join(molecule_path,self.domain_properties['molecule'])
-
+        self.simulation_name, self.results_path, self.molecule_path, self.main_path,self.logger = self.get_simulation_paths(yaml_path,molecule_path,results_path)
 
     def create_simulation(self):
 
@@ -253,13 +252,10 @@ class Simulation():
 
         if molecule_path is None:
             folder_path = xppbe_path
-            molecule_path = os.path.join(folder_path,'Molecules')
+            molecule_path = os.path.join(folder_path,'Molecules',self.domain_properties['molecule'])
         else:
             molecule_path = os.path.join(molecule_path)
 
-        # if clean_results:
-        #     if os.path.exists(results_path):
-        #             shutil.rmtree(results_path)
         os.makedirs(results_path, exist_ok=True)
             
         self.starting_point = 'new'

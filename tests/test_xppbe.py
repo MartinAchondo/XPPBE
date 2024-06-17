@@ -48,8 +48,8 @@ def test_scripts():
         results_path = os.path.join(temp_dir,'results',sim_name)
         os.mkdir(sims_path)
         shutil.copy(yaml_path,os.path.join(sims_path,sim_name+'.yaml'))
-        Allrun(sims_path=sims_path, results_path=temp_dir)
-        sim = Simulation(yaml_path, results_path=temp_dir)
+        Allrun(sims_path=sims_path, results_path=temp_dir, molecule_path=None)
+        sim = Simulation(yaml_path, results_path=results_path, molecule_path=None)
         run_checkers(sim,sim_name,temp_dir)
         Allclean(results_path=temp_dir)
         assert len(os.listdir(os.path.join(temp_dir,'results'))) == 0
