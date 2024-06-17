@@ -21,7 +21,7 @@ mesh_properties:
     density_mol: 40
     density_border: 3
     dx_experimental: 0.8
-    N_pq: 100
+    N_pq: 1
     G_sigma: 0.04
     mesh_generator: msms
     dR_exterior: 3

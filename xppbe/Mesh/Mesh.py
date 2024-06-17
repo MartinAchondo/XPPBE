@@ -320,12 +320,19 @@ class Domain_Mesh():
             elif type_b[0] in ('E'):
                 file = bl['file']
                 ens_method = bl['method']
+                L_phi = dict()
 
-                with open(os.path.join(self.molecule_path,file),'r') as f:
-                    L_phi = dict()
-                    for line in f:
-                        num, phi = line.strip().split()
-                        L_phi[str(num)] = float(phi)
+                if not file is None:
+                    
+                    with open(os.path.join(self.molecule_path,file),'r') as f:  
+                        for line in f:
+                            line = line.strip()
+                            if line.startswith('##'):
+                                current_method = line[2:].strip()
+                            elif ens_method in current_method:
+                                if line:
+                                    num, phi = line.split()
+                                    L_phi[str(num)] = float(phi)
 
                 L_names = ['H']
                 if 'sphere' in self.molecule  or self.molecule == 'born_ion':
