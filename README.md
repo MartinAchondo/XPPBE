@@ -1,12 +1,12 @@
 
-# XPINN Solver for 3D Poisson-Boltzmann Equation 
+# PINN Solver for 3D Poisson-Boltzmann Equation 
 
 ![XPPBE](https://img.shields.io/badge/dynamic/toml?label=XPPBE&url=https%3A%2F%2Fraw.githubusercontent.com%2FMartinAchondo%2FXPPBE%2Fmaster%2Fpyproject.toml&query=%24.project.version&prefix=version%20&color=blue&logo=moleculer&logoColor=white)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/MartinAchondo/XPPBE/.github%2Fworkflows%2FCI.yml)
 ![Python version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FMartinAchondo%2FXPPBE%2Fmaster%2Fpyproject.toml&query=%24.project%5B'requires-python'%5D&logo=python&label=python&color=lightgrey)
 
 
-Simple Python Poisson-Boltzmann equation solver for real macromolecules in a polarizable media, using Extended Physics Informed Neural Networks. 
+Simple Python Poisson-Boltzmann equation solver for real macromolecules in a polarizable media, using Physics Informed Neural Networks. 
 
 $$\nabla^2 \phi_1 = -\frac{1}{\epsilon_1}\sum_k q_k\delta(x_k) \quad x \in \Omega_1 $$
 
@@ -165,7 +165,7 @@ If you find this project useful for your research or work, please consider citin
 ```bibtex
 @misc{XPPBE,
   author    = {Martín Achondo},
-  title     = {XPPBE: XPINN for PBE},
+  title     = {XPPBE: PINN for PBE},
   howpublished = {GitHub repository},
   year      = {2024},
   url       = {https://github.com/MartinAchondo/XPPBE},
