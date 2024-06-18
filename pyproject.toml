@@ -22,7 +22,7 @@ dependencies = [
     "pygamer==2.0.7",
     "matplotlib==3.5.1",
     "plotly==5.7.0",
-    "kaleido==0.2.1"
+    "kaleido==0.2.1",
     "pandas==2.2.0",
     "tqdm==4.64.1",
     "ipykernel==6.22.0",
