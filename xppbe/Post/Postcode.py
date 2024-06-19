@@ -313,7 +313,7 @@ class Postprocessing():
         return fig,ax
 
 
-    def plot_interface_3D(self,variable='phi', value='phi', domain='interface', jupyter=False):
+    def plot_interface_3D(self,variable='phi', value='phi', domain='interface', jupyter=False, ext='html'):
         
         vertices = self.mesh.mol_verts.astype(np.float32)
         elements = self.mesh.mol_faces.astype(np.float32)
@@ -341,7 +341,10 @@ class Postprocessing():
         fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'),margin=dict(l=30, r=40, t=20, b=20))
 
         if not jupyter and self.save:
-            fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.html'))
+            if ext=='html':
+                fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.html'))
+            elif ext=='png':
+                fig.write_image(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.png'), scale=3)
         elif jupyter:
             fig.show()
         return fig
