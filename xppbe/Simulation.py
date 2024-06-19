@@ -8,7 +8,7 @@ import numpy as np
 
 class Simulation():
        
-    def __init__(self, yaml_path, molecule_path=None, results_path=None):
+    def __init__(self, yaml_path, molecule_dir, results_path=None):
 
 
         from xppbe import xppbe_path
@@ -22,7 +22,7 @@ class Simulation():
         for key, value in yaml_data.items():
             setattr(self, key, value)
 
-        self.simulation_name, self.results_path, self.molecule_path, self.main_path,self.logger = self.get_simulation_paths(yaml_path,molecule_path,results_path)
+        self.simulation_name, self.results_path, self.molecule_dir, self.main_path,self.logger = self.get_simulation_paths(yaml_path,molecule_dir,results_path)
 
     def create_simulation(self):
 
@@ -36,7 +36,7 @@ class Simulation():
                         path=self.main_path,
                         simulation=self.simulation_name,
                         results_path=self.results_path,
-                        molecule_path=self.molecule_path
+                        molecule_dir=self.molecule_dir
                         )
 
         if self.equation == 'standard':
@@ -50,7 +50,7 @@ class Simulation():
                 mesh=self.Mol_mesh, 
                 equation=self.pbe_model,
                 main_path=self.main_path,
-                molecule_path=self.molecule_path,
+                molecule_dir=self.molecule_dir,
                 results_path=self.results_path
                 ) 
 
@@ -137,7 +137,7 @@ class Simulation():
             )
         
 
-    def postprocessing(self, jupyter=False, mesh=True, pbj=False):
+    def postprocessing(self, run_all=False, jupyter=False, mesh=False, pbj=False):
           
         if self.domain_properties['molecule'] == 'born_ion':
             from xppbe.Post.Postcode import Born_Ion_Postprocessing as Postprocessing
@@ -151,20 +151,14 @@ class Simulation():
         
         shutil.copy(os.path.join(self.main_path,'Post','Post_Template.ipynb'),os.path.join(self.results_path,'Post.ipynb'))
 
+        if not run_all:
+            return self.Post
+        
         self.Post.plot_loss_history(domain=1);
         self.Post.plot_loss_history(domain=2);
-        self.Post.plot_loss_history(domain=1, plot_w=True);
-        self.Post.plot_loss_history(domain=2, plot_w=True);
-        # self.Post.plot_loss_history(domain=1,loss='RIu');
-        # self.Post.plot_loss_history(domain=2,loss='RIuD');
         
         self.Post.plot_loss_validation_history(domain=1,loss='TL');
         self.Post.plot_loss_validation_history(domain=2,loss='TL');
-        self.Post.plot_loss_validation_history(domain=1,loss='R');
-        self.Post.plot_loss_validation_history(domain=2,loss='R');
-
-        self.Post.plot_weights_history(domain=1);
-        self.Post.plot_weights_history(domain=2);
 
         self.Post.save_values_file();
 
@@ -196,7 +190,6 @@ class Simulation():
             self.Post.plot_line_interface(value='react');
             self.Post.plot_line_interface(plot='du');
             self.Post.plot_G_solv_history(known=True,method='analytic_Born_Ion');
-            #self.Post.plot_line_interface(plot='du',value='react');
         else:
             if 'sphere' in self.domain_properties['molecule']:
                 method = 'Spherical_Harmonics'
@@ -237,7 +230,7 @@ class Simulation():
         self.Post = Postprocessing(self.XPINN_solver, save=save, directory=self.results_path)
 
 
-    def get_simulation_paths(self,yaml_path, molecule_path=None, results_path=None):
+    def get_simulation_paths(self,yaml_path, molecule_dir=None, results_path=None):
     
         from xppbe import xppbe_path
         main_path = xppbe_path
@@ -250,11 +243,11 @@ class Simulation():
         else:
             results_path = results_path
 
-        if molecule_path is None:
+        if molecule_dir is None:
             folder_path = xppbe_path
-            molecule_path = os.path.join(folder_path,'Molecules',self.domain_properties['molecule'])
+            molecule_dir = os.path.join(folder_path,'Molecules',self.domain_properties['molecule'])
         else:
-            molecule_path = os.path.join(molecule_path)
+            molecule_dir = os.path.join(molecule_dir)
 
         os.makedirs(results_path, exist_ok=True)
             
@@ -277,7 +270,7 @@ class Simulation():
         logging.basicConfig(filename=filename, filemode='w', level=logging.INFO, format=LOG_format)
         logger = logging.getLogger(__name__)
         
-        return simulation_name,results_path,molecule_path, main_path,logger
+        return simulation_name,results_path,molecule_dir, main_path,logger
 
 
 

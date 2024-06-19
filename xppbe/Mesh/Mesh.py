@@ -95,7 +95,7 @@ class Domain_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, results_path='', molecule_path=''):
+    def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, results_path='', molecule_dir=''):
 
         self.mesh_properties = {
             'density_mol': 10,
@@ -124,7 +124,7 @@ class Domain_Mesh():
         self.main_path = path
         self.simulation_name = simulation
         self.results_path = self.main_path if results_path=='' else results_path
-        self.molecule_path = os.path.join(self.main_path,'Molecules',molecule) if molecule_path=='' else molecule_path
+        self.molecule_path = os.path.join(self.main_path,'Molecules',molecule) if molecule_dir=='' else molecule_dir
 
         self.path_files = os.path.join(self.results_path,'temp','mesh_files')
         os.makedirs(self.path_files, exist_ok=True)

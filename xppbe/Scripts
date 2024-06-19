@@ -24,11 +24,11 @@ from xppbe import RunSimulation
 yaml_path = os.path.abspath(sys.argv[1])
 simulation_name = os.path.basename(yaml_path).replace('.yaml','')
 results_path = os.path.join('${results_path}',simulation_name)
-molecule_path = '${molecule_path}' if '${molecule_path}' else None
+molecule_dir = '${molecule_dir}' if '${molecule_dir}' else None
 plot_pbj = '--pbj' in sys.argv
 plot_mesh = '--mesh' in sys.argv
 
-RunSimulation(yaml_path,results_path,molecule_path,(plot_mesh,plot_pbj))
+RunSimulation(yaml_path,results_path,molecule_dir,(plot_mesh,plot_pbj))
     "
 
     sims_count=0
@@ -134,8 +134,8 @@ for arg in "$@"; do
         results_path="${arg#*=}/results"
         shift 
         ;;
-        --molecule-path=*)
-        molecule_path="${arg#*=}"
+        --molecule-dir=*)
+        molecule_dir="${arg#*=}"
         shift 
         ;;
         --pbj)

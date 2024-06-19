@@ -6,18 +6,18 @@ xppbe_path = os.path.dirname(os.path.abspath(__file__))
 scripts_path = os.path.join(xppbe_path,'Scripts')
 
 
-def RunSimulation(yaml_path,results_path,molecule_path,plot_flags):
+def RunSimulation(yaml_path,results_path,molecule_dir,plot_flags):
     plot_mesh,plot_pbj = plot_flags
-    sim = Simulation(yaml_path, results_path=results_path, molecule_path=molecule_path)
+    sim = Simulation(yaml_path, results_path=results_path, molecule_dir=molecule_dir)
     sim.create_simulation()
     sim.adapt_model()
     sim.solve_model()
-    sim.postprocessing(mesh=plot_mesh, pbj=plot_pbj)
+    sim.postprocessing(run_all=True, mesh=plot_mesh, pbj=plot_pbj)
 
-def Allrun(sims_path, results_path, molecule_path, plot_mesh=False, plot_pbj=False):
+def Allrun(sims_path, results_path, molecule_dir, plot_mesh=False, plot_pbj=False):
     sims_path = os.path.abspath(sims_path)
     results_path = os.path.abspath(results_path)
-    command = f"bash {scripts_path} Allrun --sims-path={sims_path} --results-path={results_path} --molecule-path={molecule_path if molecule_path else ''}"
+    command = f"bash {scripts_path} Allrun --sims-path={sims_path} --results-path={results_path} --molecule-dir={molecule_dir if molecule_dir else ''}"
     if plot_mesh:
         command += " --mesh"
     if plot_pbj:
