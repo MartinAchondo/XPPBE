@@ -71,9 +71,9 @@ class Simulation():
             meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
             meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)}
 
-        meshes_domain['K1'] = {'domain': 'molecule', 'type':'K1', 'file':'data_known.dat'}
-        meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':'data_known.dat'}
-        meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': 'data_experimental.dat', 'method': self.experimental_method}
+        meshes_domain['K1'] = {'domain': 'molecule', 'type':'K1', 'file':f'known_data_{self.domain_properties['molecule']}.dat'}
+        meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':f'known_data_{self.domain_properties['molecule']}.dat'}
+        meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': f'experimental_data_{self.domain_properties['molecule']}.dat', 'method': self.experimental_method}
 
         if self.network=='xpinn':
                 meshes_domain['Iu'] = {'domain':'interface', 'type':'Iu'}
