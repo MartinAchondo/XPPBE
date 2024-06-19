@@ -75,7 +75,7 @@ class Simulation():
         meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
         meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': f'experimental_data_{self.domain_properties["molecule"]}.dat', 'method': self.experimental_method}
 
-        if self.network=='PINN':
+        if self.num_networks==2:
                 meshes_domain['Iu'] = {'domain':'interface', 'type':'Iu'}
                 meshes_domain['Id'] = {'domain':'interface', 'type':'Id'}
                 meshes_domain['Ir'] = {'domain':'interface', 'type':'Ir'}
