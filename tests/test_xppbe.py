@@ -73,7 +73,7 @@ def test_xppbe_solver(molecule):
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()
-        sim.postprocessing(mesh=False, pbj=False)
+        sim.postprocessing(run_all=True, mesh=False, pbj=False)
         run_checkers(sim,sim_name,temp_dir)
 
 
@@ -100,7 +100,7 @@ def test_additional_losses(loss):
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()
-        sim.postprocessing(mesh=False, pbj=False)
+        sim.postprocessing(run_all=True, mesh=False, pbj=False)
         run_checkers(sim,sim_name,temp_dir)
 
 
@@ -123,7 +123,7 @@ def test_other_architectures(arch):
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()
-        sim.postprocessing(mesh=False, pbj=False)
+        sim.postprocessing(run_all=True, mesh=False, pbj=False)
         run_checkers(sim,sim_name,temp_dir)
 
 
@@ -148,7 +148,7 @@ def test_non_linear_and_schemes(model,scheme):
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()
-        sim.postprocessing(mesh=False, pbj=False)
+        sim.postprocessing(run_all=True, mesh=False, pbj=False)
         run_checkers(sim,sim_name,temp_dir)
 
 
@@ -163,7 +163,7 @@ def test_mesh_post():
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()
-        sim.postprocessing(mesh=True, pbj=False)
+        sim.postprocessing(run_all=True, mesh=True, pbj=False)
         run_checkers(sim,sim_name,temp_dir)
 
 
@@ -178,7 +178,7 @@ def test_iteration_continuation():
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()
-        sim.postprocessing(mesh=False, pbj=True)
+        sim.postprocessing(run_all=True, mesh=False, pbj=True)
 
         assert os.path.isdir(results_path)
         assert len(os.listdir(results_path)) > 0
@@ -191,7 +191,7 @@ def test_iteration_continuation():
         sim_2.create_simulation()
         sim_2.adapt_model()
         sim_2.solve_model()
-        sim_2.postprocessing(mesh=False, pbj=False)
+        sim_2.postprocessing(run_all=True, mesh=False, pbj=False)
 
         last_iteration = os.path.join(iterations_path,f'iter_{sim_2.N_iters}')
 
