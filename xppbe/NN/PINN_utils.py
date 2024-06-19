@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-class XPINN_utils():
+class PINN_utils():
 
     DTYPE='float32'
 

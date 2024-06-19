@@ -5,9 +5,9 @@ from time import time
 import logging
 from tqdm import tqdm as log_progress
 
-from .XPINN_utils import XPINN_utils
+from .PINN_utils import PINN_utils
 
-class XPINN(XPINN_utils):
+class PINN(PINN_utils):
     
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)       

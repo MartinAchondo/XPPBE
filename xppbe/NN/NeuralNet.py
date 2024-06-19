@@ -2,10 +2,10 @@ import numpy as np
 import tensorflow as tf
 
 
-class XPINN_NeuralNet(tf.keras.Model):
+class PINN_2Dom_NeuralNet(tf.keras.Model):
 
     def __init__(self, hyperparameters, **kwargs):
-        super().__init__(name='XPINN_NN', **kwargs)
+        super().__init__(name='PINN_NN', **kwargs)
         param_1, param_2 = hyperparameters
         self.NNs = [NeuralNet(**param_1, name='Molecule_NN'), NeuralNet(**param_2, name='Solvent_NN')]
 
@@ -26,7 +26,7 @@ class XPINN_NeuralNet(tf.keras.Model):
         self.NNs[1].build_Net()
 
 
-class PINN_NeuralNet(tf.keras.Model):
+class PINN_1Dom_NeuralNet(tf.keras.Model):
 
     def __init__(self, hyperparameters, **kwargs):
         super().__init__(name='PINN_NN', **kwargs)

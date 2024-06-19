@@ -55,7 +55,7 @@ adapt_w_method: gradients
 alpha_w: 0.7
 
 # Architecture
-network: xpinn
+num_networks: 2
 
 hyperparameters_in:
     input_shape: [null, 3]

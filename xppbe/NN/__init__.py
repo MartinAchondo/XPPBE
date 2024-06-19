@@ -1,3 +1,3 @@
 from . import NeuralNet
-from . import XPINN
-from . import XPINN_utils
+from . import PINN
+from . import PINN_utils

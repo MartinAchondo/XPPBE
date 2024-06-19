@@ -18,7 +18,7 @@ plt.rcParams['savefig.dpi'] = 150
 
 class Postprocessing():
 
-    def __init__(self,XPINN, save=False, directory='', solution_utils=False):
+    def __init__(self,PINN, save=False, directory='', solution_utils=False):
 
         if not solution_utils:
             self.DTYPE='float32'
@@ -26,16 +26,16 @@ class Postprocessing():
             self.save = save
             self.directory = directory
 
-            self.XPINN = XPINN
-            self.model = XPINN.model
-            self.mesh = XPINN.mesh
-            self.PDE = XPINN.PDE
+            self.PINN = PINN
+            self.model = PINN.model
+            self.mesh = PINN.mesh
+            self.PDE = PINN.PDE
             self.PDE.pqr_path = self.mesh.path_pqr
             self.to_V = self.PDE.to_V
 
-            self.loss_last = [np.format_float_scientific(self.XPINN.losses['TL'][-1], unique=False, precision=3),
-                            np.format_float_scientific(self.XPINN.losses['TL1'][-1], unique=False, precision=3),
-                            np.format_float_scientific(self.XPINN.losses['TL2'][-1], unique=False, precision=3)]
+            self.loss_last = [np.format_float_scientific(self.PINN.losses['TL'][-1], unique=False, precision=3),
+                            np.format_float_scientific(self.PINN.losses['TL1'][-1], unique=False, precision=3),
+                            np.format_float_scientific(self.PINN.losses['TL2'][-1], unique=False, precision=3)]
 
             save_folders = ['plots_solution', 'plots_losses', 'plots_weights', 'plots_meshes', 'plots_model']
             
@@ -77,15 +77,15 @@ class Postprocessing():
                 if not plot_w:
                     w = {'R'+i: 1.0, 'D'+i: 1.0, 'N'+i: 1.0, 'K'+i: 1.0, 'E'+i: 1.0, 'Q'+i: 1.0, 'G': 1.0, 'Iu': 1.0, 'Id': 1.0, 'Ir': 1.0}
                 elif plot_w:
-                    w = self.XPINN.w_hist
+                    w = self.PINN.w_hist
                 
                 if plot_w==False and (loss=='TL' or loss=='all'):
-                    ax.semilogy(range(1,len(self.XPINN.losses['TL'+i])+1), self.XPINN.losses['TL'+i],'k-',label='TL'+i)
-                for t in self.XPINN.losses_names_list[int(i)-1]:
+                    ax.semilogy(range(1,len(self.PINN.losses['TL'+i])+1), self.PINN.losses['TL'+i],'k-',label='TL'+i)
+                for t in self.PINN.losses_names_list[int(i)-1]:
                     t2 = t if t in ('Iu','Id','Ir','G') else t[0]
                     if (t2 in loss or loss=='all') and not t in 'TL' and t in self.mesh.domain_mesh_names:
                         cx = c[t] if t in ('Iu','Id','Ir','G') else c[t[0]]
-                        ax.semilogy(range(1,len(self.XPINN.losses[t])+1), w[t]*self.XPINN.losses[t],cx,label=f'{t}')
+                        ax.semilogy(range(1,len(self.PINN.losses[t])+1), w[t]*self.PINN.losses[t],cx,label=f'{t}')
 
         ax.legend()
         n_label = r'$n$'
@@ -108,13 +108,13 @@ class Postprocessing():
         for i in ['1','2']:
             if int(i)==domain:               
                 if loss=='TL' or loss=='all':
-                    ax.semilogy(range(1,len(self.XPINN.losses['vTL'+i])+1), self.XPINN.losses['vTL'+i],'b-',label=f'Training {i}')
-                    ax.semilogy(range(1,len(self.XPINN.validation_losses['TL'+i])+1), self.XPINN.validation_losses['TL'+i],'r-',label=f'Validation {i}')
+                    ax.semilogy(range(1,len(self.PINN.losses['vTL'+i])+1), self.PINN.losses['vTL'+i],'b-',label=f'Training {i}')
+                    ax.semilogy(range(1,len(self.PINN.validation_losses['TL'+i])+1), self.PINN.validation_losses['TL'+i],'r-',label=f'Validation {i}')
                 else:
                     t = loss if loss in ('Iu','Id','Ir','G') else loss+i
                     if t in self.mesh.domain_mesh_names :
-                        ax.semilogy(range(1,len(self.XPINN.losses[t])+1), self.XPINN.losses[t],'b-',label=f'{loss} training')
-                        ax.semilogy(range(1,len(self.XPINN.validation_losses[t])+1), self.XPINN.validation_losses[t],'r-',label=f'{loss} validation')  
+                        ax.semilogy(range(1,len(self.PINN.losses[t])+1), self.PINN.losses[t],'b-',label=f'{loss} training')
+                        ax.semilogy(range(1,len(self.PINN.validation_losses[t])+1), self.PINN.validation_losses[t],'r-',label=f'{loss} validation')  
 
         ax.legend()
         n_label = r'$n$'
@@ -138,8 +138,8 @@ class Postprocessing():
         c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime', 'Ir': 'aqua', 'E':'darkslategrey','G': 'salmon'}
         for i in ['1','2']:
             if int(i)==domain:
-                w = self.XPINN.w_hist
-                for t in self.XPINN.losses_names_list[int(i)-1]:
+                w = self.PINN.w_hist
+                for t in self.PINN.losses_names_list[int(i)-1]:
                     if t in self.mesh.domain_mesh_names:
                         cx = c[t] if t in ('Iu','Id','Ir','G') else c[t[0]]
                         ax.semilogy(range(1,len(w[t])+1), w[t], cx,label=f'{t}')
@@ -160,19 +160,19 @@ class Postprocessing():
 
     def plot_G_solv_history(self, known=False, method=None):
         fig,ax = plt.subplots()
-        ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), self.XPINN.G_solv_hist.values(),'k-',label='XPINN')
+        ax.plot(np.array(list(self.PINN.G_solv_hist.keys()), dtype=self.DTYPE), self.PINN.G_solv_hist.values(),'k-',label='PINN')
         if known:
             G_known = self.PDE.solvation_energy_phi_qs(self.to_V**-1*self.phi_known(method,'react',tf.constant(self.PDE.x_qs, dtype=self.DTYPE),'molecule'))
-            G_known = np.ones(len(self.XPINN.G_solv_hist))*G_known
+            G_known = np.ones(len(self.PINN.G_solv_hist))*G_known
             label = method.replace('_',' ') if 'Born' not in method else 'Analytic'
-            ax.plot(np.array(list(self.XPINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'{label}')
+            ax.plot(np.array(list(self.PINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'{label}')
         ax.legend()
         n_label = r'$n$'
         ax.set_xlabel(f'Iterations', fontsize='11')
         text_l = r'$\Delta G_{solv}$'
         ax.set_ylabel(f'{text_l} [kcal/mol]', fontsize='11')
-        max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
-        #Gsolv_value = np.format_float_positional(self.XPINN.G_solv_hist[str(max_iter)], unique=False, precision=2)
+        max_iter = max(map(int,list(self.PINN.G_solv_hist.keys())))
+        #Gsolv_value = np.format_float_positional(self.PINN.G_solv_hist[str(max_iter)], unique=False, precision=2)
         # ax.set_title(f'Solution {text_l} of PBE')
         ax.grid()
 
@@ -228,7 +228,7 @@ class Postprocessing():
         u_out_an = self.phi_known(method,value,tf.constant(X_out, dtype=self.DTYPE),'solvent',self.mesh.R_max_dist)
 
         ax.plot(r_in,u_in[:], c='b')
-        ax.plot(r_out[r_out<0],u_out[r_out<0], label='XPINN', c='b')
+        ax.plot(r_out[r_out<0],u_out[r_out<0], label='PINN', c='b')
         ax.plot(r_out[r_out>0],u_out[r_out>0], c='b')
 
         ax.plot(r_in,u_in_an[:], c='r', linestyle='--')
@@ -319,10 +319,10 @@ class Postprocessing():
         elements = self.mesh.mol_faces.astype(np.float32)
          
         if variable == 'phi':
-            values,values_1,values_2 = self.get_phi_interface(self.XPINN.model,value=value)
+            values,values_1,values_2 = self.get_phi_interface(self.PINN.model,value=value)
             text_l = r'phi' if value == 'phi' else r'phi_react'
         elif variable == 'dphi':
-            values,values_1,values_2 = self.get_dphi_interface(self.XPINN.model)
+            values,values_1,values_2 = self.get_dphi_interface(self.PINN.model)
             text_l = r'dphi' if value == 'phi' else r'dphi_react'
 
         if domain =='interface':
@@ -777,22 +777,22 @@ class Postprocessing():
     
     def save_values_file(self,save=True):
      
-        max_iter = max(map(int,list(self.XPINN.G_solv_hist.keys())))
-        Gsolv_value = self.XPINN.G_solv_hist[str(max_iter)]
+        max_iter = max(map(int,list(self.PINN.G_solv_hist.keys())))
+        Gsolv_value = self.PINN.G_solv_hist[str(max_iter)]
 
         dict_pre = {
             'Gsolv_value': Gsolv_value,
-            'Loss_XPINN': self.loss_last[0],
+            'Loss_PINN': self.loss_last[0],
             'Loss_NN1': self.loss_last[1],
             'Loss_NN2': self.loss_last[2],
-            'Loss_Val_NN1': self.XPINN.validation_losses['TL1'][-1],
-            'Loss_Val_NN2': self.XPINN.validation_losses['TL2'][-1],
-            'Loss_continuity_u': self.XPINN.losses['Iu'][-1],
-            'Loss_continuity_du': self.XPINN.losses['Id'][-1],
-            'Loss_Residual_R1': self.XPINN.losses['R1'][-1],
-            'Loss_Residual_R2': self.XPINN.losses['R2'][-1],
-            'Loss_Boundary_D2': self.XPINN.losses['D2'][-1],
-            'Loss_Data_K2': self.XPINN.losses['K2'][-1]
+            'Loss_Val_NN1': self.PINN.validation_losses['TL1'][-1],
+            'Loss_Val_NN2': self.PINN.validation_losses['TL2'][-1],
+            'Loss_continuity_u': self.PINN.losses['Iu'][-1],
+            'Loss_continuity_du': self.PINN.losses['Id'][-1],
+            'Loss_Residual_R1': self.PINN.losses['R1'][-1],
+            'Loss_Residual_R2': self.PINN.losses['R2'][-1],
+            'Loss_Boundary_D2': self.PINN.losses['D2'][-1],
+            'Loss_Data_K2': self.PINN.losses['K2'][-1]
         } 
 
         df_dict = {}
@@ -813,21 +813,21 @@ class Postprocessing():
         path_save = os.path.join(self.directory,self.path_plots_model,'models_summary.txt')
         with open(path_save, 'w') as f:
             print_func = lambda x: print(x, file=f)
-            self.XPINN.model.summary(print_fn=print_func)
+            self.PINN.model.summary(print_fn=print_func)
             print("\n\n", file=f)
-            self.XPINN.model.NNs[0].summary(print_fn=print_func)
+            self.PINN.model.NNs[0].summary(print_fn=print_func)
             print("\n\n", file=f) 
-            self.XPINN.model.NNs[1].summary(print_fn=print_func)
+            self.PINN.model.NNs[1].summary(print_fn=print_func)
         
         path_save = os.path.join(self.directory,self.path_plots_model,'hyperparameters.json')
         with open(path_save, "w") as json_file:
-            json.dump({'Molecule_NN': self.XPINN.hyperparameters[0], 'Solvent_NN': self.XPINN.hyperparameters[1]}, json_file, indent=4)
+            json.dump({'Molecule_NN': self.PINN.hyperparameters[0], 'Solvent_NN': self.PINN.hyperparameters[1]}, json_file, indent=4)
 
     def plot_architecture(self,domain=1):
         
         domain -= 1
-        input_layer = tf.keras.layers.Input(shape=self.XPINN.model.NNs[domain].input_shape_N[1:], name='input')
-        visual_model = tf.keras.models.Model(inputs=input_layer, outputs=self.XPINN.model.NNs[domain].call(input_layer))
+        input_layer = tf.keras.layers.Input(shape=self.PINN.model.NNs[domain].input_shape_N[1:], name='input')
+        visual_model = tf.keras.models.Model(inputs=input_layer, outputs=self.PINN.model.NNs[domain].call(input_layer))
 
         if self.save:
             path = f'model_architecture_{domain+1}.png'
@@ -858,7 +858,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         u_out = self.get_phi(tf.constant(X_out, dtype=self.DTYPE),'solvent',self.model, value)[:,0]
 
         ax.plot(r_in,u_in[:], c='b')
-        ax.plot(r_out[r_out<0],u_out[r_out<0], label='XPINN', c='b')
+        ax.plot(r_out[r_out<0],u_out[r_out<0], label='PINN', c='b')
         ax.plot(r_out[r_out>0],u_out[r_out>0], c='b')
 
         u_in_an = self.phi_known('analytic_Born_Ion',value,tf.constant(X_in, dtype=self.DTYPE),'molecule')
@@ -869,7 +869,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         ax.plot(r_out[r_out>0],u_out_an[r_out>0], c='r', linestyle='--')
 
         if zoom:
-            R = self.XPINN.mesh.R_mol
+            R = self.PINN.mesh.R_mol
             v = self.phi_known('analytic_Born_Ion',value,tf.constant([[R,0,0]], dtype=self.DTYPE),'solvent')
 
             if value == 'phi':
@@ -924,7 +924,7 @@ class Born_Ion_Postprocessing(Postprocessing):
         colr = ['r','b']
         i = 0
 
-        rr = self.XPINN.mesh.R_mol
+        rr = self.PINN.mesh.R_mol
         uu,vv = self.normal_vector_n(nn)
         theta_bl = np.linspace(0, 2*np.pi, N, dtype=self.DTYPE)
         X = np.zeros((N,3))
@@ -957,13 +957,13 @@ class Born_Ion_Postprocessing(Postprocessing):
             ax.plot(theta_bl, u2, c='g', label='Analytic', linestyle='--')
 
         elif plot=='du':
-            dU2 = self.XPINN.PDE.analytic_Born_Ion_du(rr)*self.to_V
+            dU2 = self.PINN.PDE.analytic_Born_Ion_du(rr)*self.to_V
             du2 = np.ones((N,1))*dU2*self.PDE.PDE_in.epsilon
             if value=='react':
                 n = du2.shape[0]
                 nnvv = tf.concat([tf.ones((n, 1)), tf.zeros((n, 2))], axis=1)
                 XX2 = tf.concat([tf.ones((n,1))*rr, tf.zeros((n, 2))], axis=1)
-                du2 -= self.XPINN.PDE.dG_n(*self.mesh.get_X(XX2),nnvv)*self.to_V
+                du2 -= self.PINN.PDE.dG_n(*self.mesh.get_X(XX2),nnvv)*self.to_V
             ax.plot(theta_bl, du2, c='g', label='Analytic', linestyle='--')
         
         if plot=='u':
@@ -994,14 +994,14 @@ class Born_Ion_Postprocessing(Postprocessing):
 
 
     def L2_error_interface_analytic(self):
-        verts = self.XPINN.mesh.mol_verts
+        verts = self.PINN.mesh.mol_verts
 
         u = self.get_phi(tf.constant(verts, dtype=self.DTYPE),'interface',self.model).numpy()
         u1,u2 = u[:,0],u[:,1]
         u_mean = (u1+u2)/2
 
         r = np.sqrt(verts[:,0]**2 + verts[:,1]**2 + verts[:,2]**2)
-        u_an = self.XPINN.PDE.analytic_Born_Ion(r)
+        u_an = self.PINN.PDE.analytic_Born_Ion(r)
         u_dif = u_mean-u_an
         error = np.sqrt(np.sum(u_dif**2)/np.sum(u_an**2))
         return error

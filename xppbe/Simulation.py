@@ -75,7 +75,7 @@ class Simulation():
         meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':f'known_data_{self.domain_properties['molecule']}.dat'}
         meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': f'experimental_data_{self.domain_properties['molecule']}.dat', 'method': self.experimental_method}
 
-        if self.network=='xpinn':
+        if self.network=='PINN':
                 meshes_domain['Iu'] = {'domain':'interface', 'type':'Iu'}
                 meshes_domain['Id'] = {'domain':'interface', 'type':'Id'}
                 meshes_domain['Ir'] = {'domain':'interface', 'type':'Ir'}
@@ -87,49 +87,49 @@ class Simulation():
 
         self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
 
-        from xppbe.NN.XPINN import XPINN
-        self.XPINN_solver = XPINN(results_path=self.results_path)
-        self.XPINN_solver.adapt_PDE(self.PBE_model)
+        from xppbe.NN.PINN import PINN
+        self.PINN_solver = PINN(results_path=self.results_path)
+        self.PINN_solver.adapt_PDE(self.PBE_model)
 
 
     def adapt_model(self):
 
-        self.XPINN_solver.adapt_weights(
+        self.PINN_solver.adapt_weights(
                 self.weights,
                 adapt_weights = self.adapt_weights,
                 adapt_w_iter = self.adapt_w_iter,
                 adapt_w_method = self.adapt_w_method,
                 alpha_w = self.alpha_w
                 )       
-        self.XPINN_solver.adapt_optimizer(self.optimizer,self.lr, self.optimizer2,self.options_optimizer2) 
-        self.XPINN_solver.set_points_methods(sample_method=self.sample_method)
+        self.PINN_solver.adapt_optimizer(self.optimizer,self.lr, self.optimizer2,self.options_optimizer2) 
+        self.PINN_solver.set_points_methods(sample_method=self.sample_method)
 
-        if self.network == 'xpinn':
-            from xppbe.NN.NeuralNet import XPINN_NeuralNet as NeuralNet
-        elif self.network == 'pinn':
-            from xppbe.NN.NeuralNet import PINN_NeuralNet as NeuralNet     
+        if self.num_networks == 2:
+            from xppbe.NN.NeuralNet import PINN_2Dom_NeuralNet as NeuralNet
+        elif self.num_networks == 1:
+            from xppbe.NN.NeuralNet import PINN_1Dom_NeuralNet as NeuralNet     
 
 
         if self.starting_point == 'new':
             
-            self.hyperparameters_in['scale'] = self.XPINN_solver.mesh.scale_1
-            self.hyperparameters_out['scale'] = self.XPINN_solver.mesh.scale_2
+            self.hyperparameters_in['scale'] = self.PINN_solver.mesh.scale_1
+            self.hyperparameters_out['scale'] = self.PINN_solver.mesh.scale_2
 
             if self.scale_NN_q:
                 self.hyperparameters_in['scale_NN'] = self.PBE_model.scale_q_factor
                 self.hyperparameters_out['scale_NN'] = self.PBE_model.scale_q_factor 
 
-            self.XPINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out])
+            self.PINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out])
         
         elif self.starting_point == 'continue':
-            self.XPINN_solver.load_NeuralNet(NeuralNet,self.results_path,f'iter_{self.continue_iteration}',self.continue_iteration)
+            self.PINN_solver.load_NeuralNet(NeuralNet,self.results_path,f'iter_{self.continue_iteration}',self.continue_iteration)
         
-        self.XPINN_solver.starting_point = self.starting_point
+        self.PINN_solver.starting_point = self.starting_point
 
 
     def solve_model(self):
           
-        self.XPINN_solver.solve(
+        self.PINN_solver.solve(
             N=self.N_iters, 
             N2=self.N_steps_2,
             save_model = self.iters_save_model, 
@@ -144,7 +144,7 @@ class Simulation():
         else:
             from xppbe.Post.Postcode import Postprocessing
 
-        self.Post = Postprocessing(self.XPINN_solver, save=True, directory=self.results_path)
+        self.Post = Postprocessing(self.PINN_solver, save=True, directory=self.results_path)
         
         if jupyter:
              return self.Post
@@ -213,21 +213,21 @@ class Simulation():
 
     def load_model_for_Post(self,Iter,save=False):
 
-        if self.network == 'xpinn':
-            from xppbe.NN.NeuralNet import XPINN_NeuralNet as NeuralNet
-        elif self.network == 'pinn':
-            from xppbe.NN.NeuralNet import PINN_NeuralNet as NeuralNet
+        if self.num_networks == 2:
+            from xppbe.NN.NeuralNet import PINN_2Dom_NeuralNet as NeuralNet
+        elif self.num_networks == 1:
+            from xppbe.NN.NeuralNet import PINN_1Dom_NeuralNet as NeuralNet  
 
-        self.XPINN_solver.results_path = self.results_path
-        self.XPINN_solver.load_NeuralNet(NeuralNet,self.results_path,f'iter_{Iter}',Iter)
-        self.XPINN_solver.N_iters = self.N_iters
+        self.PINN_solver.results_path = self.results_path
+        self.PINN_solver.load_NeuralNet(NeuralNet,self.results_path,f'iter_{Iter}',Iter)
+        self.PINN_solver.N_iters = self.N_iters
          
         if self.domain_properties['molecule'] == 'born_ion':
             from xppbe.Post.Postcode import Born_Ion_Postprocessing as Postprocessing
         else:
             from xppbe.Post.Postcode import Postprocessing
 
-        self.Post = Postprocessing(self.XPINN_solver, save=save, directory=self.results_path)
+        self.Post = Postprocessing(self.PINN_solver, save=save, directory=self.results_path)
 
 
     def get_simulation_paths(self,yaml_path, molecule_dir=None, results_path=None):
