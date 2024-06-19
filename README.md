@@ -1,5 +1,5 @@
 
-# PINN Solver for 3D Poisson-Boltzmann Equation 
+# XPPBE: PINN Solver for 3D Poisson-Boltzmann Equation 
 
 ![XPPBE](https://img.shields.io/badge/dynamic/toml?label=XPPBE&url=https%3A%2F%2Fraw.githubusercontent.com%2FMartinAchondo%2FXPPBE%2Fmaster%2Fpyproject.toml&query=%24.project.version&prefix=version%20&color=blue&logo=moleculer&logoColor=white)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/MartinAchondo/XPPBE/.github%2Fworkflows%2FCI.yml)
