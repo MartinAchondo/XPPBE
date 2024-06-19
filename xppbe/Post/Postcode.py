@@ -774,7 +774,21 @@ class Postprocessing():
         bool_2 = np.linalg.norm(points, axis=1) <= R_exterior*exterior_points_bool
         bools = (interior_points_bool,bool_2)
         return interior_points,exterior_points, bools
-    
+
+    def L2_interface_known(self,known_method):
+        vertices = self.mesh.mol_verts.astype(np.float32)
+        phi_known = self.phi_known(known_method,'react', vertices, flag='solvent')
+        phi_xpinn = self.get_phi_interface(self.model,value='react')[0]
+
+        if known_method == 'PBJ':
+            vertices = self.PDE.pbj_vertices.astype(np.float32)
+            phi_known = self.phi_known(known_method,'react', vertices, flag='solvent')
+            phi_xpinn = self.get_phi(vertices,flag='molecule',model=self.model,value='react')
+
+        phi_dif = (phi_xpinn.numpy() - phi_known.numpy().reshape(-1,1))
+        error = np.sqrt(np.sum(phi_dif**2)/np.sum(phi_known.numpy()**2))
+        return error
+
     def save_values_file(self,save=True):
      
         max_iter = max(map(int,list(self.PINN.G_solv_hist.keys())))
@@ -993,22 +1007,10 @@ class Born_Ion_Postprocessing(Postprocessing):
         return fig,ax
 
 
-    def L2_error_interface_analytic(self):
-        verts = self.PINN.mesh.mol_verts
-
-        u = self.get_phi(tf.constant(verts, dtype=self.DTYPE),'interface',self.model).numpy()
-        u1,u2 = u[:,0],u[:,1]
-        u_mean = (u1+u2)/2
-
-        r = np.sqrt(verts[:,0]**2 + verts[:,1]**2 + verts[:,2]**2)
-        u_an = self.PINN.PDE.analytic_Born_Ion(r)
-        u_dif = u_mean-u_an
-        error = np.sqrt(np.sum(u_dif**2)/np.sum(u_an**2))
-        return error
     
     def save_values_file(self,save=True):
 
-        L2_analytic = self.L2_error_interface_analytic()
+        L2_analytic = self.L2_interface_known('analytic_Born_Ion')
         
         df_dict = super().save_values_file(save=False)
         df_dict['L2_analytic'] = '{:.3e}'.format(float(L2_analytic))
