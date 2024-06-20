@@ -158,13 +158,13 @@ class Postprocessing():
         return fig,ax
 
 
-    def plot_G_solv_history(self, known=False, method=None):
+    def plot_G_solv_history(self, known_method=None):
         fig,ax = plt.subplots()
         ax.plot(np.array(list(self.PINN.G_solv_hist.keys()), dtype=self.DTYPE), self.PINN.G_solv_hist.values(),'k-',label='PINN')
-        if known:
-            G_known = self.PDE.solvation_energy_phi_qs(self.to_V**-1*self.phi_known(method,'react',tf.constant(self.PDE.x_qs, dtype=self.DTYPE),'molecule'))
+        if not known_method is None:
+            G_known = self.PDE.solvation_energy_phi_qs(self.to_V**-1*self.phi_known(known_method,'react',tf.constant(self.PDE.x_qs, dtype=self.DTYPE),'molecule'))
             G_known = np.ones(len(self.PINN.G_solv_hist))*G_known
-            label = method.replace('_',' ') if 'Born' not in method else 'Analytic'
+            label = known_method.replace('_',' ') if 'Born' not in known_method else 'Analytic'
             ax.plot(np.array(list(self.PINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'{label}')
         ax.legend()
         n_label = r'$n$'
@@ -177,7 +177,7 @@ class Postprocessing():
         ax.grid()
 
         if self.save:
-            path = 'Gsolv_history.png' if not known else f'Gsolv_history_{method}.png'
+            path = 'Gsolv_history.png' if known_method is None else f'Gsolv_history_{known_method}.png'
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save, bbox_inches='tight')
         return fig,ax
@@ -320,10 +320,10 @@ class Postprocessing():
          
         if variable == 'phi':
             values,values_1,values_2 = self.get_phi_interface(self.PINN.model,value=value)
-            text_l = r'phi' if value == 'phi' else r'phi_react'
+            text_l = r'phi' if value == 'phi' else 'ϕ react'
         elif variable == 'dphi':
             values,values_1,values_2 = self.get_dphi_interface(self.PINN.model)
-            text_l = r'dphi' if value == 'phi' else r'dphi_react'
+            text_l = r'dphi' if value == 'phi' else '∂ϕ react'
 
         if domain =='interface':
             values = values.numpy().flatten()
@@ -338,34 +338,71 @@ class Postprocessing():
                             intensity=values, colorscale='RdBu_r',
                             colorbar=dict(title=f'{text_l} [V]')))
 
-        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'),margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'),margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
 
-        if not jupyter and self.save:
+        path_save = os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}')
+        if self.save:
             if ext=='html':
-                fig.write_html(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.html'))
+                fig.write_html(path_save+'.html')
             elif ext=='png':
-                fig.write_image(os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}.png'), scale=3)
-        elif jupyter:
+                fig.write_image(path_save+'.png', scale=3)
+        if jupyter:
+            fig.show()
+        return fig
+
+
+    def plot_interface_3D_known(self, method, cmin=None,cmax=None, jupyter=False, ext='html'):
+        
+        vertices = self.mesh.mol_verts.astype(np.float32)
+        elements = self.mesh.mol_faces.astype(np.float32)
+        phi_known = self.phi_known(method,'react', vertices,'solvent')
+
+        fig = self.plot_interface_3D_known_by(phi_known, vertices, elements, jupyter=False)
+        path_save = os.path.join(self.directory, self.path_plots_solution, f'Interface_{method}')
+        if self.save:
+            if ext=='html':
+                fig.write_html(path_save+'.html')
+            elif ext=='png':
+                fig.write_image(path_save+'.png', scale=3)
+        if jupyter:
             fig.show()
         return fig
 
     @staticmethod
-    def plot_interface_3D_known(phi_known, vertices, elements, cmin=None,cmax=None, jupyter=True):
+    def plot_interface_3D_known_by(phi_known, vertices, elements, cmin=None,cmax=None, jupyter=True):
         cmin = np.min(phi_known) if cmin is None else cmin
         cmax = np.max(phi_known) if cmax is None else cmax
         fig = go.Figure()
         fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
                             i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
                             intensity=phi_known, colorscale='RdBu_r',cmin=cmin,cmax=cmax,
-                            colorbar=dict(title='Phi react [V]')))
-        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
+                            colorbar=dict(title='ϕ react [V]')))
+        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
         if jupyter:
             fig.show()
         return fig
 
-    @staticmethod
-    def plot_interface_error(error,vertices,elements,scale='log',jupyter=True):
+    def plot_interface_error(self,method, type_e='relative',scale='log',jupyter=False, ext='html'):
+        vertices = self.mesh.mol_verts.astype(np.float32)
+        elements = self.mesh.mol_faces.astype(np.float32)
 
+        phi_known = self.phi_known(method,'react', vertices, flag='solvent')
+        phi_pinn = self.get_phi(vertices,flag='molecule',model=self.model,value='react')
+
+        error = np.abs(phi_pinn.numpy() - phi_known.numpy().reshape(-1,1))
+        if type_e == 'relative':
+            error /= phi_known.numpy().reshape(-1,1)
+        fig = self.plot_interface_error_by(error,vertices,elements,scale,jupyter=False)
+
+        path_save = os.path.join(self.directory, self.path_plots_solution, f'Interface_error_{method}_{type_e}_{scale}')
+        if self.save:
+            if ext=='html':
+                fig.write_html(path_save+'.html')
+            elif ext=='png':
+                fig.write_image(path_save+'.png', scale=3)
+
+    @staticmethod
+    def plot_interface_error_by(error,vertices,elements,scale='log',jupyter=True):
         fig = go.Figure()
         if scale=='log':
             epsilon = 1e-10
@@ -384,13 +421,14 @@ class Postprocessing():
                     i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
                     intensity=np.abs(error), colorscale='Plasma',
                     colorbar=dict(title='Error')))
-        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
+
         if jupyter:
             fig.show()
         return fig
 
 
-    def plot_collocation_points_3D(self, jupyter=False):
+    def plot_collocation_points_3D(self, jupyter=False, ext='html'):
 
         color_dict = {
             'Q1_verts': 'red',
@@ -425,15 +463,19 @@ class Postprocessing():
             )
             fig.add_trace(trace)
 
-        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
         
-        if not jupyter and self.save:
-            fig.write_html(os.path.join(self.directory,self.path_plots_meshes, 'collocation_points_plot_3d.html'))
-        elif jupyter:
+        path_save = os.path.join(self.directory,self.path_plots_meshes, 'collocation_points_plot_3d')
+        if self.save:
+            if ext=='html':
+                fig.write_html(path_save+'.html')
+            elif ext=='png':
+                fig.write_image(path_save+'.png', scale=3)
+        if jupyter:
             fig.show()
         return fig
 
-    def plot_surface_mesh_3D(self, jupyter=False):
+    def plot_surface_mesh_3D(self, jupyter=False, ext='html'):
 
         vertices = self.mesh.mol_verts
         elements = self.mesh.mol_faces
@@ -467,15 +509,19 @@ class Postprocessing():
         )
 
         fig = go.Figure(data=[element_trace,edge_trace])
-        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
 
-        if not jupyter and self.save:
-            fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surf_3D.html'))
-        elif jupyter:
+        path_save = os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surf_3D')
+        if self.save:
+            if ext=='html':
+                fig.write_html(path_save+'.html')
+            elif ext=='png':
+                fig.write_image(path_save+'.png', scale=3)
+        if jupyter:
             fig.show()
         return fig
 
-    def plot_vol_mesh_3D(self, jupyter=False):
+    def plot_vol_mesh_3D(self, jupyter=False, ext='html'):
         toRemove = []
         ext_tetmesh = self.mesh.ext_tetmesh
         for vertexID in ext_tetmesh.vertexIDs:
@@ -555,17 +601,20 @@ class Postprocessing():
         )
 
         fig = go.Figure(data=[element_trace_ex,edge_trace_ex, element_trace_in, edge_trace_in])
-        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
         
-
-        if not jupyter and self.save:
-            fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_vol_3D.html'))
-        elif jupyter:
+        path_save = os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_vol_3D')
+        if self.save:
+            if ext=='html':
+                fig.write_html(path_save+'.html')
+            elif ext=='png':
+                fig.write_image(path_save+'.png', scale=3)
+        if jupyter:
             fig.show()
         return fig
 
 
-    def plot_mesh_3D(self,domain,element_indices=None, jupyter=False):
+    def plot_mesh_3D(self,domain,element_indices=None, jupyter=False, ext='html'):
 
         element_indices_input = element_indices
 
@@ -653,15 +702,19 @@ class Postprocessing():
 
             fig = go.Figure(data=[trace_vertices, trace_edges, trace_elements])
 
-        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
 
-        if not jupyter and self.save:
-            fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_3D_{domain}.html'))
-        elif jupyter:
+        path_save = os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_3D_{domain}')
+        if self.save:
+            if ext=='html':
+                fig.write_html(path_save+'.html')
+            elif ext=='png':
+                fig.write_image(path_save+'.png', scale=3)
+        if jupyter:
             fig.show()
         return fig
 
-    def plot_surface_mesh_normals(self,plot='vertices',jupyter=False):
+    def plot_surface_mesh_normals(self,plot='vertices',jupyter=False, ext='html'):
 
         mesh_obj = self.mesh
         
@@ -711,11 +764,16 @@ class Postprocessing():
         )
 
         fig = go.Figure(data=[mesh_trace, vertex_normals_trace, edge_trace])
-        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [A]', yaxis_title='Y [A]', zaxis_title='Z [A]'), margin=dict(l=30, r=40, t=20, b=20))
+        fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
 
-        if not jupyter and self.save:
-            fig.write_html(os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surface_normals_{plot}.html'))
-        elif jupyter:
+
+        path_save = os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surface_normals_{plot}')
+        if self.save:
+            if ext=='html':
+                fig.write_html(path_save+'.html')
+            elif ext=='png':
+                fig.write_image(path_save+'.png', scale=3)
+        if jupyter:
             fig.show()
         return fig
 
@@ -792,7 +850,7 @@ class Postprocessing():
         error = np.sqrt(np.sum(phi_dif**2)/np.sum(phi_known.numpy()**2))
         return error
 
-    def save_values_file(self,save=True):
+    def save_values_file(self, save=True, L2_err_method=None):
      
         max_iter = max(map(int,list(self.PINN.G_solv_hist.keys())))
         Gsolv_value = self.PINN.G_solv_hist[str(max_iter)]
@@ -811,6 +869,9 @@ class Postprocessing():
             'Loss_Boundary_D2': self.PINN.losses['D2'][-1],
             'Loss_Data_K2': self.PINN.losses['K2'][-1]
         } 
+
+        if not L2_err_method is None:
+            dict_pre['L2_error'] = self.L2_interface_known(L2_err_method)
 
         df_dict = {}
         for key, value in dict_pre.items():

@@ -137,7 +137,7 @@ class Simulation():
             )
         
 
-    def postprocessing(self, run_all=False, jupyter=False, mesh=False, pbj=False):
+    def postprocessing(self, run_all=False, jupyter=False, plot_mesh=False, known_method=None):
           
         if self.domain_properties['molecule'] == 'born_ion':
             from xppbe.Post.Postcode import Born_Ion_Postprocessing as Postprocessing
@@ -160,9 +160,9 @@ class Simulation():
         self.Post.plot_loss_validation_history(domain=1,loss='TL');
         self.Post.plot_loss_validation_history(domain=2,loss='TL');
 
-        self.Post.save_values_file();
+        self.Post.save_values_file(L2_err_method=known_method);
 
-        if mesh:
+        if plot_mesh:
             self.Post.plot_collocation_points_3D();
             self.Post.plot_vol_mesh_3D();
             self.Post.plot_surface_mesh_3D();
@@ -181,29 +181,26 @@ class Simulation():
         self.Post.plot_interface_3D(variable='phi');
         self.Post.plot_interface_3D(variable='dphi');
 
-        if self.domain_properties['molecule'] == 'born_ion':
-            self.Post.plot_aprox_analytic();
-            self.Post.plot_aprox_analytic(value='react');
-            self.Post.plot_aprox_analytic(zoom=True);
-            self.Post.plot_aprox_analytic(zoom=True, value='react');
-            self.Post.plot_line_interface();
-            self.Post.plot_line_interface(value='react');
-            self.Post.plot_line_interface(plot='du');
-            self.Post.plot_G_solv_history(known=True,method='analytic_Born_Ion');
-        else:
-            if 'sphere' in self.domain_properties['molecule']:
-                method = 'Spherical_Harmonics'
-                plot_aprox = True
-            else:
-                method = 'PBJ'
-                plot_aprox = pbj
-             
-            if plot_aprox:
-                self.Post.plot_G_solv_history(known=True,method=method);
-                self.Post.plot_phi_line_aprox_known(method, value='react',theta=0, phi=np.pi/2)
-                self.Post.plot_phi_line_aprox_known(method, value='react',theta=np.pi/2, phi=np.pi/2)
-                self.Post.plot_phi_line_aprox_known(method, value='react', theta=np.pi/2, phi=np.pi)
+        if not known_method is None:
 
+            if known_method == 'analytic_Born_Ion':
+                self.Post.plot_aprox_analytic();
+                self.Post.plot_aprox_analytic(value='react');
+                self.Post.plot_aprox_analytic(zoom=True);
+                self.Post.plot_aprox_analytic(zoom=True, value='react');
+                self.Post.plot_line_interface();
+                self.Post.plot_line_interface(value='react');
+                self.Post.plot_line_interface(plot='du');
+                self.Post.plot_G_solv_history(known=True,method='analytic_Born_Ion');
+            else:
+                self.Post.plot_G_solv_history(known_method);
+                self.Post.plot_phi_line_aprox_known(known_method, value='react',theta=0, phi=np.pi/2)
+                self.Post.plot_phi_line_aprox_known(known_method, value='react',theta=np.pi/2, phi=np.pi/2)
+                self.Post.plot_phi_line_aprox_known(known_method, value='react', theta=np.pi/2, phi=np.pi)
+                self.Post.plot_interface_3D_known(known_method)
+                self.Post.plot_interface_error(known_method, type_e='relative',scale='log')
+                self.Post.plot_interface_error(known_method, type_e='absolute',scale='linear')
+                
         self.Post.save_model_summary();
         self.Post.plot_architecture(domain=1);
         self.Post.plot_architecture(domain=2);
@@ -271,22 +268,3 @@ class Simulation():
         logger = logging.getLogger(__name__)
         
         return simulation_name,results_path,molecule_dir, main_path,logger
-
-
-
-if __name__=='__main__':
-
-    yaml_path = os.path.abspath(sys.argv[1])
-
-    results_path = os.path.dirname(__file__)
-    for i, arg in enumerate(sys.argv[2:]):
-        if arg.startswith('--results-path='):
-            results_path = sys.argv[i+2].split('=')[1]
-            break
-    plot_pbj = '--pbj' in sys.argv
-    plot_mesh = '--mesh' in sys.argv
-
-    from xppbe import RunSimulation
-    RunSimulation(yaml_path,results_path,(plot_mesh,plot_pbj))
-
-

@@ -17,18 +17,15 @@ function Allrun() {
         exit 1
     fi
 
-    PYTHON_CODE="
+    PYTHON_CODE_TEMPLATE="
 import os,sys
 from xppbe import RunSimulation
-
 yaml_path = os.path.abspath(sys.argv[1])
 simulation_name = os.path.basename(yaml_path).replace('.yaml','')
 results_path = os.path.join('${results_path}',simulation_name)
 molecule_dir = '${molecule_dir}' if '${molecule_dir}' else None
-plot_pbj = '--pbj' in sys.argv
+known_method = '${known_method}' if '${known_method}' else None
 plot_mesh = '--mesh' in sys.argv
-
-RunSimulation(yaml_path,results_path,molecule_dir,(plot_mesh,plot_pbj))
     "
 
     sims_count=0
@@ -65,10 +62,21 @@ RunSimulation(yaml_path,results_path,molecule_dir,(plot_mesh,plot_pbj))
                 echo "Running step: $i" 
                 new_iters=$(echo "( $num_iters_per_step*$i)" | bc)
                 sed -i "s/^N_iters: [0-9]\+/N_iters: $new_iters/" $script_path
+                PYTHON_CODE="
+# '${$script_name}'
+${PYTHON_CODE_TEMPLATE}
+RunSimulation(yaml_path,results_path,molecule_dir,False,None)
+                "
                 python -c "$PYTHON_CODE" "$script_path"
             done
         fi
-        python -c "$PYTHON_CODE" "$script_path" "$pbj_flag" "$mesh_flag"
+
+        PYTHON_CODE="
+# '${$script_name}'
+${PYTHON_CODE_TEMPLATE}
+RunSimulation(yaml_path,results_path,molecule_dir,plot_mesh,known_method)
+        "
+        python -c "$PYTHON_CODE" "$script_path" "$mesh_flag"
 
         echo "Ending Simulation $sims_count : $script_name"
         echo ""
@@ -138,9 +146,9 @@ for arg in "$@"; do
         molecule_dir="${arg#*=}"
         shift 
         ;;
-        --pbj)
-        pbj_flag="--pbj"
-        shift
+        --known-method=*)
+        known_method="${arg#*=}"
+        shift 
         ;;
         --mesh)
         mesh_flag="--mesh"
