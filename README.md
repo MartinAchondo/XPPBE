@@ -17,11 +17,13 @@ $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
   <img height="200" src="img/Implicit-solvent-tr.png">
 </p> -->
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="img/Implicit-solvent-tr.png">
-  <source media="(prefers-color-scheme: light)" srcset="img/Implicit-solvent.png">
-  <img height="200" src="https://user-images.githubusercontent.com/25423296/163456779-a8556205-d0a5-45e2-ac17-42d089e3c3f8.png">
-</picture>
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="img/Implicit-solvent-tr.png">
+        <source media="(prefers-color-scheme: light)" srcset="img/Implicit-solvent.png">
+        <img height="200" src="https://user-images.githubusercontent.com/25423296/163456779-a8556205-d0a5-45e2-ac17-42d089e3c3f8.png">
+    </picture>
+</p>
 
 ## Features
 
