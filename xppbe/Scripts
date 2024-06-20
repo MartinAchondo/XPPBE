@@ -63,7 +63,7 @@ plot_mesh = '--mesh' in sys.argv
                 new_iters=$(echo "( $num_iters_per_step*$i)" | bc)
                 sed -i "s/^N_iters: [0-9]\+/N_iters: $new_iters/" $script_path
                 PYTHON_CODE="
-# '${$script_name}'
+# '${script_name}'
 ${PYTHON_CODE_TEMPLATE}
 RunSimulation(yaml_path,results_path,molecule_dir,False,None)
                 "
@@ -72,7 +72,7 @@ RunSimulation(yaml_path,results_path,molecule_dir,False,None)
         fi
 
         PYTHON_CODE="
-# '${$script_name}'
+# '${script_name}'
 ${PYTHON_CODE_TEMPLATE}
 RunSimulation(yaml_path,results_path,molecule_dir,plot_mesh,known_method)
         "
