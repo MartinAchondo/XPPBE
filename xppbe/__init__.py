@@ -11,7 +11,7 @@ def RunSimulation(yaml_path,results_path,molecule_dir,plot_mesh,known_method=Non
     sim.create_simulation()
     sim.adapt_model()
     sim.solve_model()
-    sim.postprocessing(run_all=True, mesh=plot_mesh, known_method=known_method)
+    sim.postprocessing(run_all=True, plot_mesh=plot_mesh, known_method=known_method)
 
 def Allrun(sims_path, results_path, molecule_dir, plot_mesh=False, known_method=None):
     sims_path = os.path.abspath(sims_path)
