@@ -13,9 +13,15 @@ $$\nabla^2 \phi_1 = -\frac{1}{\epsilon_1}\sum_k q_k\delta(x_k) \quad x \in \Omeg
 $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
 
 
-<p align="center">
+<!-- <p align="center">
   <img height="200" src="img/Implicit-solvent-tr.png">
-</p>
+</p> -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="img/Implicit-solvent-tr.png">
+  <source media="(prefers-color-scheme: light)" srcset="img/Implicit-solvent.png">
+  <img height="200" src="https://user-images.githubusercontent.com/25423296/163456779-a8556205-d0a5-45e2-ac17-42d089e3c3f8.png">
+</picture>
 
 ## Features
 
