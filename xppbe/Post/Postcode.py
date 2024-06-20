@@ -1074,7 +1074,7 @@ class Born_Ion_Postprocessing(Postprocessing):
     
     def save_values_file(self,save=True,L2_err_method='analytic_Born_Ion'):
 
-        L2_analytic = self.L2_interface_known(L2_err_method)
+        L2_analytic = self.L2_interface_known('analytic_Born_Ion')
         
         df_dict = super().save_values_file(save=False)
         df_dict['L2_analytic'] = '{:.3e}'.format(float(L2_analytic))
