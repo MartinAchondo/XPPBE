@@ -151,59 +151,8 @@ class Simulation():
         
         shutil.copy(os.path.join(self.main_path,'Post','Post_Template.ipynb'),os.path.join(self.results_path,'Post.ipynb'))
 
-        if not run_all:
-            return self.Post
-        
-        self.Post.plot_loss_history(domain=1);
-        self.Post.plot_loss_history(domain=2);
-        
-        self.Post.plot_loss_validation_history(domain=1,loss='TL');
-        self.Post.plot_loss_validation_history(domain=2,loss='TL');
-
-        self.Post.save_values_file(L2_err_method=known_method);
-
-        if plot_mesh:
-            self.Post.plot_collocation_points_3D();
-            self.Post.plot_vol_mesh_3D();
-            self.Post.plot_surface_mesh_3D();
-            self.Post.plot_mesh_3D('R1');
-            self.Post.plot_mesh_3D('R2');
-            self.Post.plot_mesh_3D('I');
-            self.Post.plot_mesh_3D('D2');
-            self.Post.plot_surface_mesh_normals(plot='vertices');
-            self.Post.plot_surface_mesh_normals(plot='faces');
-
-        self.Post.plot_G_solv_history();
-        self.Post.plot_phi_line();
-        self.Post.plot_phi_line(value='react');
-        self.Post.plot_phi_contour();
-        self.Post.plot_phi_contour(value='react');
-        self.Post.plot_interface_3D(variable='phi');
-        self.Post.plot_interface_3D(variable='dphi');
-
-        if not known_method is None:
-
-            if known_method == 'analytic_Born_Ion':
-                self.Post.plot_aprox_analytic();
-                self.Post.plot_aprox_analytic(value='react');
-                self.Post.plot_aprox_analytic(zoom=True);
-                self.Post.plot_aprox_analytic(zoom=True, value='react');
-                self.Post.plot_line_interface();
-                self.Post.plot_line_interface(value='react');
-                self.Post.plot_line_interface(plot='du');
-                self.Post.plot_G_solv_history(known=True,method='analytic_Born_Ion');
-            else:
-                self.Post.plot_G_solv_history(known_method);
-                self.Post.plot_phi_line_aprox_known(known_method, value='react',theta=0, phi=np.pi/2)
-                self.Post.plot_phi_line_aprox_known(known_method, value='react',theta=np.pi/2, phi=np.pi/2)
-                self.Post.plot_phi_line_aprox_known(known_method, value='react', theta=np.pi/2, phi=np.pi)
-                self.Post.plot_interface_3D_known(known_method)
-                self.Post.plot_interface_error(known_method, type_e='relative',scale='log')
-                self.Post.plot_interface_error(known_method, type_e='absolute',scale='linear')
-                
-        self.Post.save_model_summary();
-        self.Post.plot_architecture(domain=1);
-        self.Post.plot_architecture(domain=2);
+        if run_all:
+            self.Post.run_all(plot_mesh,known_method)
     
         return self.Post
 
