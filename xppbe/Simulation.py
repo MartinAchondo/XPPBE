@@ -141,6 +141,7 @@ class Simulation():
           
         if self.domain_properties['molecule'] == 'born_ion':
             from xppbe.Post.Postcode import Born_Ion_Postprocessing as Postprocessing
+            known_method='analytic_Born_Ion'
         else:
             from xppbe.Post.Postcode import Postprocessing
 

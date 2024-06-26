@@ -179,6 +179,10 @@ class PINN(PINN_utils):
         
         self.main_loop(N,N2)
 
+        import os
+        dir_save = os.path.join(self.results_path,'iterations',f'iter_{self.iter}')
+        self.save_model(dir_save)
+
         logger = logging.getLogger(__name__)
         logger.info(f' Iterations: {self.iter}')
         logger.info(" Loss: {:6.4e}".format(self.losses['TL'][self.iter-1]))
