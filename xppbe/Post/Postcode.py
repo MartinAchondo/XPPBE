@@ -93,6 +93,7 @@ class Postprocessing():
         self.plot_phi_contour(value='react');
         self.plot_interface_3D(variable='phi');
         self.plot_interface_3D(variable='dphi');
+        self.save_values_file();
 
         if not known_method is None:
 
