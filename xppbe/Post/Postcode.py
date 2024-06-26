@@ -75,8 +75,6 @@ class Postprocessing():
         self.plot_loss_validation_history(domain=1,loss='TL');
         self.plot_loss_validation_history(domain=2,loss='TL');
 
-        self.save_values_file(L2_err_method=known_method);
-
         if plot_mesh:
             self.plot_collocation_points_3D();
             self.plot_vol_mesh_3D();
@@ -95,10 +93,13 @@ class Postprocessing():
         self.plot_phi_contour(value='react');
         self.plot_interface_3D(variable='phi');
         self.plot_interface_3D(variable='dphi');
+        self.save_values_file();
 
         if not known_method is None:
 
             if known_method == 'analytic_Born_Ion':
+                self.plot_G_solv_history('analytic_Born_Ion');
+                self.save_values_file(L2_err_method='analytic_Born_Ion');
                 self.plot_aprox_analytic();
                 self.plot_aprox_analytic(value='react');
                 self.plot_aprox_analytic(zoom=True);
@@ -106,9 +107,10 @@ class Postprocessing():
                 self.plot_line_interface();
                 self.plot_line_interface(value='react');
                 self.plot_line_interface(plot='du');
-                self.plot_G_solv_history(method='analytic_Born_Ion');
+            
             else:
                 self.plot_G_solv_history(known_method);
+                self.save_values_file(L2_err_method=known_method);
                 self.plot_phi_line_aprox_known(known_method, value='react',theta=0, phi=np.pi/2)
                 self.plot_phi_line_aprox_known(known_method, value='react',theta=np.pi/2, phi=np.pi/2)
                 self.plot_phi_line_aprox_known(known_method, value='react', theta=np.pi/2, phi=np.pi)
