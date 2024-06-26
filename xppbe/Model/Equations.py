@@ -233,7 +233,7 @@ class Non_Linear(Equations_utils):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
         self.epsilon = self.epsilon_2
-        self.T_adim = self.T*self.eps0*self.ang_to_m*self.kb/self.qe**2
+        self.T_adim = self.T*self.PBE.eps0*self.PBE.ang_to_m*self.PBE.kb/self.PBE.qe**2
 
     def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
