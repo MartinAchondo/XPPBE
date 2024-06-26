@@ -371,7 +371,7 @@ class Domain_Mesh():
                 for q in q_list:
                     if q.atom_name in L_names:
                         if str(j) in L_phi:
-                            phi_ens = tf.constant(L_phi[str(j)] , dtype=self.DTYPE)
+                            phi_ens = tf.constant(L_phi[str(j)] , dtype=self.DTYPE)/1000
                             xq = tf.reshape(tf.constant(q.x_q, dtype=self.DTYPE), (1,3))
                             r_q = tf.constant(q.r_q, dtype=self.DTYPE)
                             X_exp_values.append(((xq,r_q),phi_ens))

@@ -72,8 +72,7 @@ class PBE(Solution_utils):
     
     def get_phi_ens(self,model,X_mesh,q_L, method='mean', pinn=True, known_method=False):
         
-        kT = self.kb*self.T
-        C = self.qe/kT                
+        T_adim = self.T*self.eps0*self.ang_to_m*self.kb/self.qe**2             
 
         (X_solv,flag) = X_mesh
         phi_ens_L = list()
@@ -82,24 +81,24 @@ class PBE(Solution_utils):
             
             if method=='exponential':
                 if pinn: 
-                    phi = self.get_phi(X_solv,flag, model) * self.to_V
+                    phi = self.get_phi(X_solv,flag, model)
                 else: 
-                    phi = self.phi_known(known_method,'phi',tf.constant(X_solv),'solvent').reshape(-1,1)*self.to_V
+                    phi = self.phi_known(known_method,'phi',tf.constant(X_solv),'solvent').reshape(-1,1)
                 r_H = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_solv), axis=1, keepdims=True))
-                G2_p = tf.math.reduce_sum(self.aprox_exp(-phi*C)/r_H**6)
-                G2_m = tf.math.reduce_sum(self.aprox_exp(phi*C)/r_H**6)
-                phi_ens_pred = -kT/(2*self.qe) * tf.math.log(G2_p/G2_m)
+                G2_p = tf.math.reduce_sum(self.aprox_exp(-phi/T_adim)/r_H**6)
+                G2_m = tf.math.reduce_sum(self.aprox_exp(phi/T_adim)/r_H**6)
+                phi_ens_pred = - T_adim/2 * tf.math.log(G2_p/G2_m)
             
             elif method=='mean':
                 r_H = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_solv), axis=1))
                 X_ens = tf.boolean_mask(X_solv, r_H < (r_q + self.mesh.dR_exterior))
                 if pinn: 
-                    phi = self.get_phi(X_ens,flag, model) * self.to_V
+                    phi = self.get_phi(X_ens,flag, model)
                 else: 
-                    phi = self.phi_known(known_method,'phi',tf.constant(X_ens),'solvent').reshape(-1,1)*self.to_V
+                    phi = self.phi_known(known_method,'phi',tf.constant(X_ens),'solvent').reshape(-1,1)
                 phi_ens_pred = tf.reduce_mean(phi)
 
-            phi_ens_L.append(phi_ens_pred * 1000)
+            phi_ens_L.append(phi_ens_pred)
 
         return phi_ens_L    
     
@@ -200,7 +199,7 @@ class PBE(Solution_utils):
         phi_ens_pred_L = self.get_phi_ens(model,(X,flag),q_L,method)
 
         for phi_pred,phi_exp in zip(phi_ens_pred_L,phi_ens_exp_L):
-            loss += tf.square(phi_pred - phi_exp)
+            loss += tf.square(phi_pred - phi_exp/self.to_V)
 
         loss *= (1/n)
 
