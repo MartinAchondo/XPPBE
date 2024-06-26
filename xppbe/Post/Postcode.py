@@ -106,7 +106,7 @@ class Postprocessing():
                 self.plot_line_interface();
                 self.plot_line_interface(value='react');
                 self.plot_line_interface(plot='du');
-                self.plot_G_solv_history(method='analytic_Born_Ion');
+                self.plot_G_solv_history('analytic_Born_Ion');
             else:
                 self.plot_G_solv_history(known_method);
                 self.plot_phi_line_aprox_known(known_method, value='react',theta=0, phi=np.pi/2)
