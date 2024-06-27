@@ -173,11 +173,6 @@ class PBE_Reg_2(PBE):
 class Equations_utils():
 
     DTYPE = 'float32'
-    qe = tf.constant(1.60217663e-19, dtype=DTYPE)
-    eps0 = tf.constant(8.8541878128e-12, dtype=DTYPE)     
-    kb = tf.constant(1.380649e-23, dtype=DTYPE)              
-    Na = tf.constant(6.02214076e23, dtype=DTYPE)
-    ang_to_m = tf.constant(1e-10, dtype=DTYPE)
 
     def __init__(self, PBE, domain_properties, field):
         
