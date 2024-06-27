@@ -233,12 +233,11 @@ class Non_Linear(Equations_utils):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
         self.epsilon = self.epsilon_2
-        self.T_adim = self.T*self.eps0*self.ang_to_m*self.kb/self.qe**2
 
     def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*self.T_adim*tf.math.sinh(phi/self.T_adim)     
+        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*self.T_adim*self.PBE.aprox_sinh(phi/self.T_adim)  
         return r
     

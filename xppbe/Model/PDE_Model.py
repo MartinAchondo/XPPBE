@@ -16,6 +16,7 @@ class PBE(Solution_utils):
     ang_to_m = tf.constant(1e-10, dtype=DTYPE)
     cal2j = tf.constant(4.184, dtype=DTYPE)
     to_V = qe/(eps0 * ang_to_m)  
+    T_fact = kb/(to_V*qe)
 
     pi = tf.constant(np.pi, dtype=DTYPE)
 
@@ -27,22 +28,7 @@ class PBE(Solution_utils):
         self.molecule_path = molecule_dir
         self.results_path = results_path
 
-        self.domain_properties = {
-                'molecule': 'born_ion',
-                'epsilon_1':  1,
-                'epsilon_2': 80,
-                'kappa': 0.125,
-                'T' : 300 
-                }
-        self.sigma = self.mesh.G_sigma
-
-        for key in self.domain_properties:
-            if key in domain_properties:
-                self.domain_properties[key] = domain_properties[key]
-            if key != 'molecule':
-                setattr(self, key, tf.constant(self.domain_properties[key], dtype=self.DTYPE))
-            else:
-                setattr(self, key, self.domain_properties[key])
+        self.calculate_properties(domain_properties)
 
         self.get_charges()
         if self.scheme == 'standard':
@@ -55,6 +41,33 @@ class PBE(Solution_utils):
     def get_PDEs(self):
         PDEs = [self.PDE_in,self.PDE_out]
         return PDEs
+    
+    def calculate_properties(self,domain_properties):
+
+        self.domain_properties = {
+                'molecule': 'born_ion',
+                'epsilon_1':  1,
+                'epsilon_2': 80,
+                'kappa': 0.125,
+                'T' : 300 
+                }
+        
+        T = domain_properties['T'] if 'T' in domain_properties else self.domain_properties['T']
+        kappa = domain_properties['kappa'] if 'kappa' in domain_properties else self.domain_properties['kappa']
+        epsilon_2 = domain_properties['epsilon_2'] if 'epsilon_2' in domain_properties else self.domain_properties['epsilon_2']
+
+        domain_properties['T_adim'] = T*self.T_fact
+        domain_properties['concentration'] = (kappa/self.ang_to_m)**2*(self.eps0*epsilon_2*self.kb*T)/(2*self.qe**2*self.Na)/1000
+
+        for key in ['molecule','epsilon_1','epsilon_2','kappa','T','concentration','T_adim']:
+            if key in domain_properties:
+                self.domain_properties[key] = domain_properties[key]
+            if key != 'molecule':
+                setattr(self, key, tf.constant(self.domain_properties[key], dtype=self.DTYPE))
+            else:
+                setattr(self, key, self.domain_properties[key])
+
+        self.sigma = self.mesh.G_sigma
             
     def get_phi_interface(self,model,**kwargs):      
         verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)
@@ -70,9 +83,7 @@ class PBE(Solution_utils):
         return du_prom,du_1,du_2
     
     
-    def get_phi_ens(self,model,X_mesh,q_L, method='mean', pinn=True, known_method=False):
-        
-        T_adim = self.T*self.eps0*self.ang_to_m*self.kb/self.qe**2             
+    def get_phi_ens(self,model,X_mesh,q_L, method='mean', pinn=True, known_method=False):        
 
         (X_solv,flag) = X_mesh
         phi_ens_L = list()
@@ -85,9 +96,9 @@ class PBE(Solution_utils):
                 else: 
                     phi = self.phi_known(known_method,'phi',tf.constant(X_solv),'solvent').reshape(-1,1)
                 r_H = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_solv), axis=1, keepdims=True))
-                G2_p = tf.math.reduce_sum(self.aprox_exp(-phi/T_adim)/r_H**6)
-                G2_m = tf.math.reduce_sum(self.aprox_exp(phi/T_adim)/r_H**6)
-                phi_ens_pred = - T_adim/2 * tf.math.log(G2_p/G2_m)
+                G2_p = tf.math.reduce_sum(self.aprox_exp(-phi/self.T_adim)/r_H**6)
+                G2_m = tf.math.reduce_sum(self.aprox_exp(phi/self.T_adim)/r_H**6)
+                phi_ens_pred = - self.T_adim/2 * tf.math.log(G2_p/G2_m)
             
             elif method=='mean':
                 r_H = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_solv), axis=1))
@@ -220,6 +231,11 @@ class PBE(Solution_utils):
     @staticmethod
     def aprox_exp(x):
         aprox = 1.0 + x + x**2/2.0 + x**3/6.0 + x**4/24.0
+        return aprox
+    
+    @staticmethod
+    def aprox_sinh(x):
+        aprox = x + x**3/6.0 
         return aprox
 
     # Differential operators
