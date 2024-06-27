@@ -112,7 +112,7 @@ class NeuralNet(tf.keras.Model):
             self.fourier_features.add(SinCosLayer(name='fourier_sincos_layer'))
         
         # FCNN or ModMLP architectures
-        if self.architecture_Net in ('FCNN','ModMLP'):
+        if self.architecture_Net in ('FCNN','ModMLP','MLP'):
             self.hidden_layers = list()
             for i in range(self.num_hidden_layers):
                 layer = Dense_Layer(self.num_neurons_per_layer,
@@ -183,7 +183,7 @@ class NeuralNet(tf.keras.Model):
         self.build(self.input_shape_N)
 
     def call(self, X):
-        if self.architecture_Net == 'FCNN':
+        if self.architecture_Net in ('FCNN','MLP'):
             return self.call_FCNN(X)
         elif self.architecture_Net == 'ModMLP':
             return self.call_ModMLP(X)
