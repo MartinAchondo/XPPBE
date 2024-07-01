@@ -152,9 +152,9 @@ def test_non_linear_and_schemes(model,scheme):
 @pytest.mark.parametrize(
  ('pinns_method','model','scheme'),
  (
-     ('DCM','nonlinear','regularized_scheme_2'),
+     ('DCM','linear','direct'),
      ('DCM','linear', 'regularized_scheme_1'),
-     ('DCM','linear','direct')
+     ('DCM','nonlinear','regularized_scheme_2'),
      ('DVM','linear','direct'),
      ('DVM','linear','regularized_scheme_1'),
      ('DVM','nonlinear','regularized_scheme_1'),

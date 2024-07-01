@@ -181,7 +181,7 @@ class PBE_Var_Direct(PBE_Direct):
         if self.equation=='linear':
             self.PDE_out = Variational_Helmholtz(self,self.domain_properties,field='phi')
         elif self.equation=='nonlinear':
-            self.PDE_out = Variational_Non_linear(self,self.domain_properties,field='phi')
+            self.PDE_out = Variational_Non_Linear(self,self.domain_properties,field='phi')
 
 class PBE_Var_Reg_1(PBE_Reg_1):
 
@@ -193,7 +193,7 @@ class PBE_Var_Reg_1(PBE_Reg_1):
         if self.equation=='linear':
             self.PDE_out = Variational_Helmholtz(self,self.domain_properties,field='react')
         elif self.equation=='nonlinear':
-            self.PDE_out = Variational_Non_linear(self,self.domain_properties,field='react')
+            self.PDE_out = Variational_Non_Linear(self,self.domain_properties,field='react')
 
 
 
