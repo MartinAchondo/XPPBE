@@ -6,7 +6,7 @@ import shutil
 from xppbe import Simulation
 from xppbe import Allrun,Allclean
 
-def run_checkers(sim,sim_name,temp_dir):
+def run_checkers(sim,sim_name,temp_dir,num_iters=1):
 
     results_path = os.path.join(temp_dir,'results')
     assert os.path.isdir(results_path)
@@ -20,7 +20,7 @@ def run_checkers(sim,sim_name,temp_dir):
     assert len(os.listdir(mesh_path)) > 0 
 
     iterations_path = os.path.join(results_path,'iterations')
-    assert len(os.listdir(iterations_path)) == 1
+    assert len(os.listdir(iterations_path)) == num_iters
 
     last_iteration = os.path.join(iterations_path,f'iter_{sim.N_iters}')
     listdir_last_iteration = os.listdir(last_iteration)
@@ -99,6 +99,23 @@ def test_additional_losses(loss):
         sim.solve_model()
         sim.postprocessing(run_all=True)
         run_checkers(sim,sim_name,temp_dir)
+
+
+def test_optimizers():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        sim_name = f'test_optimizers'
+        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
+        yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
+        shutil.copy(yaml_prev_path,yaml_path)
+        results_path = os.path.join(temp_dir,'results',sim_name)
+        sim = Simulation(yaml_path, results_path=results_path, molecule_dir=None)
+        sim.options_optimizer2['maxiter'] = 3
+        sim.N_steps_2 = 2
+        sim.create_simulation()
+        sim.adapt_model()
+        sim.solve_model()
+        sim.postprocessing(run_all=True)
+        run_checkers(sim,sim_name,temp_dir,num_iters=2)
 
 
 @pytest.mark.parametrize(
