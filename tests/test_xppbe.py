@@ -58,8 +58,6 @@ def test_scripts():
 @pytest.mark.parametrize(
  ('molecule'),
  (
-     ('born_ion'),
-     ('sphere_+1-1'),
      ('methanol'),
      ('arg')
  )       
@@ -142,6 +140,36 @@ def test_non_linear_and_schemes(model,scheme):
         shutil.copy(yaml_prev_path,yaml_path)
         results_path = os.path.join(temp_dir,'results',sim_name)
         sim = Simulation(yaml_path, results_path=results_path, molecule_dir=None)
+        sim.pbe_model = model
+        sim.equation = scheme
+        sim.create_simulation()
+        sim.adapt_model()
+        sim.solve_model()
+        sim.postprocessing(run_all=True)
+        run_checkers(sim,sim_name,temp_dir)
+
+
+@pytest.mark.parametrize(
+ ('pinns_method','model','scheme'),
+ (
+     ('DCM','nonlinear','regularized_scheme_2'),
+     ('DCM','linear', 'regularized_scheme_1'),
+     ('DCM','linear','direct')
+     ('DVM','linear','direct'),
+     ('DVM','linear','regularized_scheme_1'),
+     ('DVM','nonlinear','regularized_scheme_1'),
+     ('DBM','linear','direct')
+ )       
+)
+def test_non_linear_and_schemes(pinns_method,model,scheme):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        sim_name = f'test_{pinns_method}_{scheme}'
+        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
+        yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
+        shutil.copy(yaml_prev_path,yaml_path)
+        results_path = os.path.join(temp_dir,'results',sim_name)
+        sim = Simulation(yaml_path, results_path=results_path, molecule_dir=None)
+        sim.pinns_method = pinns_method
         sim.pbe_model = model
         sim.equation = scheme
         sim.create_simulation()

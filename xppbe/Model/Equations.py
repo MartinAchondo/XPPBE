@@ -49,7 +49,7 @@ class PBE_Direct(PBE):
     def get_solvation_energy(self,model):
         X = self.grid.vertices.transpose()
         Nv = self.grid.normals.transpose()
-        phi = tf.reshape(model(X,'interface')[:,1], (-1,1))
+        phi = model(X,'interface')
         phi_mean = (phi[:,0]+phi[:,1])/2
         u_interface = phi_mean.numpy().flatten()
         du_1 = self.directional_gradient(self.mesh,model,X,Nv,'molecule',value='phi')
