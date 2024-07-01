@@ -366,7 +366,7 @@ class Variational_Laplace(Equations_utils):
     def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
-        gx,gy,gz = self.PBE.gradient(self,mesh,model,X,flag,value=self.field)
+        gx,gy,gz = self.PBE.gradient(mesh,model,X,flag,value=self.field)
         r = self.epsilon*(gx**2+gy**2+gz**2)/2   
         return r
     
@@ -381,7 +381,7 @@ class Variational_Poisson(Equations_utils):
         R = mesh.stack_X(x,y,z)
         source = self.PBE.source(mesh.stack_X(x,y,z)) if SU==None else SU
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        gx,gy,gz = self.PBE.gradient(self,mesh,model,X,flag,value=self.field)
+        gx,gy,gz = self.PBE.gradient(mesh,model,X,flag,value=self.field)
         r = self.epsilon*(gx**2+gy**2+gz**2)/2 - source*phi  
         return r
     
@@ -400,7 +400,7 @@ class Variational_Helmholtz(Equations_utils):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        gx,gy,gz = self.PBE.gradient(self,mesh,model,X,flag,value=self.field)
+        gx,gy,gz = self.PBE.gradient(mesh,model,X,flag,value=self.field)
         r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa*2 * phi**2
         return r
     
@@ -408,7 +408,7 @@ class Variational_Helmholtz(Equations_utils):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        gx,gy,gz = self.PBE.gradient(self,mesh,model,X,flag,value=self.field)
+        gx,gy,gz = self.PBE.gradient(mesh,model,X,flag,value=self.field)
         r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa*2 * phi**2 - self.kappa*2*phi*self.PBE.G(X)
         return r
 
@@ -428,7 +428,7 @@ class Variational_Non_Linear(Equations_utils):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        gx,gy,gz = self.PBE.gradient(self,mesh,model,X,flag,value=self.field)
+        gx,gy,gz = self.PBE.gradient(mesh,model,X,flag,value=self.field)
         r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.PBE.aprox_sinh(phi/self.T_adim) *phi
         return r
     
@@ -436,7 +436,7 @@ class Variational_Non_Linear(Equations_utils):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        gx,gy,gz = self.PBE.gradient(self,mesh,model,X,flag,value=self.field)
+        gx,gy,gz = self.PBE.gradient(mesh,model,X,flag,value=self.field)
         r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.PBE.aprox_sinh(phi+self.PBE.G(X)/self.T_adim) *phi
         return r
 
@@ -457,7 +457,7 @@ class Boundary_Poisson(Equations_utils):
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         dphi = self.get_dphi(X,N_v,flag,model,value='phi')
         G,dG = 1,2
-        integrand = dphi*G - phi*dG
+        integral = tf.reduce_sum(dphi*G - phi*dG)
 
 
 class Boundary_Helmholtz(Equations_utils):
@@ -474,6 +474,6 @@ class Boundary_Helmholtz(Equations_utils):
         N_v = self.normals
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        dphi,_ = self.get_dphi(X,N_v,flag,model,value='phi')
+        dphi = self.get_dphi(X,N_v,flag,model,value='phi')
         
         
