@@ -332,7 +332,7 @@ class Helmholtz(Equations_utils):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*(phi+self.G(X))  
+        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*(phi+self.PBE.G(X))  
         return r 
 
 
@@ -358,7 +358,7 @@ class Non_Linear(Equations_utils):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*self.T_adim*self.aprox_sinh((phi+self.G(X))/self.T_adim)     
+        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*self.T_adim*self.aprox_sinh((phi+self.PBE.G(X))/self.T_adim)     
         return r
 
 class Variational_Laplace(Equations_utils):

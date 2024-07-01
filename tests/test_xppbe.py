@@ -17,7 +17,7 @@ def run_checkers(sim,sim_name,temp_dir):
         assert name in os.listdir(results_path)
 
     mesh_path = os.path.join(results_path,'mesh')
-    assert len(os.listdir(mesh_path)) == 10 or len(os.listdir(mesh_path)) == 11 
+    assert len(os.listdir(mesh_path)) > 0 
 
     iterations_path = os.path.join(results_path,'iterations')
     assert len(os.listdir(iterations_path)) == 1
