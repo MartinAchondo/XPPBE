@@ -209,8 +209,6 @@ class Solution_utils():
 
         if not self.apbs_created:
             from .apbs_utils.apbs_interface import APBS
-
-            self.domain_properties['concentration'] = (self.kappa/self.ang_to_m)**2*(self.eps0*self.epsilon_2*self.kb*self.T)/(2*self.qe**2*self.Na)/1000
             
             self.apbs_obj = APBS(self.domain_properties,self.equation,self.pqr_path,self.results_path)
             self.apbs_created = True

@@ -265,11 +265,6 @@ class PBE_Bound(PBE):
 class Equations_utils():
 
     DTYPE = 'float32'
-    qe = tf.constant(1.60217663e-19, dtype=DTYPE)
-    eps0 = tf.constant(8.8541878128e-12, dtype=DTYPE)     
-    kb = tf.constant(1.380649e-23, dtype=DTYPE)              
-    Na = tf.constant(6.02214076e23, dtype=DTYPE)
-    ang_to_m = tf.constant(1e-10, dtype=DTYPE)
 
     def __init__(self, PBE, domain_properties, field):
         
@@ -316,6 +311,7 @@ class Helmholtz(Equations_utils):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
         self.epsilon = self.epsilon_2
+
         if self.field == 'phi':
             self.get_r = self.get_r_total
         elif self.field == 'react':
@@ -341,7 +337,7 @@ class Non_Linear(Equations_utils):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
         self.epsilon = self.epsilon_2
-        self.T_adim = self.PBE.T_adim
+
         if self.field == 'phi':
             self.get_r = self.get_r_total
         elif self.field == 'react':
@@ -394,6 +390,7 @@ class Variational_Helmholtz(Equations_utils):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
         self.epsilon = self.epsilon_2
+
         if self.field == 'phi':
             self.get_r = self.get_r_total
         elif self.field == 'react':
@@ -412,7 +409,7 @@ class Variational_Helmholtz(Equations_utils):
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         gx,gy,gz = self.gradient(self,mesh,model,X,flag,value=self.field)
-        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa*2 * phi**2 - self.kappa*2*phi*self.G(X)
+        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa*2 * phi**2 - self.kappa*2*phi*self.PBE.G(X)
         return r
 
     
@@ -440,7 +437,7 @@ class Variational_Non_Linear(Equations_utils):
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         gx,gy,gz = self.gradient(self,mesh,model,X,flag,value=self.field)
-        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.PBE.aprox_sinh(phi+self.G(X)/self.T_adim) *phi
+        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.PBE.aprox_sinh(phi+self.PBE.G(X)/self.T_adim) *phi
         return r
 
 
