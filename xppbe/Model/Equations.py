@@ -51,9 +51,12 @@ class PBE_Direct(PBE):
         Nv = tf.reshape(tf.constant(self.grid.normals.transpose(),dtype=self.DTYPE), (-1,3))
         phi = model(X,'interface')
         phi_mean = (phi[:,0]+phi[:,1])/2
+
+        x = self.mesh.get_X(X)
+        nv = self.mesh.get_X(Nv)
         u_interface = phi_mean.numpy().flatten()
-        du_1 = self.directional_gradient(self.mesh,model,X,Nv,'molecule',value='phi')
-        du_2 = self.directional_gradient(self.mesh,model,X,Nv,'solvent',value='phi')
+        du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='phi')
+        du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='phi')
         du_1 = du_1.numpy().flatten()
         du_2 = du_2.numpy().flatten()
         du_1_interface = (du_1+du_2*self.PDE_out.epsilon/self.PDE_in.epsilon)/2

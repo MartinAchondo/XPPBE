@@ -33,7 +33,7 @@ def run_checkers(sim,sim_name,temp_dir,num_iters=1):
         with open(file, 'r') as csvfile:
             reader = csv.reader(csvfile)
             lines = list(reader)
-            assert len(lines) == sim.N_iters + 1
+            assert len(lines) == int(sim.N_iters+sim.N_steps_2*sim.options_optimizer2["maxiter"]) + 1
             last_line = lines[-1]
             assert not '' in last_line
     
