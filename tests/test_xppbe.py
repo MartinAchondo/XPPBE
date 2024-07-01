@@ -125,31 +125,6 @@ def test_other_architectures(arch):
 
 
 @pytest.mark.parametrize(
- ('model','scheme'),
- (
-     ('nonlinear','regularized_scheme_2'),
-     ('linear', 'regularized_scheme_1'),
-     ('linear','direct')
- )       
-)
-def test_non_linear_and_schemes(model,scheme):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        sim_name = f'test_{model}_{scheme}'
-        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
-        yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
-        shutil.copy(yaml_prev_path,yaml_path)
-        results_path = os.path.join(temp_dir,'results',sim_name)
-        sim = Simulation(yaml_path, results_path=results_path, molecule_dir=None)
-        sim.pbe_model = model
-        sim.equation = scheme
-        sim.create_simulation()
-        sim.adapt_model()
-        sim.solve_model()
-        sim.postprocessing(run_all=True)
-        run_checkers(sim,sim_name,temp_dir)
-
-
-@pytest.mark.parametrize(
  ('pinns_method','model','scheme'),
  (
      ('DCM','linear','direct'),
@@ -161,7 +136,7 @@ def test_non_linear_and_schemes(model,scheme):
      ('DBM','linear','direct')
  )       
 )
-def test_non_linear_and_schemes(pinns_method,model,scheme):
+def test_pinns_method_and_schemes(pinns_method,model,scheme):
     with tempfile.TemporaryDirectory() as temp_dir:
         sim_name = f'test_{pinns_method}_{scheme}'
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
