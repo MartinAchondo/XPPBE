@@ -309,7 +309,7 @@ class PBE(Solution_utils):
         elements = self.mesh.mol_faces
         vertices = self.mesh.mol_verts
         self.grid = self.bempp.Grid(vertices.transpose(), elements.transpose())
-        self.space = self.bempp.function_space(self.grid, "P", 1)
+        self.space = self.bempp.function_space(self.grid, "DP", 0)
         self.dirichl_space = self.space
         self.neumann_space = self.space
 

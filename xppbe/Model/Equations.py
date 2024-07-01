@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 
 from .PDE_Model import PBE
@@ -47,8 +48,15 @@ class PBE_Direct(PBE):
         return du_1,du_2
 
     def get_solvation_energy(self,model):
-        X = tf.reshape(tf.constant(self.grid.vertices.transpose(),dtype=self.DTYPE), (-1,3))
-        Nv = tf.reshape(tf.constant(self.grid.normals.transpose(),dtype=self.DTYPE), (-1,3))
+        vertices = self.grid.vertices
+        faces_normals = self.grid.normals
+        elements = self.grid.elements
+        centroids = np.zeros((3, elements.shape[1]))
+        for i, element in enumerate(elements.T):
+            centroids[:, i] = np.mean(vertices[:, element], axis=1)
+
+        X = tf.reshape(tf.constant(centroids.transpose(),dtype=self.DTYPE), (-1,3))
+        Nv = tf.reshape(tf.constant(faces_normals.transpose(),dtype=self.DTYPE), (-1,3))
         phi = model(X,'interface')
         phi_mean = (phi[:,0]+phi[:,1])/2
 
