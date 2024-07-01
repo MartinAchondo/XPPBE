@@ -95,7 +95,7 @@ class Domain_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, results_path='', molecule_dir=''):
+    def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, results_path='', molecule_dir='', losses_names=list()):
 
         self.mesh_properties = {
             'density_mol': 10,
@@ -123,6 +123,7 @@ class Domain_Mesh():
         self.save_points = save_points
         self.main_path = path
         self.simulation_name = simulation
+        self.losses_names = losses_names
         self.results_path = self.main_path if results_path=='' else results_path
         self.molecule_path = os.path.join(self.main_path,'Molecules',molecule) if molecule_dir=='' else molecule_dir
 
@@ -142,10 +143,14 @@ class Domain_Mesh():
     
     def read_create_meshes(self):
         self.create_molecule_mesh()
-        self.create_sphere_mesh()
-        self.create_interior_mesh()
-        self.create_exterior_mesh()
-        self.create_charges_mesh()
+        if 'D2' or 'R2' in self.losses_names:
+            self.create_sphere_mesh()
+        if 'R1' in self.losses_names:
+            self.create_interior_mesh()
+        if 'R2' in self.losses_names:
+            self.create_exterior_mesh()
+        if 'Q1' in self.losses_names:
+            self.create_charges_mesh()
         self.create_mesh_obj()
         print("Mesh initialization ready")
 

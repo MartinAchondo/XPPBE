@@ -36,40 +36,54 @@ class Simulation():
                         path=self.main_path,
                         simulation=self.simulation_name,
                         results_path=self.results_path,
-                        molecule_dir=self.molecule_dir
+                        molecule_dir=self.molecule_dir,
+                        losses_names=self.losses
                         )
 
-        if self.equation == 'standard':
-                from xppbe.Model.Equations import PBE_Std as PBE
-        elif self.equation == 'regularized_scheme_1':
-                from xppbe.Model.Equations import PBE_Reg_1 as PBE
-        elif self.equation == 'regularized_scheme_2':
-                from xppbe.Model.Equations import PBE_Reg_2 as PBE
+        if self.pinns_method == 'DCM':
+            if self.equation == 'direct':
+                    from xppbe.Model.Equations import PBE_Direct as PBE
+            elif self.equation == 'regularized_scheme_1':
+                    from xppbe.Model.Equations import PBE_Reg_1 as PBE
+            elif self.equation == 'regularized_scheme_2':
+                    from xppbe.Model.Equations import PBE_Reg_2 as PBE
+                    
+        elif self.pinns_method == 'DVM':
+            if self.equation == 'direct':
+                    from xppbe.Model.Equations import PBE_Var_Direct as PBE
+            elif self.equation == 'regularized_scheme_1':
+                    from xppbe.Model.Equations import PBE_Var_Reg_1 as PBE
+
+        elif self.pinns_method == 'DBM':
+            from xppbe.Model.Equations import PBE_Bound as PBE
 
         self.PBE_model = PBE(self.domain_properties,
                 mesh=self.Mol_mesh, 
+                pinns_method=self.pinns_method,
                 equation=self.pbe_model,
                 main_path=self.main_path,
                 molecule_dir=self.molecule_dir,
                 results_path=self.results_path
                 ) 
 
-        meshes_domain = dict()           
-        if self.equation == 'standard':
-            meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'fun':lambda X: self.PBE_model.source(X)}
-            meshes_domain['Q1'] = {'domain': 'molecule', 'type':'Q1', 'fun':lambda X: self.PBE_model.source(X)}
-            meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)}
-                
-        elif self.equation == 'regularized_scheme_1':
-            meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
-            meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)-self.PBE_model.G(X)}
+        meshes_domain = dict()   
+        if self.pinns_method in ['DCM','DVM']:     
+            if self.equation == 'direct':
+                meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'fun':lambda X: self.PBE_model.source(X)}
+                meshes_domain['Q1'] = {'domain': 'molecule', 'type':'Q1', 'fun':lambda X: self.PBE_model.source(X)}
+                meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
+                meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)}
+                    
+            elif self.equation == 'regularized_scheme_1':
+                meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
+                meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
+                meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)-self.PBE_model.G(X)}
 
-        elif self.equation == 'regularized_scheme_2':
-            meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
-            meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)}
+            if self.pinns_method == 'DCM':
+                if self.equation == 'regularized_scheme_2':
+                    meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
+                    meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
+                    meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)}
 
         meshes_domain['K1'] = {'domain': 'molecule', 'type':'K1', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
         meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}

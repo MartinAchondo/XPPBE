@@ -1,5 +1,7 @@
 # Simulation settings
 
+pinns_method: DCM
+
 # Equation to solve
 equation: regularized_scheme_2
 

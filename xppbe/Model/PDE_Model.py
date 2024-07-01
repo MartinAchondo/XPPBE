@@ -19,11 +19,12 @@ class PBE(Solution_utils):
 
     pi = tf.constant(np.pi, dtype=DTYPE)
 
-    def __init__(self, domain_properties, mesh, equation, main_path, molecule_dir, results_path):      
+    def __init__(self, domain_properties, mesh, equation, pinns_method, main_path, molecule_dir, results_path):      
 
         self.mesh = mesh
         self.main_path = main_path
         self.equation = equation
+        self.pinns_method = pinns_method
         self.molecule_path = molecule_dir
         self.results_path = results_path
 
@@ -45,7 +46,7 @@ class PBE(Solution_utils):
                 setattr(self, key, self.domain_properties[key])
 
         self.get_charges()
-        if self.scheme == 'standard':
+        if self.scheme == 'direct':
             self.bempp = None
             self.get_integral_operators()
 
