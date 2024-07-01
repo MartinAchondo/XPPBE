@@ -37,7 +37,7 @@ class Simulation():
                         simulation=self.simulation_name,
                         results_path=self.results_path,
                         molecule_dir=self.molecule_dir,
-                        losses_names=self.losses
+                        losses_names= ['I'] if self.pinns_method=='DBM' else self.losses
                         )
 
         if self.pinns_method == 'DCM':
@@ -85,11 +85,15 @@ class Simulation():
                     meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
                     meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)}
 
-        meshes_domain['K1'] = {'domain': 'molecule', 'type':'K1', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
-        meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
-        meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': f'experimental_data_{self.domain_properties["molecule"]}.dat', 'method': self.experimental_method}
+            meshes_domain['K1'] = {'domain': 'molecule', 'type':'K1', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
+            meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
+            meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': f'experimental_data_{self.domain_properties["molecule"]}.dat', 'method': self.experimental_method}
+        
+        elif self.pinns_method == 'DBM':
+             meshes_domain['R1'] = {'domain': 'interface', 'type':'R1', 'fun':lambda X: self.PBE_model.G_Yukawa(X)-self.PBE_model.G(X)}
+             meshes_domain['R2'] = {'domain': 'interface', 'type':'R2', 'value':0.0}
 
-        if self.num_networks==2:
+        if self.num_networks==2 and self.pinns_method=='DCM':
                 meshes_domain['Iu'] = {'domain':'interface', 'type':'Iu'}
                 meshes_domain['Id'] = {'domain':'interface', 'type':'Id'}
                 meshes_domain['Ir'] = {'domain':'interface', 'type':'Ir'}
@@ -97,7 +101,8 @@ class Simulation():
 
         self.meshes_domain = dict()
         for t in self.losses:
-            self.meshes_domain[t] = meshes_domain[t]
+            if t in self.meshes_domain:
+                self.meshes_domain[t] = meshes_domain[t]
 
         self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
 

@@ -456,35 +456,44 @@ class Boundary_Poisson(Equations_utils):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
-        self.areas = self.PBE.mesh.mol_faces_areas
-        self.normals = self.PBE.mesh.mol_faces_normal
-        self.centroids = self.PBE.mesh.mol_faces_centroid
+        self.areas = tf.transpose(tf.constant(self.PBE.mesh.mol_faces_areas, dtype=self.DTYPE))
+        self.normals = tf.constant(self.PBE.mesh.mol_faces_normal, dtype=self.DTYPE)
+        self.centroids = tf.constant(self.PBE.mesh.mol_faces_centroid, dtype=self.DTYPE)
 
     def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
+        R = mesh.stack_X(x,y,z)
         X_c = self.centroids
         N_v = self.normals
-        R = mesh.stack_X(x,y,z)
+        phi_i = tf.transpose(self.PBE.get_phi(X_c,flag,model,value=self.field))
+        dphi_i = tf.transpose(self.PBE.get_dphi(X_c,N_v,flag,model,value='phi'))
+        integrand = (dphi_i*self.PBE.G_L(R,X_c) - phi_i*self.PBE.dG_L(R,X_c))*self.areas
+        integral = tf.reduce_sum(integrand, axis=1, keepdims=True) 
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        dphi = self.get_dphi(X,N_v,flag,model,value='phi')
-        G,dG = 1,2
-        integral = tf.reduce_sum(dphi*G - phi*dG)
+        G = self.PBE.G(R) if SU==None else SU
+        r = 0.5*phi - G - integral
+        return r
 
 
 class Boundary_Helmholtz(Equations_utils):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
-        self.areas = self.PBE.mesh.mol_faces_areas
-        self.normals = self.PBE.mesh.mol_faces_normal
-        self.centroids = self.PBE.mesh.mol_faces_centroid
+        self.areas = tf.transpose(tf.constant(self.PBE.mesh.mol_faces_areas, dtype=self.DTYPE))
+        self.normals = tf.constant(self.PBE.mesh.mol_faces_normal, dtype=self.DTYPE)
+        self.centroids = tf.constant(self.PBE.mesh.mol_faces_centroid, dtype=self.DTYPE)
 
     def get_r(self,mesh,model,X,SU,flag):
         x,y,z = X
+        R = mesh.stack_X(x,y,z)
         X_c = self.centroids
         N_v = self.normals
-        R = mesh.stack_X(x,y,z)
+        phi_i = tf.transpose(self.PBE.get_phi(X_c,flag,model,value=self.field))
+        dphi_i = tf.transpose(self.PBE.get_dphi(X_c,N_v,flag,model,value='phi'))*(self.epsilon_2/self.epsilon_1)
+        integrand = (- dphi_i*self.PBE.G_Y(R,X_c) + phi_i*self.PBE.dG_Y(R,X_c))*self.areas
+        integral =  tf.reduce_sum(integrand, axis=1, keepdims=True) 
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        dphi = self.get_dphi(X,N_v,flag,model,value='phi')
+        r = 0.5*phi - integral
+        return r
         
         

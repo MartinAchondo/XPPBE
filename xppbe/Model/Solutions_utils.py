@@ -93,7 +93,47 @@ class Solution_utils():
         result = (1 / (self.epsilon_2 * 4 * self.pi)) * total_sum
         result = tf.expand_dims(result, axis=1)
         return result
+
+
+    def G_L(self,X,Xp):
+        X_expanded = tf.expand_dims(X, axis=1)  # Shape: (n, 1, 3)
+        Xp_expanded = tf.expand_dims(Xp, axis=0)  # Shape: (1, m, 3)
+        # Compute the pairwise differences
+        r_diff = X_expanded - Xp_expanded  # Shape: (n, m, 3)
+        # Compute the Euclidean distances
+        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))  # Shape: (n, m)
+        # Avoid division by zero by ading a small epsilon where r is zero
+        # epsilon = 1e-10
+        # r = tf.where(r == 0, epsilon, r)
+        # Compute 1/r
+        over_r = 1 / r  # Shape: (n, m)
+        # Compute the Green's function
+        green_function = (1 / (4 * self.pi)) * over_r  # Shape: (n, m)
+        return green_function
+    
+    def G_Y(self,X,Xp):
+        X_expanded = tf.expand_dims(X, axis=1)  # Shape: (n, 1, 3)
+        Xp_expanded = tf.expand_dims(Xp, axis=0)  # Shape: (1, m, 3)
+        # Compute the pairwise differences
+        r_diff = X_expanded - Xp_expanded  # Shape: (n, m, 3)
+        # Compute the Euclidean distances
+        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))  # Shape: (n, m)
+        # Avoid division by zero by ading a small epsilon where r is zero
+        # epsilon = 1e-10
+        # r = tf.where(r == 0, epsilon, r)
+        # Compute 1/r
+        e_over_r = tf.exp(-self.kappa*r) / r  # Shape: (n, m)
+        # Compute the Green's function
+        green_function = (1 / (4 * self.pi)) * e_over_r  # Shape: (n, m)
+        return green_function
+    
+    def dG_L(self,X,Xp):
+        return self.G_L(X,Xp)
+
+    def dG_Y(self,X,Xp):
+        return self.G_Y(X,Xp)
         
+
     def analytic_Born_Ion(self,r, R=None):
         if R is None:
             R = self.mesh.R_mol
@@ -215,3 +255,17 @@ class Solution_utils():
 
         phi = self.apbs_obj.calculate_potential(X)
         return phi
+
+
+
+if __name == '__main__':
+       
+    X = np.array([[]])   
+    X_expanded = tf.expand_dims(X, axis=1)
+    Xp_expanded = tf.expand_dims(Xp, axis=1)
+    r_diff = X_expanded - Xp_expanded
+    r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))
+    over_r = 1 / r
+    total_sum = tf.reduce_sum(over_r, axis=1)
+    result = (1 / ( 4 * self.pi)) * total_sum
+    result = tf.expand_dims(result, axis=1)
