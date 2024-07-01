@@ -351,14 +351,14 @@ class Non_Linear(Equations_utils):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*self.T_adim*self.aprox_sinh(phi/self.T_adim)     
+        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*self.T_adim*self.PBE.aprox_sinh(phi/self.T_adim)     
         return r
     
     def get_r_reg(self,mesh,model,X,SU,flag):
         x,y,z = X
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*self.T_adim*self.aprox_sinh((phi+self.PBE.G(X))/self.T_adim)     
+        r = self.PBE.laplacian(mesh,model,X,flag,value=self.field) - self.kappa**2*self.T_adim*self.PBE.aprox_sinh((phi+self.PBE.G(X))/self.T_adim)     
         return r
 
 class Variational_Laplace(Equations_utils):
@@ -432,7 +432,7 @@ class Variational_Non_Linear(Equations_utils):
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         gx,gy,gz = self.gradient(self,mesh,model,X,flag,value=self.field)
-        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.aprox_sinh(phi/self.T_adim) *phi
+        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.PBE.aprox_sinh(phi/self.T_adim) *phi
         return r
     
     def get_r_reg(self,mesh,model,X,SU,flag):
@@ -440,7 +440,7 @@ class Variational_Non_Linear(Equations_utils):
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         gx,gy,gz = self.gradient(self,mesh,model,X,flag,value=self.field)
-        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.aprox_sinh(phi+self.G(X)/self.T_adim) *phi
+        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.PBE.aprox_sinh(phi+self.G(X)/self.T_adim) *phi
         return r
 
 

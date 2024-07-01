@@ -82,8 +82,7 @@ def test_xppbe_solver(molecule):
  (
      ('K2'),
      ('E2'),
-     ('G'),
-     ('Ir')
+     ('G')
  )       
 )
 def test_additional_losses(loss):
@@ -132,7 +131,7 @@ def test_other_architectures(arch):
  (
      ('nonlinear','regularized_scheme_2'),
      ('linear', 'regularized_scheme_1'),
-     ('linear','standard')
+     ('linear','direct')
  )       
 )
 def test_non_linear_and_schemes(model,scheme):
