@@ -256,16 +256,3 @@ class Solution_utils():
         phi = self.apbs_obj.calculate_potential(X)
         return phi
 
-
-
-if __name == '__main__':
-       
-    X = np.array([[]])   
-    X_expanded = tf.expand_dims(X, axis=1)
-    Xp_expanded = tf.expand_dims(Xp, axis=1)
-    r_diff = X_expanded - Xp_expanded
-    r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))
-    over_r = 1 / r
-    total_sum = tf.reduce_sum(over_r, axis=1)
-    result = (1 / ( 4 * self.pi)) * total_sum
-    result = tf.expand_dims(result, axis=1)
