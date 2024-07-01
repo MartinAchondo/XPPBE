@@ -101,7 +101,7 @@ class Simulation():
 
         self.meshes_domain = dict()
         for t in self.losses:
-            if t in self.meshes_domain:
+            if t in meshes_domain:
                 self.meshes_domain[t] = meshes_domain[t]
 
         self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
