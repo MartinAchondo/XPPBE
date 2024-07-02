@@ -37,7 +37,7 @@ class Simulation():
                         simulation=self.simulation_name,
                         results_path=self.results_path,
                         molecule_dir=self.molecule_dir,
-                        losses_names= ['I'] if self.pinns_method=='DBM' else self.losses
+                        losses_names= self.losses
                         )
 
         if self.pinns_method == 'DCM':
