@@ -345,7 +345,7 @@ class PBE(Solution_utils):
     def get_grid_coefficients_faces(self,model):
 
         X = self.mesh.grid_centroids
-        N_v = self.mesh.grid_faces_normals
+        Nv = self.mesh.grid_faces_normals
         phi_mean,_,_ = self.get_phi_interface(X,model)
         u_interface = phi_mean.numpy().flatten()
         x = self.mesh.get_X(X)
