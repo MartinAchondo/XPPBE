@@ -23,17 +23,15 @@ class PBE_Direct(PBE):
         elif flag=='solvent':
             phi = tf.reshape(model(X,flag)[:,1], (-1,1))
         elif flag=='interface':
-            phi = model(X,flag)
+            phi = (tf.reshape(model(X,flag)[:,0], (-1,1))+tf.reshape(model(X,flag)[:,1], (-1,1)))/2
 
         if value=='phi':
             return phi 
 
         if value == 'react':
             G_val = tf.stop_gradient(self.G(X))
-            if flag != 'interface':
-                phi_r = phi - G_val
-            elif flag =='interface':
-                phi_r = tf.stack([tf.reshape(phi[:,0],(-1,1))-G_val,tf.reshape(phi[:,1],(-1,1))-G_val], axis=1)
+            phi_r = phi - G_val
+
         return phi_r
 
     def get_dphi(self,X,Nv,flag,model,value='phi'):
@@ -72,17 +70,15 @@ class PBE_Reg_1(PBE):
         elif flag=='solvent':
             phi_r = tf.reshape(model(X,flag)[:,1], (-1,1))
         elif flag=='interface':
-            phi_r = model(X,flag)
+            phi_r = (tf.reshape(model(X,flag)[:,0], (-1,1))+tf.reshape(model(X,flag)[:,1], (-1,1)))/2
         
         if value =='react':
             return phi_r
         
         if value == 'phi':
             G_val = tf.stop_gradient(self.G(X))
-            if flag != 'interface':
-                phi = phi_r + G_val
-            elif flag =='interface':
-                phi = tf.stack([tf.reshape(phi_r[:,0],(-1,1))+G_val,tf.reshape(phi_r[:,1],(-1,1))+G_val], axis=1)
+            phi = phi_r + G_val
+
         return phi 
 
     def get_dphi(self,X,Nv,flag,model,value='phi'):
@@ -122,19 +118,16 @@ class PBE_Reg_2(PBE):
         elif flag=='solvent':
             phi_r = tf.reshape(model(X,flag)[:,1], (-1,1)) - tf.stop_gradient(self.G(X))
         elif flag=='interface':
-            phi_t = model(X,flag)
             G_val = tf.stop_gradient(self.G(X))
-            phi_r = tf.stack([tf.reshape(phi_t[:,0],(-1,1)),tf.reshape(phi_t[:,1],(-1,1))-G_val], axis=1)
+            phi_r = (tf.reshape(model(X,flag)[:,0], (-1,1))+tf.reshape(model(X,flag)[:,1], (-1,1))-G_val)/2
 
         if value =='react':
             return phi_r
         
         if value == 'phi':
             G_val = tf.stop_gradient(self.G(X))
-            if flag != 'interface':
-                phi = phi_r + G_val
-            elif flag =='interface':
-                phi = tf.stack([tf.reshape(phi_r[:,0],(-1,1))+G_val,tf.reshape(phi_r[:,1],(-1,1))+G_val], axis=1)
+            phi = phi_r + G_val
+
         return phi 
 
     def get_dphi(self,X,Nv,flag,model,value='phi'):
@@ -209,16 +202,15 @@ class PBE_Bound(PBE):
             phi = phi.reshape(-1,1)
             
         elif flag=='interface':
-            phi = model(X,flag)
-            phi = tf.reshape(phi[:,0]+phi[:,1],(-1,1))/2
+            phi = tf.reshape(model(X,flag)[:,0]+model(X,flag)[:,1],(-1,1))/2
 
         if value=='phi':
             return phi 
 
         if value == 'react':
             G_val = tf.stop_gradient(self.G(X))
-            if flag != 'interface':
-                phi_r = phi - G_val
+            phi_r = phi - G_val
+            
         return phi_r
 
     def get_dphi(self,X,Nv,flag,model,value='phi'):

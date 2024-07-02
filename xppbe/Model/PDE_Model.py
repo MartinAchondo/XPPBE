@@ -71,9 +71,10 @@ class PBE(Solution_utils):
         self.sigma = self.mesh.G_sigma
             
     def get_phi_interface(self,X,model,**kwargs):      
-        u = self.get_phi(X,'interface',model,**kwargs)
-        u_mean = (u[:,0]+u[:,1])/2
-        return u_mean,u[:,0],u[:,1]
+        u_mean = self.get_phi(X,'interface',model,**kwargs)
+        u_1 = self.get_phi(X,'molecule',model,**kwargs)
+        u_2 = self.get_phi(X,'solvent',model,**kwargs)
+        return u_mean[:,0],u[:,0],u[:,0]
     
     def get_dphi_interface(self,X,N_v,model,value='phi'): 
         du_1,du_2 = self.get_dphi(X,N_v,'',model,value)
@@ -204,8 +205,9 @@ class PBE(Solution_utils):
         X = self.mesh.get_X(XI)
 
         if loss_type=='Iu':
-            u = self.get_phi(XI,flag,model)
-            loss += tf.reduce_mean(tf.square(u[:,0]-u[:,1])) 
+            u1 = self.get_phi(XI,'molecule',model)
+            u2 = self.get_phi(XI,'solvent',model)
+            loss += tf.reduce_mean(tf.square(u1[:,0]-u2[:,1])) 
 
         elif loss_type=='Id':
             du_1,du_2 = self.get_dphi(XI,N_v,flag,model,value='phi')

@@ -443,7 +443,7 @@ class Postprocessing():
         elements = self.mesh.mol_faces.astype(np.float32)
 
         phi_known = self.phi_known(method,'react', vertices, flag='solvent')
-        phi_pinn = self.get_phi(vertices,flag='molecule',model=self.model,value='react')
+        phi_pinn = self.get_phi(vertices,flag='interface',model=self.model,value='react')
 
         error = np.abs(phi_pinn.numpy() - phi_known.numpy().reshape(-1,1))
         if type_e == 'relative':
@@ -900,7 +900,7 @@ class Postprocessing():
         if known_method == 'PBJ':
             vertices = self.PDE.pbj_vertices.astype(np.float32)
             phi_known = self.phi_known(known_method,'react', vertices, flag='solvent')
-            phi_xpinn = self.get_phi(vertices,flag='molecule',model=self.model,value='react')
+            phi_xpinn = self.get_phi(vertices,flag='interface',model=self.model,value='react')
 
         phi_dif = (phi_xpinn.numpy() - phi_known.numpy().reshape(-1,1))
         error = np.sqrt(np.sum(phi_dif**2)/np.sum(phi_known.numpy()**2))
@@ -1080,9 +1080,9 @@ class Born_Ion_Postprocessing(Postprocessing):
                 normal_vector = radial_vector / magnitude
                 du = self.get_dphi(XX_bl,normal_vector,flag,self.model,value)
                 if i==0:
-                    ax.plot(theta_bl[:,0],du[i][:,0]*self.PDE.PDE_in.epsilon, label=labels[i], c=colr[i])
+                    ax.plot(theta_bl[:,0],du[i][:,0]*self.PDE.epsilon_1, label=labels[i], c=colr[i])
                 else:
-                    ax.plot(theta_bl[:,0],du[i][:,0]*self.PDE.PDE_out.epsilon, label=labels[i], c=colr[i])
+                    ax.plot(theta_bl[:,0],du[i][:,0]*self.PDE.epsilon_2, label=labels[i], c=colr[i])
             i += 1
 
         if plot=='u':
@@ -1092,7 +1092,7 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         elif plot=='du':
             dU2 = self.PINN.PDE.analytic_Born_Ion_du(rr)*self.to_V
-            du2 = np.ones((N,1))*dU2*self.PDE.PDE_in.epsilon
+            du2 = np.ones((N,1))*dU2*self.PDE.epsilon_1
             if value=='react':
                 n = du2.shape[0]
                 nnvv = tf.concat([tf.ones((n, 1)), tf.zeros((n, 2))], axis=1)
