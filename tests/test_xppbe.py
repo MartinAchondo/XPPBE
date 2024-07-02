@@ -64,7 +64,7 @@ def test_scripts():
      #('DCM','nonlinear','regularized_scheme_2'),
      #('DVM','linear','direct'),
      #('DVM','linear','regularized_scheme_1'),
-     #('DVM','nonlinear','regularized_scheme_1'),
+     ('DVM','nonlinear','regularized_scheme_1'),
      ('DBM','linear','direct')
  )       
 )
