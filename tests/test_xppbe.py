@@ -60,7 +60,7 @@ def test_scripts():
  ('pinns_method','model','scheme'),
  (
      #('DCM','linear','direct'),
-     #('DCM','linear', 'regularized_scheme_1'),
+     ('DCM','linear', 'regularized_scheme_1'),
      #('DCM','nonlinear','regularized_scheme_2'),
      #('DVM','linear','direct'),
      #('DVM','linear','regularized_scheme_1'),

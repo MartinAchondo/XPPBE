@@ -207,7 +207,7 @@ class PBE(Solution_utils):
         if loss_type=='Iu':
             u1 = self.get_phi(XI,'molecule',model)
             u2 = self.get_phi(XI,'solvent',model)
-            loss += tf.reduce_mean(tf.square(u1[:,0]-u2[:,1])) 
+            loss += tf.reduce_mean(tf.square(u1-u2)) 
 
         elif loss_type=='Id':
             du_1,du_2 = self.get_dphi(XI,N_v,flag,model,value='phi')
