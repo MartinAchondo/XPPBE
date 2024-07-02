@@ -131,7 +131,7 @@ class Solution_utils():
 
         X_expanded = tf.expand_dims(X, axis=1)  # Shape: (n, 1, 3)
         Xp_expanded = tf.expand_dims(Xp, axis=0)  # Shape: (1, m, 3)
-        n_expanded = tf.expand_dims(N, axis=1)  # Shape: (n, 1, 3)
+        n_expanded = tf.expand_dims(N, axis=0)  # Shape: (1, m, 3)
         # Compute the pairwise differences
         r_diff = X_expanded - Xp_expanded  # Shape: (n, m, 3)
         # Compute the Euclidean distances
@@ -151,7 +151,7 @@ class Solution_utils():
     def dG_Y(self,X,Xp,N):
         X_expanded = tf.expand_dims(X, axis=1)  # Shape: (n, 1, 3)
         Xp_expanded = tf.expand_dims(Xp, axis=0)  # Shape: (1, m, 3)
-        n_expanded = tf.expand_dims(N, axis=1)  # Shape: (n, 1, 3)
+        n_expanded = tf.expand_dims(N, axis=0)  # Shape: (1, m, 3)
         # Compute the pairwise differences
         r_diff = X_expanded - Xp_expanded  # Shape: (n, m, 3)
         # Compute the Euclidean distances
