@@ -133,9 +133,9 @@ class PINN_utils():
                     x,y = self.mesh.get_XU(x,bl)
                     self.L_X_domain[type_b] = ((x,y),flag)
 
-            if type_b[0] == 'I' and flag:
-                flag = False
-                self.L_X_domain['I'] = ((self.mesh.region_meshes['I'].get_dataset(),self.mesh.region_meshes['I'].normals),'interface')
+                elif type_b[0] == 'I' and flag:
+                    flag = False
+                    self.L_X_domain['I'] = ((self.mesh.region_meshes['I'].get_dataset(),self.mesh.region_meshes['I'].normals),'interface')
 
             X_d = self.L_X_domain
 
