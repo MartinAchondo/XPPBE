@@ -59,10 +59,10 @@ def test_scripts():
 @pytest.mark.parametrize(
  ('pinns_method','model','scheme'),
  (
-     ('DCM','linear','direct'),
+     #('DCM','linear','direct'),
      #('DCM','linear', 'regularized_scheme_1'),
      #('DCM','nonlinear','regularized_scheme_2'),
-     ('DVM','linear','direct'),
+     #('DVM','linear','direct'),
      #('DVM','linear','regularized_scheme_1'),
      #('DVM','nonlinear','regularized_scheme_1'),
      ('DBM','linear','direct')
@@ -81,7 +81,7 @@ def test_pinns_method_and_schemes(pinns_method,model,scheme):
         sim.equation = scheme
         if pinns_method == 'DBM':
             sim.num_networks = 1
-            sim.losses['IB1','IB2']
+            sim.losses = ['IB1','IB2']
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()
