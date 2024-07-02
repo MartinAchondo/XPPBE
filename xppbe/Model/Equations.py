@@ -268,7 +268,7 @@ class PBE_Bound(PBE):
         x = self.mesh.get_X(X)
         nv = self.mesh.get_X(Nv)
         u_interface = phi_mean.numpy().flatten()
-        du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='phi')
+        du_1 = self.directional_gradient(self.mesh,model,x,nv,'interface',value='phi')
         du_1_interface = du_1.numpy().flatten()
 
         phi = self.bempp.GridFunction(self.space, coefficients=u_interface)
