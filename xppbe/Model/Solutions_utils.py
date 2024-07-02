@@ -139,9 +139,9 @@ class Solution_utils():
         # Compute the derivative of the Green's function with respect to r
         dg_dr = (-1 / (4 * self.pi)) / (r**2)  # Shape: (n, m)
         # Compute the components of the gradient
-        grad_x = dg_dr * r_diff[:, :, 0] / r  # Shape: (n, m)
-        grad_y = dg_dr * r_diff[:, :, 1] / r  # Shape: (n, m)
-        grad_z = dg_dr * r_diff[:, :, 2] / r  # Shape: (n, m)
+        grad_x = -1*dg_dr * r_diff[:, :, 0] / r  # Shape: (n, m)
+        grad_y = -1*dg_dr * r_diff[:, :, 1] / r  # Shape: (n, m)
+        grad_z = -1*dg_dr * r_diff[:, :, 2] / r  # Shape: (n, m)
         # Combine the components into the gradient
         grad = tf.stack([grad_x, grad_y, grad_z], axis=2)  # Shape: (n, m, 3)
         # Compute the dot product of the gradient with the normal vector
@@ -159,9 +159,9 @@ class Solution_utils():
         # Compute the derivative of the Green's function with respect to r
         dg_dr = (-tf.exp(-self.kappa*r) / (4 * self.pi)) / (r)  *(-self.kappa/r - 1/r**2) # Shape: (n, m)
         # Compute the components of the gradient
-        grad_x = dg_dr * r_diff[:, :, 0] / r  # Shape: (n, m)
-        grad_y = dg_dr * r_diff[:, :, 1] / r  # Shape: (n, m)
-        grad_z = dg_dr * r_diff[:, :, 2] / r  # Shape: (n, m)
+        grad_x = -1*dg_dr * r_diff[:, :, 0] / r  # Shape: (n, m)
+        grad_y = -1*dg_dr * r_diff[:, :, 1] / r  # Shape: (n, m)
+        grad_z = -1*dg_dr * r_diff[:, :, 2] / r  # Shape: (n, m)
         # Combine the components into the gradient
         grad = tf.stack([grad_x, grad_y, grad_z], axis=2)  # Shape: (n, m, 3)
         # Compute the dot product of the gradient with the normal vector
