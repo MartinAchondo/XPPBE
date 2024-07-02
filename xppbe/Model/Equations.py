@@ -243,8 +243,8 @@ class PBE_Bound(PBE):
     
     def get_dphi_interface(self,X,N_v,model, value='phi'):
         du_1 = self.get_dphi(X,N_v,'',model,value)
-        du_prom = du_1*self.PDE_in.epsilon
-        du_2 = du_prom/self.PDE_out.epsilon
+        du_prom = du_1*self.epsilon_1
+        du_2 = du_prom/self.epsilon_2
         return du_prom,du_1,du_2
 
 
