@@ -251,18 +251,26 @@ class PBE_Bound(PBE):
         return du_1
 
     def get_solvation_energy(self,model):
+        vertices = self.grid.vertices
+        faces_normals = self.grid.normals
+        elements = self.grid.elements
+        centroids = np.zeros((3, elements.shape[1]))
+        for i, element in enumerate(elements.T):
+            centroids[:, i] = np.mean(vertices[:, element], axis=1)
 
-        u_interface,_,_ = self.get_phi_interface(model) 
-        u_interface = u_interface.numpy().flatten()
-        _,du_1,du_2 = self.get_dphi_interface(model)
-        du_1 = du_1.numpy().flatten()
-        du_2 = du_2.numpy().flatten()
-        du_1_interface = (du_1+du_2*self.PDE_out.epsilon/self.PDE_in.epsilon)/2
-        du_1_interface = du_1_interface.numpy()
+        X = tf.reshape(tf.constant(centroids.transpose(),dtype=self.DTYPE), (-1,3))
+        Nv = tf.reshape(tf.constant(faces_normals.transpose(),dtype=self.DTYPE), (-1,3))
+        phi = model(X,'interface')
+        phi_mean = phi[:,0]
+
+        x = self.mesh.get_X(X)
+        nv = self.mesh.get_X(Nv)
+        u_interface = phi_mean.numpy().flatten()
+        du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='phi')
+        du_1_interface = du_1.numpy().flatten()
 
         phi = self.bempp.GridFunction(self.space, coefficients=u_interface)
         dphi = self.bempp.GridFunction(self.space, coefficients=du_1_interface)
-
         phi_q = self.slp_q * dphi - self.dlp_q * phi
         
         G_solv = self.solvation_energy_phi_qs(phi_q.real)
@@ -467,7 +475,7 @@ class Boundary_Poisson(Equations_utils):
         N_v = self.normals
         phi_i = tf.transpose(self.PBE.get_phi(X_c,flag,model,value=self.field))
         dphi_i = tf.transpose(self.PBE.get_dphi(X_c,N_v,flag,model,value='phi'))
-        integrand = (dphi_i*self.PBE.G_L(R,X_c) - phi_i*self.PBE.dG_L(R,X_c))*self.areas
+        integrand = (self.PBE.G_L(R,X_c)*dphi_i - self.PBE.dG_L(R,X_c)*phi_i)*self.areas
         integral = tf.reduce_sum(integrand, axis=1, keepdims=True) 
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         G = self.PBE.G(R) if SU==None else SU
@@ -490,7 +498,7 @@ class Boundary_Helmholtz(Equations_utils):
         N_v = self.normals
         phi_i = tf.transpose(self.PBE.get_phi(X_c,flag,model,value=self.field))
         dphi_i = tf.transpose(self.PBE.get_dphi(X_c,N_v,flag,model,value='phi'))*(self.epsilon_2/self.epsilon_1)
-        integrand = (- dphi_i*self.PBE.G_Y(R,X_c) + phi_i*self.PBE.dG_Y(R,X_c))*self.areas
+        integrand = (- self.PBE.G_Y(R,X_c)*dphi_i + self.PBE.dG_Y(R,X_c)*phi_i)*self.areas
         integral =  tf.reduce_sum(integrand, axis=1, keepdims=True) 
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         r = 0.5*phi - integral
