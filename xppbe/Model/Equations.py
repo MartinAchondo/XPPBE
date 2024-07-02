@@ -48,34 +48,9 @@ class PBE_Direct(PBE):
         return du_1,du_2
 
     def get_solvation_energy(self,model):
-        vertices = self.grid.vertices
-        faces_normals = self.grid.normals
-        elements = self.grid.elements
-        centroids = np.zeros((3, elements.shape[1]))
-        for i, element in enumerate(elements.T):
-            centroids[:, i] = np.mean(vertices[:, element], axis=1)
-
-        X = tf.reshape(tf.constant(centroids.transpose(),dtype=self.DTYPE), (-1,3))
-        Nv = tf.reshape(tf.constant(faces_normals.transpose(),dtype=self.DTYPE), (-1,3))
-        phi = model(X,'interface')
-        phi_mean = (phi[:,0]+phi[:,1])/2
-
-        x = self.mesh.get_X(X)
-        nv = self.mesh.get_X(Nv)
-        u_interface = phi_mean.numpy().flatten()
-        du_1 = self.directional_gradient(self.mesh,model,x,nv,'molecule',value='phi')
-        du_2 = self.directional_gradient(self.mesh,model,x,nv,'solvent',value='phi')
-        du_1 = du_1.numpy().flatten()
-        du_2 = du_2.numpy().flatten()
-        du_1_interface = (du_1+du_2*self.PDE_out.epsilon/self.PDE_in.epsilon)/2
-        du_1_interface = du_1_interface.numpy()
-
-        phi = self.bempp.GridFunction(self.space, coefficients=u_interface)
-        dphi = self.bempp.GridFunction(self.space, coefficients=du_1_interface)
+        phi,dphi = self.get_grid_coefficients_faces(model)
         phi_q = self.slp_q * dphi - self.dlp_q * phi
-        
         G_solv = self.solvation_energy_phi_qs(phi_q.real)
-        
         return G_solv
 
 
@@ -218,42 +193,24 @@ class PBE_Bound(PBE):
         self.PDE_out = Boundary_Helmholtz(self,self.domain_properties,field='phi')
 
     def get_phi(self,X,flag,model,value='phi'):
-        phi = model(X,flag)
-        phi_interface = tf.reshape(phi[:,0]+phi[:,1],(-1,1))/2
-        if flag != 'interface':
-            vertices = self.grid.vertices
-            faces_normals = self.grid.normals
-            elements = self.grid.elements
-            centroids = np.zeros((3, elements.shape[1]))
-            for i, element in enumerate(elements.T):
-                centroids[:, i] = np.mean(vertices[:, element], axis=1)
-            X = tf.reshape(tf.constant(centroids.transpose(),dtype=self.DTYPE), (-1,3))
-            Nv = tf.reshape(tf.constant(faces_normals.transpose(),dtype=self.DTYPE), (-1,3))
-            phi = model(X,'interface')
-            phi_mean = phi[:,0]
-            x = self.mesh.get_X(X)
-            nv = self.mesh.get_X(Nv)
-            u_interface = phi_mean.numpy().flatten()
-            du_1 = self.directional_gradient(self.mesh,model,x,nv,'interface',value='phi')
-            du_1_interface = du_1.numpy().flatten()
-            phi = self.bempp.GridFunction(self.space, coefficients=u_interface)
-            dphi = self.bempp.GridFunction(self.space, coefficients=du_1_interface)
-            
+ 
         if flag=='molecule':
             slp = self.bempp.api.operators.potential.laplace.single_layer(self.neumann_space, X.numpy().transpose())
             dlp = self.bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, X.numpy().transpose())
-            phi = slp * dphi - dlp * phi
+            phi_c,dphi_c = self.get_grid_coefficients_faces(model)
+            phi = slp * dphi_c - dlp * phi_c
             phi = phi.reshape(-1,1) + self.G(X)
             
         elif flag=='solvent':
             slp = self.bempp.api.operators.potential.helmholtz_modified.single_layer(self.neumann_space, X.numpy().transpose(),self.kappa)
             dlp = self.bempp.api.operators.potential.helmholtz_modified.double_layer(self.dirichl_space, X.numpy().transpose(),self.kappa)
-            phi = slp * dphi - dlp * phi
+            phi_c,dphi_c = self.get_grid_coefficients_faces(model)
+            phi = slp * dphi_c - dlp * phi_c
             phi = phi.reshape(-1,1)
             
         elif flag=='interface':
-
-            phi = phi_interface
+            phi = model(X,flag)
+            phi = tf.reshape(phi[:,0]+phi[:,1],(-1,1))/2
 
         if value=='phi':
             return phi 
@@ -262,8 +219,6 @@ class PBE_Bound(PBE):
             G_val = tf.stop_gradient(self.G(X))
             if flag != 'interface':
                 phi_r = phi - G_val
-            elif flag =='interface':
-                phi_r = tf.stack([tf.reshape(phi[:,0],(-1,1))-G_val,tf.reshape(phi[:,1],(-1,1))-G_val], axis=1)
         return phi_r
 
     def get_dphi(self,X,Nv,flag,model,value='phi'):
@@ -276,46 +231,21 @@ class PBE_Bound(PBE):
         return du_1
 
     def get_solvation_energy(self,model):
-        vertices = self.grid.vertices
-        faces_normals = self.grid.normals
-        elements = self.grid.elements
-        centroids = np.zeros((3, elements.shape[1]))
-        for i, element in enumerate(elements.T):
-            centroids[:, i] = np.mean(vertices[:, element], axis=1)
-
-        X = tf.reshape(tf.constant(centroids.transpose(),dtype=self.DTYPE), (-1,3))
-        Nv = tf.reshape(tf.constant(faces_normals.transpose(),dtype=self.DTYPE), (-1,3))
-        phi = model(X,'interface')
-        phi_mean = phi[:,0]
-
-        x = self.mesh.get_X(X)
-        nv = self.mesh.get_X(Nv)
-        u_interface = phi_mean.numpy().flatten()
-        du_1 = self.directional_gradient(self.mesh,model,x,nv,'interface',value='phi')
-        du_1_interface = du_1.numpy().flatten()
-
-        phi = self.bempp.GridFunction(self.space, coefficients=u_interface)
-        dphi = self.bempp.GridFunction(self.space, coefficients=du_1_interface)
+        phi,dphi = self.get_grid_coefficients_faces(model)
         phi_q = self.slp_q * dphi - self.dlp_q * phi
-        
         G_solv = self.solvation_energy_phi_qs(phi_q.real)
-        
         return G_solv
     
-    def get_phi_interface(self,model,**kwargs):      
-        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)
-        u = self.get_phi(verts,'interface',model,**kwargs)
+    def get_phi_interface(self,X,model,**kwargs):      
+        u = self.get_phi(X,'interface',model,**kwargs)
         u = u[:,0]
         return u,u,u
     
-    def get_dphi_interface(self,model, value='phi'): 
-        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)     
-        N_v = self.mesh.mol_verts_normal
-        du_1 = self.get_dphi(verts,N_v,'',model,value)
+    def get_dphi_interface(self,X,N_v,model, value='phi'):
+        du_1 = self.get_dphi(X,N_v,'',model,value)
         du_prom = du_1*self.PDE_in.epsilon
         du_2 = du_prom/self.PDE_out.epsilon
         return du_prom,du_1,du_2
-
 
 
 

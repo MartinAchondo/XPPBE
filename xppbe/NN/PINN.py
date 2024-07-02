@@ -114,6 +114,10 @@ class PINN(PINN_utils):
         X_v = self.get_batches('full_batch', validation=True)
         X_d = self.get_batches(self.sample_method)
 
+        print(X_d)
+        print(self.w)
+        print(self.mesh.domain_mesh_names)
+
         self.train_sgd(X_d, X_v)
 
         if self.use_optimizer_2:

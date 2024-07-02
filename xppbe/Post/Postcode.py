@@ -59,6 +59,12 @@ class Postprocessing():
     def get_dphi_interface(self,*args,**kwargs):
         return tuple(dphi*self.to_V for dphi in self.PDE.get_dphi_interface(*args,**kwargs))
 
+    def get_phi_interface_verts(self,*args,**kwargs):
+        return tuple(phi*self.to_V for phi in self.PDE.get_phi_interface_verts(*args,**kwargs))
+
+    def get_dphi_interface_verts(self,*args,**kwargs):
+        return tuple(dphi*self.to_V for dphi in self.PDE.get_dphi_interface_verts(*args,**kwargs))
+
     def get_solvation_energy(self,*args,**kwargs):
         return self.PDE.get_solvation_energy(self.model)
     
@@ -375,10 +381,10 @@ class Postprocessing():
         elements = self.mesh.mol_faces.astype(np.float32)
          
         if variable == 'phi':
-            values,values_1,values_2 = self.get_phi_interface(self.PINN.model,value=value)
+            values,values_1,values_2 = self.get_phi_interface_verts(self.PINN.model,value=value)
             text_l = r'phi' if value == 'phi' else 'ϕ react'
         elif variable == 'dphi':
-            values,values_1,values_2 = self.get_dphi_interface(self.PINN.model)
+            values,values_1,values_2 = self.get_dphi_interface_verts(self.PINN.model)
             text_l = r'dphi' if value == 'phi' else '∂ϕ react'
 
         if domain =='interface':
@@ -895,7 +901,7 @@ class Postprocessing():
     def L2_interface_known(self,known_method):
         vertices = self.mesh.mol_verts.astype(np.float32)
         phi_known = self.phi_known(known_method,'react', vertices, flag='solvent')
-        phi_xpinn = self.get_phi_interface(self.model,value='react')[0]
+        phi_xpinn = self.get_phi_interface_verts(self.model,value='react')[0]
 
         if known_method == 'PBJ':
             vertices = self.PDE.pbj_vertices.astype(np.float32)

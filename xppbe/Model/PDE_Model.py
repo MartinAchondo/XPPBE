@@ -70,18 +70,24 @@ class PBE(Solution_utils):
 
         self.sigma = self.mesh.G_sigma
             
-    def get_phi_interface(self,model,**kwargs):      
-        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)
-        u = self.get_phi(verts,'interface',model,**kwargs)
+    def get_phi_interface(self,X,model,**kwargs):      
+        u = self.get_phi(X,'interface',model,**kwargs)
         u_mean = (u[:,0]+u[:,1])/2
         return u_mean,u[:,0],u[:,1]
     
-    def get_dphi_interface(self,model, value='phi'): 
-        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)     
-        N_v = self.mesh.mol_verts_normal
-        du_1,du_2 = self.get_dphi(verts,N_v,'',model,value)
+    def get_dphi_interface(self,X,N_v,model,value='phi'): 
+        du_1,du_2 = self.get_dphi(X,N_v,'',model,value)
         du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
         return du_prom,du_1,du_2
+
+    def get_phi_interface_verts(self,model,**kwargs):      
+        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)
+        return self.get_phi_interface(verts,model)
+    
+    def get_dphi_interface_verts(self,model,value='phi'): 
+        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)     
+        N_v = self.mesh.mol_verts_normal
+        return self.get_dphi_interface(verts,N_v,model)
     
     
     def get_phi_ens(self,model,X_mesh,q_L, method='mean', pinn=True, known_method=False):        
@@ -325,7 +331,34 @@ class PBE(Solution_utils):
 
         self.slp_q = bempp.api.operators.potential.laplace.single_layer(self.neumann_space, self.x_qs.numpy().transpose())
         self.dlp_q = bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, self.x_qs.numpy().transpose())
+
+        vertices = self.grid.vertices
+        faces_normals = self.grid.normals
+        elements = self.grid.elements
+        centroids = np.zeros((3, elements.shape[1]))
+        for i, element in enumerate(elements.T):
+            centroids[:, i] = np.mean(vertices[:, element], axis=1)
+
+        self.mesh.grid_centroids = tf.reshape(tf.constant(centroids.transpose(),dtype=self.DTYPE), (-1,3))
+        self.mesh.grid_faces_normals = tf.reshape(tf.constant(faces_normals.transpose(),dtype=self.DTYPE), (-1,3))
     
+    def get_grid_coefficients_faces(self,model):
+
+        X = self.mesh.grid_centroids
+        N_v = self.mesh.grid_faces_normals
+        phi_mean,_,_ = self.get_phi_interface(X,model)
+        u_interface = phi_mean.numpy().flatten()
+        x = self.mesh.get_X(X)
+        nv = self.mesh.get_X(Nv)   
+        _,du_1,_ = self.get_dphi_interface(x,nv,model)
+        du_1_interface = du_1.numpy().flatten()
+
+        phi = self.bempp.GridFunction(self.space, coefficients=u_interface)
+        dphi = self.bempp.GridFunction(self.space, coefficients=du_1_interface)
+
+        return phi,dphi
+
+
     @classmethod
     def create_L(cls):
         cls.names = ['R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','Ir','E2','P1','P2','IB1','IB2']
