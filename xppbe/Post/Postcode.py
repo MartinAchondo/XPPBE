@@ -53,12 +53,6 @@ class Postprocessing():
     def phi_known(self,*args,**kwargs):
         return self.PDE.phi_known(*args,**kwargs)*self.to_V
 
-    def get_phi_interface(self,*args,**kwargs):
-        return tuple(phi*self.to_V for phi in self.PDE.get_phi_interface(*args,**kwargs))
-
-    def get_dphi_interface(self,*args,**kwargs):
-        return tuple(dphi*self.to_V for dphi in self.PDE.get_dphi_interface(*args,**kwargs))
-
     def get_phi_interface_verts(self,*args,**kwargs):
         return tuple(phi*self.to_V for phi in self.PDE.get_phi_interface_verts(*args,**kwargs))
 

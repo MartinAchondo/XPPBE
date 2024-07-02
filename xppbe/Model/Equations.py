@@ -228,7 +228,7 @@ class PBE_Bound(PBE):
         if value=='react':
             dG_dn = tf.stop_gradient(self.dG_n(X,Nv))
             du_1 -= dG_dn
-        return du_1
+        return du_1,du_1*self.epsilon_1/self.epsilon_2
 
     def get_solvation_energy(self,model):
         phi,dphi = self.get_grid_coefficients_faces(model)
@@ -242,9 +242,8 @@ class PBE_Bound(PBE):
         return u,u,u
     
     def get_dphi_interface(self,X,N_v,model, value='phi'):
-        du_1 = self.get_dphi(X,N_v,'',model,value)
+        du_1,du_2 = self.get_dphi(X,N_v,'',model,value)
         du_prom = du_1*self.epsilon_1
-        du_2 = du_prom/self.epsilon_2
         return du_prom,du_1,du_2
 
 
@@ -443,7 +442,7 @@ class Boundary_Poisson(Equations_utils):
         X_c = self.centroids
         N_v = self.normals
         phi_i = tf.transpose(self.PBE.get_phi(X_c,flag,model,value=self.field))
-        dphi_i = tf.transpose(self.PBE.get_dphi(X_c,N_v,flag,model,value='phi'))
+        dphi_i = tf.transpose(self.PBE.get_dphi(X_c,N_v,flag,model,value='phi')[0])
         integrand = (self.PBE.G_L(R,X_c)*dphi_i - self.PBE.dG_L(R,X_c)*phi_i)*self.areas
         integral = tf.reduce_sum(integrand, axis=1, keepdims=True) 
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
@@ -465,7 +464,7 @@ class Boundary_Helmholtz(Equations_utils):
         X_c = self.centroids
         N_v = self.normals
         phi_i = tf.transpose(self.PBE.get_phi(X_c,flag,model,value=self.field))
-        dphi_i = tf.transpose(self.PBE.get_dphi(X_c,N_v,flag,model,value='phi'))*(self.epsilon_2/self.epsilon_1)
+        dphi_i = tf.transpose(self.PBE.get_dphi(X_c,N_v,flag,model,value='phi')[1])
         integrand = (- self.PBE.G_Y(R,X_c)*dphi_i + self.PBE.dG_Y(R,X_c)*phi_i)*self.areas
         integral =  tf.reduce_sum(integrand, axis=1, keepdims=True) 
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
