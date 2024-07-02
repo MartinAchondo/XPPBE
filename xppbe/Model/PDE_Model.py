@@ -74,7 +74,7 @@ class PBE(Solution_utils):
         u_mean = self.get_phi(X,'interface',model,**kwargs)
         u_1 = self.get_phi(X,'molecule',model,**kwargs)
         u_2 = self.get_phi(X,'solvent',model,**kwargs)
-        return u_mean[:,0],u[:,0],u[:,0]
+        return u_mean[:,0],u_1[:,0],u_2[:,0]
     
     def get_dphi_interface(self,X,N_v,model,value='phi'): 
         du_1,du_2 = self.get_dphi(X,N_v,'',model,value)
