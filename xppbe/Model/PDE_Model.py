@@ -348,9 +348,7 @@ class PBE(Solution_utils):
         Nv = self.mesh.grid_faces_normals
         phi_mean,_,_ = self.get_phi_interface(X,model)
         u_interface = phi_mean.numpy().flatten()
-        x = self.mesh.get_X(X)
-        nv = self.mesh.get_X(Nv)   
-        _,du_1,_ = self.get_dphi_interface(x,nv,model)
+        _,du_1,_ = self.get_dphi_interface(X,Nv,model)
         du_1_interface = du_1.numpy().flatten()
 
         phi = self.bempp.GridFunction(self.space, coefficients=u_interface)
