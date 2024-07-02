@@ -329,7 +329,7 @@ class PBE(Solution_utils):
     
     @classmethod
     def create_L(cls):
-        cls.names = ['R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','Ir','E2','P1','P2']
+        cls.names = ['R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','Ir','E2','P1','P2','IB1','IB2']
         L = dict()
         for t in cls.names:
             L[t] = tf.constant(0.0, dtype=cls.DTYPE)
