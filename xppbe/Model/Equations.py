@@ -220,13 +220,36 @@ class PBE_Bound(PBE):
     def get_phi(self,X,flag,model,value='phi'):
         phi = model(X,flag)
         phi_interface = tf.reshape(phi[:,0]+phi[:,1],(-1,1))/2
+        if flag != 'interface':
+            vertices = self.grid.vertices
+            faces_normals = self.grid.normals
+            elements = self.grid.elements
+            centroids = np.zeros((3, elements.shape[1]))
+            for i, element in enumerate(elements.T):
+                centroids[:, i] = np.mean(vertices[:, element], axis=1)
+            X = tf.reshape(tf.constant(centroids.transpose(),dtype=self.DTYPE), (-1,3))
+            Nv = tf.reshape(tf.constant(faces_normals.transpose(),dtype=self.DTYPE), (-1,3))
+            phi = model(X,'interface')
+            phi_mean = phi[:,0]
+            x = self.mesh.get_X(X)
+            nv = self.mesh.get_X(Nv)
+            u_interface = phi_mean.numpy().flatten()
+            du_1 = self.directional_gradient(self.mesh,model,x,nv,'interface',value='phi')
+            du_1_interface = du_1.numpy().flatten()
+            phi = self.bempp.GridFunction(self.space, coefficients=u_interface)
+            dphi = self.bempp.GridFunction(self.space, coefficients=du_1_interface)
+            
         if flag=='molecule':
             slp = self.bempp.api.operators.potential.laplace.single_layer(self.neumann_space, X.numpy().transpose())
             dlp = self.bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, X.numpy().transpose())
+            phi = slp * dphi - dlp * phi
+            phi = phi.reshape(-1,1) + self.G(X)
             
         elif flag=='solvent':
             slp = self.bempp.api.operators.potential.helmholtz_modified.single_layer(self.neumann_space, X.numpy().transpose(),self.kappa)
             dlp = self.bempp.api.operators.potential.helmholtz_modified.double_layer(self.dirichl_space, X.numpy().transpose(),self.kappa)
+            phi = slp * dphi - dlp * phi
+            phi = phi.reshape(-1,1)
             
         elif flag=='interface':
 
@@ -480,8 +503,7 @@ class Boundary_Poisson(Equations_utils):
         integrand = (self.PBE.G_L(R,X_c)*dphi_i - self.PBE.dG_L(R,X_c)*phi_i)*self.areas
         integral = tf.reduce_sum(integrand, axis=1, keepdims=True) 
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        G = self.PBE.G(R) if SU==None else SU
-        r = 0.5*phi - G - integral
+        r = 0.5*phi - self.PBE.G(R) - integral
         return r
 
 

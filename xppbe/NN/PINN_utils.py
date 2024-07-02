@@ -12,10 +12,10 @@ class PINN_utils():
     def __init__(self, results_path):
 
         self.results_path = results_path
-        self.losses_names = ['TL','TL1','TL2','vTL1','vTL2','R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','Ir','E2','P1','P2']
-        self.losses_names_1 = ['TL1','R1','D1','N1','K1','Q1','Iu','Id','Ir','G','P1']
-        self.losses_names_2 = ['TL2','R2','D2','N2','K2','Iu','Id','Ir','E2','G','P2']
-        self.validation_names = ['TL','TL1','TL2','R1','D1','N1','Q1','R2','D2','N2','Iu','Id','Ir']
+        self.losses_names = ['TL','TL1','TL2','vTL1','vTL2','R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','Ir','E2','P1','P2','IB1','IB2']
+        self.losses_names_1 = ['TL1','R1','D1','N1','K1','Q1','Iu','Id','Ir','G','P1','IB1']
+        self.losses_names_2 = ['TL2','R2','D2','N2','K2','Iu','Id','Ir','E2','G','P2','IB2']
+        self.validation_names = ['TL','TL1','TL2','R1','D1','N1','Q1','R2','D2','N2','Iu','Id','Ir','IB1','IB2']
         self.w_names = self.losses_names[5:]
         self.losses_names_list = [self.losses_names_1,self.losses_names_2]
         
@@ -79,7 +79,7 @@ class PINN_utils():
     def adapt_datasets(self):
         self.L_X_domain = dict()
         for t in self.mesh.domain_mesh_names:
-            if t in ('Iu','Id','Ir'):
+            if t in ('Iu','Id','Ir','IB1','IB2'):
                 self.L_X_domain['I'] = self.mesh.domain_mesh_data['I']
             else:
                 self.L_X_domain[t] = self.mesh.domain_mesh_data[t]
