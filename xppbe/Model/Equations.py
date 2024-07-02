@@ -435,7 +435,7 @@ class Boundary_Poisson(Equations_utils):
         N_v = self.normals
         phi_i = tf.transpose(self.PBE.get_phi(X_c,flag,model,value=self.field))
         dphi_i = tf.transpose(self.PBE.get_dphi(X_c,N_v,flag,model,value='phi')[0])
-        integrand = (self.PBE.G_L(R,X_c)*dphi_i - self.PBE.dG_L(R,X_c)*phi_i)*self.areas
+        integrand = (self.PBE.G_L(R,X_c)*dphi_i - self.PBE.dG_L(R,X_c,N_v)*phi_i)*self.areas
         integral = tf.reduce_sum(integrand, axis=1, keepdims=True) 
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         r = 0.5*phi - self.PBE.G(R) - integral
@@ -457,7 +457,7 @@ class Boundary_Helmholtz(Equations_utils):
         N_v = self.normals
         phi_i = tf.transpose(self.PBE.get_phi(X_c,flag,model,value=self.field))
         dphi_i = tf.transpose(self.PBE.get_dphi(X_c,N_v,flag,model,value='phi')[1])
-        integrand = (- self.PBE.G_Y(R,X_c)*dphi_i + self.PBE.dG_Y(R,X_c)*phi_i)*self.areas
+        integrand = (- self.PBE.G_Y(R,X_c)*dphi_i + self.PBE.dG_Y(R,X_c,N_v)*phi_i)*self.areas
         integral =  tf.reduce_sum(integrand, axis=1, keepdims=True) 
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         r = 0.5*phi - integral
