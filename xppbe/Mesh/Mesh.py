@@ -315,6 +315,13 @@ class Domain_Mesh():
                 self.domain_mesh_names.add(type_b)
                 self.domain_mesh_data['I'] = (X_I,flag)
             
+            elif 'IR' in type_b:
+                N = self.mol_verts_normal
+                X = tf.constant(self.mol_verts, dtype=self.DTYPE)
+                X_I = (X, None)
+                self.domain_mesh_names.add(type_b.replace('I',''))
+                self.domain_mesh_data[type_b.replace('I','')] = (X_I,flag)                
+
             elif type_b in ('G'):
                 self.domain_mesh_names.add(type_b)
                 self.domain_mesh_data[type_b] = ((tf.constant(self.mol_faces_centroid, dtype=self.DTYPE),

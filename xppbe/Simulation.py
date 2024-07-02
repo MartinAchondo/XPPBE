@@ -90,8 +90,8 @@ class Simulation():
             meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': f'experimental_data_{self.domain_properties["molecule"]}.dat', 'method': self.experimental_method}
         
         elif self.pinns_method == 'DBM':
-             meshes_domain['R1'] = {'domain': 'interface', 'type':'R1', 'value':0.0}
-             meshes_domain['R2'] = {'domain': 'interface', 'type':'R2', 'value':0.0}
+             meshes_domain['R1'] = {'domain': 'interface', 'type':'IR1', 'fun':lambda X: self.PBE_model.G(X)}
+             meshes_domain['R2'] = {'domain': 'interface', 'type':'IR2', 'value':0.0}
 
         if self.num_networks==2 and self.pinns_method!='DBM':
                 meshes_domain['Iu'] = {'domain':'interface', 'type':'Iu'}
