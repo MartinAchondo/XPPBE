@@ -202,8 +202,8 @@ class PBE_Bound(PBE):
             phi = phi.reshape(-1,1) + self.G(X)
             
         elif flag=='solvent':
-            slp = self.bempp.operators.potential.helmholtz_modified.single_layer(self.neumann_space, X.numpy().transpose(),self.kappa)
-            dlp = self.bempp.operators.potential.helmholtz_modified.double_layer(self.dirichl_space, X.numpy().transpose(),self.kappa)
+            slp = self.bempp.operators.potential.modified_helmholtz.single_layer(self.neumann_space, X.numpy().transpose(),self.kappa)
+            dlp = self.bempp.operators.potential.modified_helmholtz.double_layer(self.dirichl_space, X.numpy().transpose(),self.kappa)
             phi_c,dphi_c = self.get_grid_coefficients_faces(model)
             phi = slp * dphi_c - dlp * phi_c
             phi = phi.reshape(-1,1)
