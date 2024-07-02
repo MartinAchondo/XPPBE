@@ -218,7 +218,8 @@ class PBE_Bound(PBE):
         self.PDE_out = Boundary_Helmholtz(self,self.domain_properties,field='phi')
 
     def get_phi(self,X,flag,model,value='phi'):
-        phi_interface = model(X,flag)
+        phi = model(X,flag)
+        phi_interface = tf.reshape(phi[:,0]+phi[:,1],(-1,1))/2
         if flag=='molecule':
             slp = self.bempp.api.operators.potential.laplace.single_layer(self.neumann_space, X.numpy().transpose())
             dlp = self.bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, X.numpy().transpose())
@@ -228,6 +229,7 @@ class PBE_Bound(PBE):
             dlp = self.bempp.api.operators.potential.helmholtz_modified.double_layer(self.dirichl_space, X.numpy().transpose())
             pass
         elif flag=='interface':
+
             phi = phi_interface
 
         if value=='phi':

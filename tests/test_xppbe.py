@@ -79,6 +79,8 @@ def test_pinns_method_and_schemes(pinns_method,model,scheme):
         sim.pinns_method = pinns_method
         sim.pbe_model = model
         sim.equation = scheme
+        if pinns_method == 'DBM':
+            sim.num_networks = 1
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()
