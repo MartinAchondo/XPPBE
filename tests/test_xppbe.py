@@ -81,6 +81,7 @@ def test_pinns_method_and_schemes(pinns_method,model,scheme):
         sim.equation = scheme
         if pinns_method == 'DBM':
             sim.num_networks = 1
+            sim.losses['IB1','IB2']
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()
