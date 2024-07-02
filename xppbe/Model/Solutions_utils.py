@@ -127,11 +127,46 @@ class Solution_utils():
         green_function = (1 / (4 * self.pi)) * e_over_r  # Shape: (n, m)
         return green_function
     
-    def dG_L(self,X,Xp):
-        return self.G_L(X,Xp)
+    def dG_L(self,X,Xp,N):
 
-    def dG_Y(self,X,Xp):
-        return self.G_Y(X,Xp)
+        X_expanded = tf.expand_dims(X, axis=1)  # Shape: (n, 1, 3)
+        Xp_expanded = tf.expand_dims(Xp, axis=0)  # Shape: (1, m, 3)
+        n_expanded = tf.expand_dims(N, axis=1)  # Shape: (n, 1, 3)
+        # Compute the pairwise differences
+        r_diff = X_expanded - Xp_expanded  # Shape: (n, m, 3)
+        # Compute the Euclidean distances
+        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))  # Shape: (n, m)
+        # Compute the derivative of the Green's function with respect to r
+        dg_dr = (-1 / (4 * self.pi)) / (r**2)  # Shape: (n, m)
+        # Compute the components of the gradient
+        grad_x = dg_dr * r_diff[:, :, 0] / r  # Shape: (n, m)
+        grad_y = dg_dr * r_diff[:, :, 1] / r  # Shape: (n, m)
+        grad_z = dg_dr * r_diff[:, :, 2] / r  # Shape: (n, m)
+        # Combine the components into the gradient
+        grad = tf.stack([grad_x, grad_y, grad_z], axis=2)  # Shape: (n, m, 3)
+        # Compute the dot product of the gradient with the normal vector
+        dg_dn = tf.reduce_sum(grad * n_expanded, axis=2)  # Shape: (n, m)
+        return dg_dn
+
+    def dG_Y(self,X,Xp,N):
+        X_expanded = tf.expand_dims(X, axis=1)  # Shape: (n, 1, 3)
+        Xp_expanded = tf.expand_dims(Xp, axis=0)  # Shape: (1, m, 3)
+        n_expanded = tf.expand_dims(N, axis=1)  # Shape: (n, 1, 3)
+        # Compute the pairwise differences
+        r_diff = X_expanded - Xp_expanded  # Shape: (n, m, 3)
+        # Compute the Euclidean distances
+        r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))  # Shape: (n, m)
+        # Compute the derivative of the Green's function with respect to r
+        dg_dr = (-tf.exp(-self.kappa*r) / (4 * self.pi)) / (r)  *(-self.kappa/r - 1/r**2) # Shape: (n, m)
+        # Compute the components of the gradient
+        grad_x = dg_dr * r_diff[:, :, 0] / r  # Shape: (n, m)
+        grad_y = dg_dr * r_diff[:, :, 1] / r  # Shape: (n, m)
+        grad_z = dg_dr * r_diff[:, :, 2] / r  # Shape: (n, m)
+        # Combine the components into the gradient
+        grad = tf.stack([grad_x, grad_y, grad_z], axis=2)  # Shape: (n, m, 3)
+        # Compute the dot product of the gradient with the normal vector
+        dg_dn = tf.reduce_sum(grad * n_expanded, axis=2)  # Shape: (n, m)
+        return dg_dn
         
 
     def analytic_Born_Ion(self,r, R=None):
