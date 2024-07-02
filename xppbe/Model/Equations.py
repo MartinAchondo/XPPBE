@@ -223,11 +223,11 @@ class PBE_Bound(PBE):
         if flag=='molecule':
             slp = self.bempp.api.operators.potential.laplace.single_layer(self.neumann_space, X.numpy().transpose())
             dlp = self.bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, X.numpy().transpose())
-            #phi = self.slp_q * dphi - self.dlp_q * phi
+            
         elif flag=='solvent':
-            slp = self.bempp.api.operators.potential.helmholtz_modified.single_layer(self.neumann_space, X.numpy().transpose())
-            dlp = self.bempp.api.operators.potential.helmholtz_modified.double_layer(self.dirichl_space, X.numpy().transpose())
-            pass
+            slp = self.bempp.api.operators.potential.helmholtz_modified.single_layer(self.neumann_space, X.numpy().transpose(),self.kappa)
+            dlp = self.bempp.api.operators.potential.helmholtz_modified.double_layer(self.dirichl_space, X.numpy().transpose(),self.kappa)
+            
         elif flag=='interface':
 
             phi = phi_interface

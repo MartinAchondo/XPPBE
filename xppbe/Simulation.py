@@ -125,7 +125,7 @@ class Simulation():
 
         if self.num_networks == 2:
             from xppbe.NN.NeuralNet import PINN_2Dom_NeuralNet as NeuralNet
-        elif self.num_networks == 1:
+        elif self.num_networks == 1 or self.pinns_method=='DBM':
             from xppbe.NN.NeuralNet import PINN_1Dom_NeuralNet as NeuralNet     
 
 
