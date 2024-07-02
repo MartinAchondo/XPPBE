@@ -135,17 +135,6 @@ class PBE(Solution_utils):
             loss_r = self.PDE_out.residual_loss(self.mesh,model,self.mesh.get_X(X),SU,flag)
             L['R2'] += loss_r   
 
-        if 'IB1' in X_batches: 
-            ((X,N),flag) = X_batches['I']
-            loss_r = self.PDE_in.residual_loss(self.mesh,model,self.mesh.get_X(X),N,flag)
-            L['IB1'] += loss_r   
-
-        if 'IB2' in X_batches: 
-            ((X,N),flag) = X_batches['I']
-            loss_r = self.PDE_out.residual_loss(self.mesh,model,self.mesh.get_X(X),N,flag)
-            L['IB2'] += loss_r   
-
-
         if 'Q1' in X_batches: 
             ((X,SU),flag) = X_batches['Q1']
             loss_q = self.PDE_in.residual_loss(self.mesh,model,self.mesh.get_X(X),SU,flag)
@@ -175,6 +164,16 @@ class PBE(Solution_utils):
                 L['Id'] += self.get_loss_I(model,X_batches['I'], 'Id')
             if 'Ir' in self.mesh.domain_mesh_names:
                 L['Ir'] += self.get_loss_I(model,X_batches['I'], 'Ir')    
+
+            if 'IB1' in self.mesh.domain_mesh_names: 
+                ((X,N),flag) = X_batches['I']
+                loss_r = self.PDE_in.residual_loss(self.mesh,model,self.mesh.get_X(X),N,flag)
+                L['IB1'] += loss_r   
+
+            if 'IB2' in self.mesh.domain_mesh_names: 
+                ((X,N),flag) = X_batches['I']
+                loss_r = self.PDE_out.residual_loss(self.mesh,model,self.mesh.get_X(X),N,flag)
+                L['IB2'] += loss_r   
 
         if 'E2' in X_batches and not validation:
             L['E2'] += self.get_loss_experimental(model,X_batches['E2'])

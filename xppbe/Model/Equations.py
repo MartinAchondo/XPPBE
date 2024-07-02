@@ -301,6 +301,20 @@ class PBE_Bound(PBE):
         G_solv = self.solvation_energy_phi_qs(phi_q.real)
         
         return G_solv
+    
+    def get_phi_interface(self,model,**kwargs):      
+        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)
+        u = self.get_phi(verts,'interface',model,**kwargs)
+        u = u[:,0]
+        return u,u,u
+    
+    def get_dphi_interface(self,model, value='phi'): 
+        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)     
+        N_v = self.mesh.mol_verts_normal
+        du_1 = self.get_dphi(verts,N_v,'',model,value)
+        du_prom = du_1*self.PDE_in.epsilon
+        du_2 = du_prom/self.PDE_out.epsilon
+        return du_prom,du_1,du_2
 
 
 

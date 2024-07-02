@@ -308,7 +308,7 @@ class Domain_Mesh():
                         X_plot[f'{type_b}_verts'] = X.numpy()
                         self.save_data_plot(X_plot)
 
-            elif type_b in ('Iu','Id','Ir','IB1','IB2'):
+            elif type_b[0] == 'I':
                 N = self.mol_verts_normal
                 X = tf.constant(self.mol_verts, dtype=self.DTYPE)
                 X_I = (X, N)

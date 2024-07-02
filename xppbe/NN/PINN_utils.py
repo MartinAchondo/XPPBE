@@ -124,6 +124,7 @@ class PINN_utils():
             X_d = self.L_X_domain
         
         elif sample_method == 'random_sample':
+            flag = True
             for bl in self.mesh.meshes_info.values():
                 type_b = bl['type']
                 flag = bl['domain']
@@ -132,7 +133,10 @@ class PINN_utils():
                     x,y = self.mesh.get_XU(x,bl)
                     self.L_X_domain[type_b] = ((x,y),flag)
 
-            self.L_X_domain['I'] = ((self.mesh.region_meshes['I'].get_dataset(),self.mesh.region_meshes['I'].normals),'interface')
+            if type_b[0] == 'I' and flag:
+                flag = False
+                self.L_X_domain['I'] = ((self.mesh.region_meshes['I'].get_dataset(),self.mesh.region_meshes['I'].normals),'interface')
+
             X_d = self.L_X_domain
 
         if not validation:
