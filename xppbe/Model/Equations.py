@@ -195,15 +195,15 @@ class PBE_Bound(PBE):
     def get_phi(self,X,flag,model,value='phi'):
  
         if flag=='molecule':
-            slp = self.bempp.api.operators.potential.laplace.single_layer(self.neumann_space, X.numpy().transpose())
-            dlp = self.bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, X.numpy().transpose())
+            slp = self.bempp.operators.potential.laplace.single_layer(self.neumann_space, X.numpy().transpose())
+            dlp = self.bempp.operators.potential.laplace.double_layer(self.dirichl_space, X.numpy().transpose())
             phi_c,dphi_c = self.get_grid_coefficients_faces(model)
             phi = slp * dphi_c - dlp * phi_c
             phi = phi.reshape(-1,1) + self.G(X)
             
         elif flag=='solvent':
-            slp = self.bempp.api.operators.potential.helmholtz_modified.single_layer(self.neumann_space, X.numpy().transpose(),self.kappa)
-            dlp = self.bempp.api.operators.potential.helmholtz_modified.double_layer(self.dirichl_space, X.numpy().transpose(),self.kappa)
+            slp = self.bempp.operators.potential.helmholtz_modified.single_layer(self.neumann_space, X.numpy().transpose(),self.kappa)
+            dlp = self.bempp.operators.potential.helmholtz_modified.double_layer(self.dirichl_space, X.numpy().transpose(),self.kappa)
             phi_c,dphi_c = self.get_grid_coefficients_faces(model)
             phi = slp * dphi_c - dlp * phi_c
             phi = phi.reshape(-1,1)
