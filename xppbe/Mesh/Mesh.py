@@ -274,8 +274,9 @@ class Domain_Mesh():
         mol_min, mol_max = np.min(self.mol_verts, axis=0), np.max(self.mol_verts, axis=0)
         self.scale_1 = [mol_min.tolist(), mol_max.tolist()]
 
-        sphere_min, sphere_max = np.min(self.sphere_mesh.vertices, axis=0), np.max(self.sphere_mesh.vertices, axis=0)
-        self.scale_2 = [sphere_min.tolist(), sphere_max.tolist()]
+        if 'D2' in self.losses_names or 'R2' in self.losses_names:
+            sphere_min, sphere_max = np.min(self.sphere_mesh.vertices, axis=0), np.max(self.sphere_mesh.vertices, axis=0)
+            self.scale_2 = [sphere_min.tolist(), sphere_max.tolist()]
 
         if self.save_points:
             X_plot = dict()

@@ -132,7 +132,10 @@ class Simulation():
         if self.starting_point == 'new':
             
             self.hyperparameters_in['scale'] = self.PINN_solver.mesh.scale_1
-            self.hyperparameters_out['scale'] = self.PINN_solver.mesh.scale_2
+            if self.pinns_method!='DBM':
+                self.hyperparameters_out['scale'] = self.PINN_solver.mesh.scale_2
+            else: 
+                self.hyperparameters_out['scale'] = self.PINN_solver.mesh.scale_1
 
             if self.scale_NN_q:
                 self.hyperparameters_in['scale_NN'] = self.PBE_model.scale_q_factor
