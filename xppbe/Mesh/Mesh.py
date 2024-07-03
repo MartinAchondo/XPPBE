@@ -143,7 +143,7 @@ class Domain_Mesh():
     
     def read_create_meshes(self):
         self.create_molecule_mesh()
-        if 'D2' or 'R2' in self.losses_names:
+        if 'D2' in self.losses_names or 'R2' in self.losses_names:
             self.create_sphere_mesh()
         if 'R1' in self.losses_names:
             self.create_interior_mesh()
