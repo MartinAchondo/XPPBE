@@ -6,7 +6,7 @@
 ![Python version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FMartinAchondo%2FXPPBE%2Fmaster%2Fpyproject.toml&query=%24.project%5B'requires-python'%5D&logo=python&label=python&color=lightgrey)
 
 
-Simple Python Poisson-Boltzmann equation solver for real macromolecules in a polarizable media, using Physics Informed Neural Networks. 
+Physics-Informed Neural Network solver for the Poisson-Boltzmann equation applied to real macromolecules in polarizable media.
 
 $$\nabla^2 \phi_1 = -\frac{1}{\epsilon_1}\sum_k q_k\delta(x_k) \quad x \in \Omega_1 $$
 
