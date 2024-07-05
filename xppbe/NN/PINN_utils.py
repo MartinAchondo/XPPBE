@@ -33,7 +33,6 @@ class PINN_utils():
         self.hyperparameters = hyperparameters
         self.model = NN_class(hyperparameters, *args, **kwargs)
         self.model.build_Net()
-        print(self.hyperparameters)
 
     def adapt_optimizer(self,optimizer,lr,optimizer2=False,options2=None):
         self.optimizer_name = optimizer
