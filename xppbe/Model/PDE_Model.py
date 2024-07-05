@@ -308,23 +308,13 @@ class PBE(Solution_utils):
         self.pqr_path = os.path.join(self.molecule_path,self.molecule+'.pqr')
         self.q_list = get_charges_list(self.pqr_path)
         #self.scale_q_factor = min(self.q_list, key=lambda q_obj: np.abs(q_obj.q)).q
-        scale_min_value, scale_max_value = 0.,0.
 
         n = len(self.q_list)
         self.qs = np.zeros(n)
         self.x_qs = np.zeros((n,3))
         for i,q in enumerate(self.q_list):
             self.qs[i] = q.q
-            self.x_qs[i,:] = q.x_q
-            
-            value = self.analytic_Born_Ion(0.0, R=self.q_list[i].r_q, index_q=i)
-            if value > scale_max_value:
-                scale_max_value = value
-            if value < scale_min_value:
-                scale_min_value = value
-        self.scale_phi_1 = [scale_min_value,scale_max_value]
-        self.scale_phi_2 = [scale_min_value,scale_max_value]
-        
+            self.x_qs[i,:] = q.x_q        
         self.total_charge = tf.constant(np.sum(self.qs), dtype=self.DTYPE)
         self.qs = tf.constant(self.qs, dtype=self.DTYPE)
         self.x_qs = tf.constant(self.x_qs, dtype=self.DTYPE)
@@ -339,7 +329,7 @@ class PBE(Solution_utils):
             if phi < scale_min_value_1:
                 scale_min_value_1 = phi
             
-            if self.PDE_out.field == 'phi':
+            if self.scheme != 'regularized_equation_1':
                 phi += self.G(tf.constant([[self.q_list[i].r_q,0,0]],dtype=self.DTYPE))
             
             if phi > scale_max_value_2:
