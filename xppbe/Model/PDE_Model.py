@@ -341,8 +341,8 @@ class PBE(Solution_utils):
             if phi < scale_min_value_2:
                 scale_min_value_2 = phi
 
-        self.scale_phi_1 = (scale_min_value_1,scale_max_value_1)
-        self.scale_phi_2 = (scale_min_value_2,scale_max_value_2)
+        self.scale_phi_1 = [float(scale_min_value_1),float(scale_max_value_1)]
+        self.scale_phi_2 = [float(scale_min_value_2),float(scale_max_value_2)]
     
 
     def get_integral_operators(self):

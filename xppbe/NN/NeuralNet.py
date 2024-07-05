@@ -63,8 +63,8 @@ class NeuralNet(tf.keras.Model):
                  weight_factorization=False,
                  scale_input=True,
                  scale_output=False,
-                 scale_input_s=([-1.,-1.,-1.],[1.,1.,1.]),
-                 scale_output_s=(-1.,1.),
+                 scale_input_s=[[-1.,-1.,-1.],[1.,1.,1.]],
+                 scale_output_s=[-1.,1.],
                  **kwargs):
         super().__init__(**kwargs)
 
