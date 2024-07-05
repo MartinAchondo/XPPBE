@@ -324,12 +324,16 @@ class PBE(Solution_utils):
         for i,q in enumerate(self.q_list):
             
             phi = self.analytic_Born_Ion(0.0, R=self.q_list[i].r_q, index_q=i)
+
+            if self.pinns_method == 'DBM' and self.scheme != 'regularized_equation_1':
+                phi += self.G(tf.constant([[self.q_list[i].r_q,0,0]],dtype=self.DTYPE))
+
             if phi > scale_max_value_1:
                 scale_max_value_1 = phi
             if phi < scale_min_value_1:
                 scale_min_value_1 = phi
             
-            if self.scheme != 'regularized_equation_1':
+            if self.pinns_method != 'DBM' and self.scheme != 'regularized_equation_1':
                 phi += self.G(tf.constant([[self.q_list[i].r_q,0,0]],dtype=self.DTYPE))
             
             if phi > scale_max_value_2:

@@ -134,7 +134,7 @@ class Simulation():
             self.hyperparameters_in['scale_input_s'] = self.PINN_solver.mesh.scale_1
             self.hyperparameters_out['scale_input_s'] = self.PINN_solver.mesh.scale_2
 
-            if self.PBE_model.PDE_in.field == 'phi':
+            if self.PBE_model.PDE_in.field == 'phi' and self.pinns_method != 'DBM':
                  self.hyperparameters_in['scale_output'] = False
 
             self.hyperparameters_in['scale_output_s'] = self.PBE_model.scale_phi_1
