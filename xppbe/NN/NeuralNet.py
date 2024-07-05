@@ -109,7 +109,7 @@ class NeuralNet(tf.keras.Model):
             self.fourier_features.add(SinCosLayer(name='fourier_sincos_layer'))
         
 
-        if self.architecture_Net in ('ModMLP','MLP'):
+        if self.architecture_Net in ('FCNN','MLP'):
             self.create_FCNN()
            
         elif self.architecture_Net == 'ModMLP':
