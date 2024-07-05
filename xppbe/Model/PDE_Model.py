@@ -307,7 +307,8 @@ class PBE(Solution_utils):
     def get_charges(self):
         self.pqr_path = os.path.join(self.molecule_path,self.molecule+'.pqr')
         self.q_list = get_charges_list(self.pqr_path)
-        self.scale_q_factor = min(self.q_list, key=lambda q_obj: np.abs(q_obj.q)).q
+        #self.scale_q_factor = min(self.q_list, key=lambda q_obj: np.abs(q_obj.q)).q
+        scale_min_value, scale_max_value = 0.,0.
 
         n = len(self.q_list)
         self.qs = np.zeros(n)
@@ -315,10 +316,40 @@ class PBE(Solution_utils):
         for i,q in enumerate(self.q_list):
             self.qs[i] = q.q
             self.x_qs[i,:] = q.x_q
+            
+            value = self.analytic_Born_Ion(0.0, R=self.q_list[i].r_q, index_q=i)
+            if value > scale_max_value:
+                scale_max_value = value
+            if value < scale_min_value:
+                scale_min_value = value
+        self.scale_phi_1 = [scale_min_value,scale_max_value]
+        self.scale_phi_2 = [scale_min_value,scale_max_value]
         
         self.total_charge = tf.constant(np.sum(self.qs), dtype=self.DTYPE)
         self.qs = tf.constant(self.qs, dtype=self.DTYPE)
         self.x_qs = tf.constant(self.x_qs, dtype=self.DTYPE)
+
+        scale_min_value_1, scale_max_value_1 = 0.,0.
+        scale_min_value_2, scale_max_value_2 = 0.,0.
+        for i,q in enumerate(self.q_list):
+            
+            phi = self.analytic_Born_Ion(0.0, R=self.q_list[i].r_q, index_q=i)
+            if phi > scale_max_value_1:
+                scale_max_value_1 = phi
+            if phi < scale_min_value_1:
+                scale_min_value_1 = phi
+            
+            if self.PDE_out.field == 'phi':
+                phi += self.G(tf.constant([[self.q_list[i].r_q,0,0]],dtype=self.DTYPE))
+            
+            if phi > scale_max_value_2:
+                scale_max_value_2 = phi
+            if phi < scale_min_value_2:
+                scale_min_value_2 = phi
+
+        self.scale_phi_1 = (scale_min_value_1,scale_max_value_1)
+        self.scale_phi_2 = (scale_min_value_2,scale_max_value_2)
+    
 
     def get_integral_operators(self):
         if self.bempp == None:

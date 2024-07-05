@@ -277,6 +277,8 @@ class Domain_Mesh():
         if 'D2' in self.losses_names or 'R2' in self.losses_names:
             sphere_min, sphere_max = np.min(self.sphere_mesh.vertices, axis=0), np.max(self.sphere_mesh.vertices, axis=0)
             self.scale_2 = [sphere_min.tolist(), sphere_max.tolist()]
+        else:
+            self.scale_2 = self.scale_1
 
         if self.save_points:
             X_plot = dict()

@@ -127,19 +127,18 @@ class Simulation():
             from xppbe.NN.NeuralNet import PINN_2Dom_NeuralNet as NeuralNet
         elif self.num_networks == 1 or self.pinns_method=='DBM':
             from xppbe.NN.NeuralNet import PINN_1Dom_NeuralNet as NeuralNet     
-
+ 
 
         if self.starting_point == 'new':
             
-            self.hyperparameters_in['scale'] = self.PINN_solver.mesh.scale_1
-            if self.pinns_method!='DBM':
-                self.hyperparameters_out['scale'] = self.PINN_solver.mesh.scale_2
-            else: 
-                self.hyperparameters_out['scale'] = self.PINN_solver.mesh.scale_1
+            self.hyperparameters_in['scale_input_s'] = self.PINN_solver.mesh.scale_1
+            self.hyperparameters_out['scale_input_s'] = self.PINN_solver.mesh.scale_2
 
-            if self.scale_NN_q:
-                self.hyperparameters_in['scale_NN'] = self.PBE_model.scale_q_factor
-                self.hyperparameters_out['scale_NN'] = self.PBE_model.scale_q_factor 
+            if self.PBE_model.PDE_in.field == 'phi':
+                 self.hyperparameters_in['scale_output'] = False
+
+            self.hyperparameters_in['scale_output_s'] = self.PBE_model.scale_phi_1
+            self.hyperparameters_out['scale_output_s'] = self.PBE_model.scale_phi_2
 
             self.PINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out])
         

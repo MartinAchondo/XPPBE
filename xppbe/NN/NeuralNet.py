@@ -45,6 +45,8 @@ class PINN_1Dom_NeuralNet(tf.keras.Model):
 
 class NeuralNet(tf.keras.Model):
 
+    DTYPE = 'float32'
+
     def __init__(self, 
                  input_shape=(None, 3),
                  output_dim=1,
@@ -60,8 +62,9 @@ class NeuralNet(tf.keras.Model):
                  fourier_sigma=1,
                  weight_factorization=False,
                  scale_input=True,
-                 scale_NN=1.0,
-                 scale=([-1.,-1.,-1.],[1.,1.,1.]),
+                 scale_output=False,
+                 scale_input_s=([-1.,-1.,-1.],[1.,1.,1.]),
+                 scale_output_s=(-1.,1.),
                  **kwargs):
         super().__init__(**kwargs)
 
@@ -80,11 +83,15 @@ class NeuralNet(tf.keras.Model):
         self.num_fourier_features = num_fourier_features
         self.fourier_sigma = fourier_sigma
         self.weight_factorization = weight_factorization
-
+ 
         self.scale_input = scale_input
-        self.scale_NN = scale_NN
-        self.lb = tf.constant(scale[0])
-        self.ub = tf.constant(scale[1])
+        self.input_lb = tf.constant(scale_input_s[0], dtype=self.DTYPE)
+        self.input_ub = tf.constant(scale_input_s[1], dtype=self.DTYPE)
+
+        self.scale_output = scale_output
+        self.output_lb = tf.constant(scale_output_s[0], dtype=self.DTYPE)
+        self.output_ub = tf.constant(scale_output_s[1], dtype=self.DTYPE)
+
 
         if not self.weight_factorization:
             self.Dense_Layer = tf.keras.layers.Dense
@@ -93,8 +100,8 @@ class NeuralNet(tf.keras.Model):
 
         # Scale layer
         if self.scale_input:
-            self.scale = tf.keras.layers.Lambda(
-                            lambda x: 2.0 * (x - self.lb) / (self.ub - self.lb) - 1.0, 
+            self.scale_in = tf.keras.layers.Lambda(
+                            lambda x: 2.0 * (x - self.input_lb) / (self.input_ub - self.input_lb) - 1.0, 
                             name=f'scale_layer')
 
         # Fourier feature layer
@@ -121,14 +128,14 @@ class NeuralNet(tf.keras.Model):
         # Output layer
         self.out = tf.keras.layers.Dense(output_dim,
                                activation=None,
-                               use_bias=False,
                                name=f'output_layer')
 
         # Scale output layer
-        self.scale_out = tf.keras.layers.Lambda(
-                            lambda x: x*self.scale_NN, 
-                            name=f'scale_output_layer')
-        
+        if self.scale_output:
+            self.scale_out = tf.keras.layers.Lambda(
+                                lambda x: (x+1.0)/2.0 * (self.output_ub-self.output_lb)+self.output_lb, 
+                                name=f'scale_output_layer')
+  
 
     def create_FCNN(self):
         self.hidden_layers = list()
@@ -198,12 +205,14 @@ class NeuralNet(tf.keras.Model):
 
     def call(self, X):
         if self.scale_input:
-            X = self.scale(X)
+            X = self.scale_in(X)
         if self.use_fourier_features:
             X = self.fourier_features(X) 
         X = self.call_architecture(X)
         X = self.out(X)
-        return self.scale_out(X)
+        if self.scale_output:
+            X = self.scale_out(X)
+        return X
 
     def call_FCNN(self, X):
         for layer in self.hidden_layers:
