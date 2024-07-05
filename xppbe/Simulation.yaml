@@ -69,8 +69,8 @@ hyperparameters_in:
     architecture_Net: FCNN
     fourier_features: true
     weight_factorization: false
-    scale_input: True
-    scale_output: False
+    scale_input: true
+    scale_output: false
 
 hyperparameters_out:
     input_shape: [null, 3]
@@ -82,8 +82,8 @@ hyperparameters_out:
     architecture_Net: FCNN
     fourier_features: true
     weight_factorization: false
-    scale_input: True
-    scale_output: False
+    scale_input: true
+    scale_output: false
 
 # Optimizer properties
 optimizer: Adam
