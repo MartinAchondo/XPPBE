@@ -67,37 +67,32 @@ class Simulation():
                 ) 
 
         meshes_domain = dict()   
-        if self.pinns_method in ['DCM','DVM']:     
+        if self.pinns_method in ['DCM','DVM']: 
+                
             if self.equation == 'direct':
                 meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'fun':lambda X: self.PBE_model.source(X)}
-                meshes_domain['Q1'] = {'domain': 'molecule', 'type':'Q1', 'fun':lambda X: self.PBE_model.source(X)}
                 meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-                meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)}
                     
-            elif self.equation == 'regularized_scheme_1':
+            else:
                 meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
                 meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-                meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)-self.PBE_model.G(X)}
 
-            if self.pinns_method == 'DCM':
-                if self.equation == 'regularized_scheme_2':
-                    meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
-                    meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-                    meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)}
-
+            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)}
+            meshes_domain['Q1'] = {'domain': 'molecule', 'type':'Q1', 'fun':lambda X: self.PBE_model.source(X)}
             meshes_domain['K1'] = {'domain': 'molecule', 'type':'K1', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
             meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
             meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': f'experimental_data_{self.domain_properties["molecule"]}.dat', 'method': self.experimental_method}
+            meshes_domain['G'] = {'domain':'interface', 'type':'G'}
+
+            if self.num_networks==2:
+                meshes_domain['Iu'] = {'domain':'interface', 'type':'Iu'}
+                meshes_domain['Id'] = {'domain':'interface', 'type':'Id'}
+                meshes_domain['Ir'] = {'domain':'interface', 'type':'Ir'}
         
         elif self.pinns_method == 'DBM':
              meshes_domain['IB1'] = {'domain': 'interface', 'type':'IB1', 'value':0.0}
              meshes_domain['IB2'] = {'domain': 'interface', 'type':'IB2', 'value':0.0}
 
-        if self.num_networks==2 and self.pinns_method!='DBM':
-                meshes_domain['Iu'] = {'domain':'interface', 'type':'Iu'}
-                meshes_domain['Id'] = {'domain':'interface', 'type':'Id'}
-                meshes_domain['Ir'] = {'domain':'interface', 'type':'Ir'}
-        meshes_domain['G'] = {'domain':'interface', 'type':'G'}
 
         self.meshes_domain = dict()
         for t in self.losses:
