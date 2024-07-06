@@ -422,7 +422,7 @@ class Variational_Non_Linear(Equations_utils):
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         gx,gy,gz = self.PBE.gradient(mesh,model,X,flag,value=self.field)
-        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.PBE.aprox_sinh(phi+self.PBE.G(X)/self.T_adim) *phi
+        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.PBE.aprox_sinh((phi+self.PBE.G(X))/self.T_adim) *phi
         return r
 
 
