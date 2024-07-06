@@ -322,24 +322,36 @@ class PBE(Solution_utils):
         scale_min_value_1, scale_max_value_1 = 0.,0.
         scale_min_value_2, scale_max_value_2 = 0.,0.
         for i,q in enumerate(self.q_list):
-            
-            phi = self.analytic_Born_Ion(0.0, R=self.q_list[i].r_q, index_q=i)
+            phi = self.analytic_Born_Ion(0.0, R=q.r_q, index_q=i)
+            phi_save = phi.copy()
+            for j,q2 in enumerate(self.q_list):
+                if i==j: 
+                    continue
+                rx = np.linalg.norm(q.x_q-q2.x_q)
+                phi += self.analytic_Born_Ion(rx, R=rx, index_q=j)
 
-            if self.pinns_method == 'DBM' and self.scheme != 'regularized_equation_1':
-                phi += self.G(tf.constant([[self.q_list[i].r_q,0,0]],dtype=self.DTYPE))
+            if self.fields[0] == 'phi':
+                phi_1 = phi + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
+                phi_1_save = phi_save + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
+            else:
+                phi_1 = phi 
+                phi_1_save = phi_save
+            phi_1_max = phi_1_save if phi_1_save>phi_1 else phi_1
+            phi_1_min = phi_1_save if phi_1_save<phi_1 else phi_1
+            if phi_1_max > scale_max_value_1:
+                scale_max_value_1 = phi_1_max
+            if phi_1_min < scale_min_value_1:
+                scale_min_value_1 = phi_1_min
 
-            if phi > scale_max_value_1:
-                scale_max_value_1 = phi
-            if phi < scale_min_value_1:
-                scale_min_value_1 = phi
-            
-            if self.pinns_method != 'DBM' and self.scheme != 'regularized_equation_1':
-                phi += self.G(tf.constant([[self.q_list[i].r_q,0,0]],dtype=self.DTYPE))
-            
-            if phi > scale_max_value_2:
-                scale_max_value_2 = phi
-            if phi < scale_min_value_2:
-                scale_min_value_2 = phi
+            if self.fields[1] == 'phi':
+                phi_2 = phi + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
+                phi_2_save = phi_save + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
+            phi_2_max = phi_2_save if phi_2_save>phi_2 else phi_2
+            phi_2_min = phi_2_save if phi_2_save<phi_2 else phi_2
+            if phi_2_max > scale_max_value_2:
+                scale_max_value_2 = phi_2_max
+            if phi_2_min < scale_min_value_2:
+                scale_min_value_2 = phi_2_min
 
         self.scale_phi_1 = [float(scale_min_value_1),float(scale_max_value_1)]
         self.scale_phi_2 = [float(scale_min_value_2),float(scale_max_value_2)]

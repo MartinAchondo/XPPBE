@@ -9,6 +9,7 @@ class PBE_Direct(PBE):
 
     def __init__(self,*args,**kwargs):
         self.scheme = 'direct'
+        self.fields = ['phi','phi']
         super().__init__(*args,**kwargs)
 
         self.PDE_in = Poisson(self,self.domain_properties,field='phi')
@@ -55,7 +56,8 @@ class PBE_Direct(PBE):
 class PBE_Reg_1(PBE):
 
     def __init__(self,*args,**kwargs):
-        self.scheme = 'regularized_1'
+        self.scheme = 'regularized_1'        
+        self.fields = ['react','react']
         super().__init__(*args,**kwargs)
 
         self.PDE_in = Laplace(self,self.domain_properties,field='react')
@@ -104,6 +106,7 @@ class PBE_Reg_2(PBE):
 
     def __init__(self,*args,**kwargs):
         self.scheme = 'regularized_2'
+        self.fields = ['react','phi']
         super().__init__(*args,**kwargs)
 
         self.PDE_in = Laplace(self,self.domain_properties,field='react')
@@ -154,6 +157,7 @@ class PBE_Var_Direct(PBE_Direct):
 
     def __init__(self,*args,**kwargs):
         self.scheme = 'direct'
+        self.fields = ['phi','phi']
         super().__init__(*args,**kwargs)
 
         self.PDE_in = Variational_Poisson(self,self.domain_properties,field='phi')
@@ -166,6 +170,7 @@ class PBE_Var_Reg_1(PBE_Reg_1):
 
     def __init__(self,*args,**kwargs):
         self.scheme = 'regularized_1'
+        self.fields = ['react','react']
         super().__init__(*args,**kwargs)
 
         self.PDE_in = Variational_Laplace(self,self.domain_properties,field='react')
@@ -180,6 +185,7 @@ class PBE_Bound(PBE):
 
     def __init__(self,*args,**kwargs):
         self.scheme = 'direct'
+        self.fields = ['phi','phi']
         super().__init__(*args,**kwargs)
 
         self.PDE_in = Boundary_Poisson(self,self.domain_properties,field='phi')
