@@ -6,7 +6,7 @@ import shutil
 from xppbe import Simulation
 from xppbe import Allrun,Allclean
 
-def run_checkers(sim,sim_name,temp_dir):
+def run_checkers(sim,sim_name,temp_dir,num_iters=1):
 
     results_path = os.path.join(temp_dir,'results')
     assert os.path.isdir(results_path)
@@ -17,12 +17,12 @@ def run_checkers(sim,sim_name,temp_dir):
         assert name in os.listdir(results_path)
 
     mesh_path = os.path.join(results_path,'mesh')
-    assert len(os.listdir(mesh_path)) == 10 or len(os.listdir(mesh_path)) == 11 
+    assert len(os.listdir(mesh_path)) > 0 
 
     iterations_path = os.path.join(results_path,'iterations')
-    assert len(os.listdir(iterations_path)) == 1
+    assert len(os.listdir(iterations_path)) == num_iters
 
-    last_iteration = os.path.join(iterations_path,f'iter_{sim.N_iters}')
+    last_iteration = os.path.join(iterations_path,f'iter_{int(sim.N_iters+sim.N_steps_2*sim.options_optimizer2["maxiter"])}')
     listdir_last_iteration = os.listdir(last_iteration)
 
     for file_name in ['optimizer.npy', 'weights.index', 'w_hist.csv', 'checkpoint', 'loss.csv', 'hyperparameters.json', 'G_solv.csv', 'loss_validation.csv', 'weights.data-00000-of-00001']:
@@ -33,7 +33,7 @@ def run_checkers(sim,sim_name,temp_dir):
         with open(file, 'r') as csvfile:
             reader = csv.reader(csvfile)
             lines = list(reader)
-            assert len(lines) == sim.N_iters + 1
+            assert len(lines) == int(sim.N_iters+sim.N_steps_2*sim.options_optimizer2["maxiter"]) + 1
             last_line = lines[-1]
             assert not '' in last_line
     
@@ -53,18 +53,50 @@ def test_scripts():
         run_checkers(sim,sim_name,temp_dir)
         Allclean(results_path=temp_dir)
         assert len(os.listdir(os.path.join(temp_dir,'results'))) == 0
-        
+    
+
+
+@pytest.mark.parametrize(
+ ('pinns_method','model','scheme'),
+ (
+     ('DCM','linear','direct'),
+     ('DCM','linear', 'regularized_scheme_1'),
+     ('DCM','nonlinear','regularized_scheme_2'),
+     ('DVM','linear','direct'),
+     ('DVM','linear','regularized_scheme_1'),
+     ('DVM','nonlinear','regularized_scheme_1'),
+     ('DBM','linear','direct')
+ )       
+)
+def test_pinns_method_and_schemes(pinns_method,model,scheme):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        sim_name = f'test_{pinns_method}_{scheme}'
+        yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
+        yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
+        shutil.copy(yaml_prev_path,yaml_path)
+        results_path = os.path.join(temp_dir,'results',sim_name)
+        sim = Simulation(yaml_path, results_path=results_path, molecule_dir=None)
+        sim.pinns_method = pinns_method
+        sim.pbe_model = model
+        sim.equation = scheme
+        if pinns_method == 'DBM':
+            sim.num_networks = 1
+            sim.losses = ['IB1','IB2']
+        sim.create_simulation()
+        sim.adapt_model()
+        sim.solve_model()
+        sim.postprocessing(run_all=True)
+        run_checkers(sim,sim_name,temp_dir)
+
 
 @pytest.mark.parametrize(
  ('molecule'),
  (
-     ('born_ion'),
-     ('sphere_+1-1'),
      ('methanol'),
      ('arg')
  )       
 )
-def test_xppbe_solver(molecule):
+def test_other_molecules(molecule):
     with tempfile.TemporaryDirectory() as temp_dir:
         sim_name = f'test_{molecule}'
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
@@ -77,31 +109,21 @@ def test_xppbe_solver(molecule):
         run_checkers(sim,sim_name,temp_dir)
 
 
-@pytest.mark.parametrize(
- ('loss'),
- (
-     ('K2'),
-     ('E2'),
-     ('G'),
-     ('Ir')
- )       
-)
-def test_additional_losses(loss):
+def test_optimizers():
     with tempfile.TemporaryDirectory() as temp_dir:
-        sim_name = f'test_{loss}'
+        sim_name = f'test_optimizers'
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
         yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
         shutil.copy(yaml_prev_path,yaml_path)
         results_path = os.path.join(temp_dir,'results',sim_name)
         sim = Simulation(yaml_path, results_path=results_path, molecule_dir=None)
-        sim.losses.append(loss)
-        if loss == 'E2':
-            sim.mesh_properties['dR_exterior'] = 5
+        sim.options_optimizer2['maxiter'] = 3
+        sim.N_steps_2 = 2
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()
         sim.postprocessing(run_all=True)
-        run_checkers(sim,sim_name,temp_dir)
+        run_checkers(sim,sim_name,temp_dir,num_iters=2)
 
 
 @pytest.mark.parametrize(
@@ -127,24 +149,26 @@ def test_other_architectures(arch):
         run_checkers(sim,sim_name,temp_dir)
 
 
+
 @pytest.mark.parametrize(
- ('model','scheme'),
+ ('loss'),
  (
-     ('nonlinear','regularized_scheme_2'),
-     ('linear', 'regularized_scheme_1'),
-     ('linear','standard')
+     ('K2'),
+     ('E2'),
+     ('G')
  )       
 )
-def test_non_linear_and_schemes(model,scheme):
+def test_additional_losses(loss):
     with tempfile.TemporaryDirectory() as temp_dir:
-        sim_name = f'test_{model}_{scheme}'
+        sim_name = f'test_{loss}'
         yaml_path = os.path.join(os.path.dirname(__file__),'simulations_yaml',sim_name+'.yaml')
         yaml_prev_path = os.path.join(os.path.dirname(__file__),'simulations_yaml','test_born_ion.yaml')
         shutil.copy(yaml_prev_path,yaml_path)
         results_path = os.path.join(temp_dir,'results',sim_name)
         sim = Simulation(yaml_path, results_path=results_path, molecule_dir=None)
-        sim.pbe_model = model
-        sim.equation = scheme
+        sim.losses.append(loss)
+        if loss == 'E2':
+            sim.mesh_properties['dR_exterior'] = 5
         sim.create_simulation()
         sim.adapt_model()
         sim.solve_model()

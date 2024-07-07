@@ -95,7 +95,7 @@ class Domain_Mesh():
     DTYPE = 'float32'
     pi = np.pi
 
-    def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, results_path='', molecule_dir=''):
+    def __init__(self, molecule, mesh_properties, simulation='Main', path='', save_points=False, results_path='', molecule_dir='', losses_names=list()):
 
         self.mesh_properties = {
             'density_mol': 10,
@@ -123,6 +123,7 @@ class Domain_Mesh():
         self.save_points = save_points
         self.main_path = path
         self.simulation_name = simulation
+        self.losses_names = losses_names
         self.results_path = self.main_path if results_path=='' else results_path
         self.molecule_path = os.path.join(self.main_path,'Molecules',molecule) if molecule_dir=='' else molecule_dir
 
@@ -142,10 +143,14 @@ class Domain_Mesh():
     
     def read_create_meshes(self):
         self.create_molecule_mesh()
-        self.create_sphere_mesh()
-        self.create_interior_mesh()
-        self.create_exterior_mesh()
-        self.create_charges_mesh()
+        if 'D2' in self.losses_names or 'R2' in self.losses_names:
+            self.create_sphere_mesh()
+        if 'R1' in self.losses_names:
+            self.create_interior_mesh()
+        if 'R2' in self.losses_names:
+            self.create_exterior_mesh()
+        if 'Q1' in self.losses_names:
+            self.create_charges_mesh()
         self.create_mesh_obj()
         print("Mesh initialization ready")
 
@@ -269,8 +274,11 @@ class Domain_Mesh():
         mol_min, mol_max = np.min(self.mol_verts, axis=0), np.max(self.mol_verts, axis=0)
         self.scale_1 = [mol_min.tolist(), mol_max.tolist()]
 
-        sphere_min, sphere_max = np.min(self.sphere_mesh.vertices, axis=0), np.max(self.sphere_mesh.vertices, axis=0)
-        self.scale_2 = [sphere_min.tolist(), sphere_max.tolist()]
+        if 'D2' in self.losses_names or 'R2' in self.losses_names:
+            sphere_min, sphere_max = np.min(self.sphere_mesh.vertices, axis=0), np.max(self.sphere_mesh.vertices, axis=0)
+            self.scale_2 = [sphere_min.tolist(), sphere_max.tolist()]
+        else:
+            self.scale_2 = self.scale_1
 
         if self.save_points:
             X_plot = dict()
@@ -303,13 +311,13 @@ class Domain_Mesh():
                         X_plot[f'{type_b}_verts'] = X.numpy()
                         self.save_data_plot(X_plot)
 
-            elif type_b in ('Iu','Id','Ir'):
+            elif type_b[0] == 'I':
                 N = self.mol_verts_normal
                 X = tf.constant(self.mol_verts, dtype=self.DTYPE)
                 X_I = (X, N)
                 self.domain_mesh_names.add(type_b)
-                self.domain_mesh_data['I'] = (X_I,flag)
-            
+                self.domain_mesh_data['I'] = (X_I,flag)               
+
             elif type_b in ('G'):
                 self.domain_mesh_names.add(type_b)
                 self.domain_mesh_data[type_b] = ((tf.constant(self.mol_faces_centroid, dtype=self.DTYPE),

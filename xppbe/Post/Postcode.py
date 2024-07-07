@@ -53,11 +53,11 @@ class Postprocessing():
     def phi_known(self,*args,**kwargs):
         return self.PDE.phi_known(*args,**kwargs)*self.to_V
 
-    def get_phi_interface(self,*args,**kwargs):
-        return tuple(phi*self.to_V for phi in self.PDE.get_phi_interface(*args,**kwargs))
+    def get_phi_interface_verts(self,*args,**kwargs):
+        return tuple(phi*self.to_V for phi in self.PDE.get_phi_interface_verts(*args,**kwargs))
 
-    def get_dphi_interface(self,*args,**kwargs):
-        return tuple(dphi*self.to_V for dphi in self.PDE.get_dphi_interface(*args,**kwargs))
+    def get_dphi_interface_verts(self,*args,**kwargs):
+        return tuple(dphi*self.to_V for dphi in self.PDE.get_dphi_interface_verts(*args,**kwargs))
 
     def get_solvation_energy(self,*args,**kwargs):
         return self.PDE.get_solvation_energy(self.model)
@@ -126,21 +126,21 @@ class Postprocessing():
 
     def plot_loss_history(self, domain=1, plot_w=False, loss='all'):
         fig,ax = plt.subplots()
-        c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime', 'Ir': 'aqua', 'E':'darkslategrey','G': 'salmon'}
+        c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime', 'Ir': 'aqua', 'E':'darkslategrey','G': 'salmon','IB1':'lime','IB2': 'aqua'}
         c2 = {'royalblue','springgreen','aqua', 'pink','yellowgreen','teal'}
         for i in ['1','2']:
             if int(i)==domain:
                 if not plot_w:
-                    w = {'R'+i: 1.0, 'D'+i: 1.0, 'N'+i: 1.0, 'K'+i: 1.0, 'E'+i: 1.0, 'Q'+i: 1.0, 'G': 1.0, 'Iu': 1.0, 'Id': 1.0, 'Ir': 1.0}
+                    w = {'R'+i: 1.0, 'D'+i: 1.0, 'N'+i: 1.0, 'K'+i: 1.0, 'E'+i: 1.0, 'Q'+i: 1.0, 'G': 1.0, 'Iu': 1.0, 'Id': 1.0, 'Ir': 1.0,'IB1':1.0,'IB2':1.0}
                 elif plot_w:
                     w = self.PINN.w_hist
                 
                 if plot_w==False and (loss=='TL' or loss=='all'):
                     ax.semilogy(range(1,len(self.PINN.losses['TL'+i])+1), self.PINN.losses['TL'+i],'k-',label='TL'+i)
                 for t in self.PINN.losses_names_list[int(i)-1]:
-                    t2 = t if t in ('Iu','Id','Ir','G') else t[0]
+                    t2 = t if t in ('Iu','Id','Ir','G','IB1','IB2') else t[0]
                     if (t2 in loss or loss=='all') and not t in 'TL' and t in self.mesh.domain_mesh_names:
-                        cx = c[t] if t in ('Iu','Id','Ir','G') else c[t[0]]
+                        cx = c[t] if t in ('Iu','Id','Ir','G','IB1','IB2') else c[t[0]]
                         ax.semilogy(range(1,len(self.PINN.losses[t])+1), w[t]*self.PINN.losses[t],cx,label=f'{t}')
 
         ax.legend()
@@ -167,7 +167,7 @@ class Postprocessing():
                     ax.semilogy(range(1,len(self.PINN.losses['vTL'+i])+1), self.PINN.losses['vTL'+i],'b-',label=f'Training {i}')
                     ax.semilogy(range(1,len(self.PINN.validation_losses['TL'+i])+1), self.PINN.validation_losses['TL'+i],'r-',label=f'Validation {i}')
                 else:
-                    t = loss if loss in ('Iu','Id','Ir','G') else loss+i
+                    t = loss if loss in ('Iu','Id','Ir','G','IB1','IB2') else loss+i
                     if t in self.mesh.domain_mesh_names :
                         ax.semilogy(range(1,len(self.PINN.losses[t])+1), self.PINN.losses[t],'b-',label=f'{loss} training')
                         ax.semilogy(range(1,len(self.PINN.validation_losses[t])+1), self.PINN.validation_losses[t],'r-',label=f'{loss} validation')  
@@ -191,13 +191,13 @@ class Postprocessing():
 
     def plot_weights_history(self, domain=1):
         fig,ax = plt.subplots()
-        c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime', 'Ir': 'aqua', 'E':'darkslategrey','G': 'salmon'}
+        c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime', 'Ir': 'aqua', 'E':'darkslategrey','G': 'salmon','IB1':'lime','IB2': 'aqua'}
         for i in ['1','2']:
             if int(i)==domain:
                 w = self.PINN.w_hist
                 for t in self.PINN.losses_names_list[int(i)-1]:
                     if t in self.mesh.domain_mesh_names:
-                        cx = c[t] if t in ('Iu','Id','Ir','G') else c[t[0]]
+                        cx = c[t] if t in ('Iu','Id','Ir','G','IB1','IB2') else c[t[0]]
                         ax.semilogy(range(1,len(w[t])+1), w[t], cx,label=f'{t}')
                 
         ax.legend()
@@ -375,10 +375,10 @@ class Postprocessing():
         elements = self.mesh.mol_faces.astype(np.float32)
          
         if variable == 'phi':
-            values,values_1,values_2 = self.get_phi_interface(self.PINN.model,value=value)
+            values,values_1,values_2 = self.get_phi_interface_verts(self.PINN.model,value=value)
             text_l = r'phi' if value == 'phi' else 'ϕ react'
         elif variable == 'dphi':
-            values,values_1,values_2 = self.get_dphi_interface(self.PINN.model)
+            values,values_1,values_2 = self.get_dphi_interface_verts(self.PINN.model)
             text_l = r'dphi' if value == 'phi' else '∂ϕ react'
 
         if domain =='interface':
@@ -443,7 +443,7 @@ class Postprocessing():
         elements = self.mesh.mol_faces.astype(np.float32)
 
         phi_known = self.phi_known(method,'react', vertices, flag='solvent')
-        phi_pinn = self.get_phi(vertices,flag='molecule',model=self.model,value='react')
+        phi_pinn = self.get_phi(vertices,flag='interface',model=self.model,value='react')
 
         error = np.abs(phi_pinn.numpy() - phi_known.numpy().reshape(-1,1))
         if type_e == 'relative':
@@ -895,12 +895,12 @@ class Postprocessing():
     def L2_interface_known(self,known_method):
         vertices = self.mesh.mol_verts.astype(np.float32)
         phi_known = self.phi_known(known_method,'react', vertices, flag='solvent')
-        phi_xpinn = self.get_phi_interface(self.model,value='react')[0]
+        phi_xpinn = self.get_phi_interface_verts(self.model,value='react')[0]
 
         if known_method == 'PBJ':
             vertices = self.PDE.pbj_vertices.astype(np.float32)
             phi_known = self.phi_known(known_method,'react', vertices, flag='solvent')
-            phi_xpinn = self.get_phi(vertices,flag='molecule',model=self.model,value='react')
+            phi_xpinn = self.get_phi(vertices,flag='interface',model=self.model,value='react')
 
         phi_dif = (phi_xpinn.numpy() - phi_known.numpy().reshape(-1,1))
         error = np.sqrt(np.sum(phi_dif**2)/np.sum(phi_known.numpy()**2))
@@ -1080,9 +1080,9 @@ class Born_Ion_Postprocessing(Postprocessing):
                 normal_vector = radial_vector / magnitude
                 du = self.get_dphi(XX_bl,normal_vector,flag,self.model,value)
                 if i==0:
-                    ax.plot(theta_bl[:,0],du[i][:,0]*self.PDE.PDE_in.epsilon, label=labels[i], c=colr[i])
+                    ax.plot(theta_bl[:,0],du[i][:,0]*self.PDE.epsilon_1, label=labels[i], c=colr[i])
                 else:
-                    ax.plot(theta_bl[:,0],du[i][:,0]*self.PDE.PDE_out.epsilon, label=labels[i], c=colr[i])
+                    ax.plot(theta_bl[:,0],du[i][:,0]*self.PDE.epsilon_2, label=labels[i], c=colr[i])
             i += 1
 
         if plot=='u':
@@ -1092,7 +1092,7 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         elif plot=='du':
             dU2 = self.PINN.PDE.analytic_Born_Ion_du(rr)*self.to_V
-            du2 = np.ones((N,1))*dU2*self.PDE.PDE_in.epsilon
+            du2 = np.ones((N,1))*dU2*self.PDE.epsilon_1
             if value=='react':
                 n = du2.shape[0]
                 nnvv = tf.concat([tf.ones((n, 1)), tf.zeros((n, 2))], axis=1)

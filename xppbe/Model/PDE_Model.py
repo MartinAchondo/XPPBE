@@ -20,18 +20,19 @@ class PBE(Solution_utils):
 
     pi = tf.constant(np.pi, dtype=DTYPE)
 
-    def __init__(self, domain_properties, mesh, equation, main_path, molecule_dir, results_path):      
+    def __init__(self, domain_properties, mesh, equation, pinns_method, main_path, molecule_dir, results_path):      
 
         self.mesh = mesh
         self.main_path = main_path
         self.equation = equation
+        self.pinns_method = pinns_method
         self.molecule_path = molecule_dir
         self.results_path = results_path
 
         self.calculate_properties(domain_properties)
 
         self.get_charges()
-        if self.scheme == 'standard':
+        if self.scheme == 'direct':
             self.bempp = None
             self.get_integral_operators()
 
@@ -69,18 +70,25 @@ class PBE(Solution_utils):
 
         self.sigma = self.mesh.G_sigma
             
-    def get_phi_interface(self,model,**kwargs):      
-        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)
-        u = self.get_phi(verts,'interface',model,**kwargs)
-        u_mean = (u[:,0]+u[:,1])/2
-        return u_mean,u[:,0],u[:,1]
+    def get_phi_interface(self,X,model,**kwargs):      
+        u_mean = self.get_phi(X,'interface',model,**kwargs)
+        u_1 = self.get_phi(X,'molecule',model,**kwargs)
+        u_2 = self.get_phi(X,'solvent',model,**kwargs)
+        return u_mean[:,0],u_1[:,0],u_2[:,0]
     
-    def get_dphi_interface(self,model, value='phi'): 
-        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)     
-        N_v = self.mesh.mol_verts_normal
-        du_1,du_2 = self.get_dphi(verts,N_v,'',model,value)
+    def get_dphi_interface(self,X,N_v,model,value='phi'): 
+        du_1,du_2 = self.get_dphi(X,N_v,'',model,value)
         du_prom = (du_1*self.PDE_in.epsilon + du_2*self.PDE_out.epsilon)/2
         return du_prom,du_1,du_2
+
+    def get_phi_interface_verts(self,model,**kwargs):      
+        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)
+        return self.get_phi_interface(verts,model)
+    
+    def get_dphi_interface_verts(self,model,value='phi'): 
+        verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)     
+        N_v = self.mesh.mol_verts_normal
+        return self.get_dphi_interface(verts,N_v,model)
     
     
     def get_phi_ens(self,model,X_mesh,q_L, method='mean', pinn=True, known_method=False):        
@@ -164,6 +172,16 @@ class PBE(Solution_utils):
             if 'Ir' in self.mesh.domain_mesh_names:
                 L['Ir'] += self.get_loss_I(model,X_batches['I'], 'Ir')    
 
+            if 'IB1' in self.mesh.domain_mesh_names: 
+                ((X,N),flag) = X_batches['I']
+                loss_r = self.PDE_in.residual_loss(self.mesh,model,self.mesh.get_X(X),N,flag)
+                L['IB1'] += loss_r   
+
+            if 'IB2' in self.mesh.domain_mesh_names: 
+                ((X,N),flag) = X_batches['I']
+                loss_r = self.PDE_out.residual_loss(self.mesh,model,self.mesh.get_X(X),N,flag)
+                L['IB2'] += loss_r   
+
         if 'E2' in X_batches and not validation:
             L['E2'] += self.get_loss_experimental(model,X_batches['E2'])
 
@@ -187,8 +205,9 @@ class PBE(Solution_utils):
         X = self.mesh.get_X(XI)
 
         if loss_type=='Iu':
-            u = self.get_phi(XI,flag,model)
-            loss += tf.reduce_mean(tf.square(u[:,0]-u[:,1])) 
+            u1 = self.get_phi(XI,'molecule',model)
+            u2 = self.get_phi(XI,'solvent',model)
+            loss += tf.reduce_mean(tf.square(u1-u2)) 
 
         elif loss_type=='Id':
             du_1,du_2 = self.get_dphi(XI,N_v,flag,model,value='phi')
@@ -288,18 +307,60 @@ class PBE(Solution_utils):
     def get_charges(self):
         self.pqr_path = os.path.join(self.molecule_path,self.molecule+'.pqr')
         self.q_list = get_charges_list(self.pqr_path)
-        self.scale_q_factor = min(self.q_list, key=lambda q_obj: np.abs(q_obj.q)).q
+        #self.scale_q_factor = min(self.q_list, key=lambda q_obj: np.abs(q_obj.q)).q
 
         n = len(self.q_list)
         self.qs = np.zeros(n)
         self.x_qs = np.zeros((n,3))
         for i,q in enumerate(self.q_list):
             self.qs[i] = q.q
-            self.x_qs[i,:] = q.x_q
-        
+            self.x_qs[i,:] = q.x_q        
         self.total_charge = tf.constant(np.sum(self.qs), dtype=self.DTYPE)
         self.qs = tf.constant(self.qs, dtype=self.DTYPE)
         self.x_qs = tf.constant(self.x_qs, dtype=self.DTYPE)
+
+        scale_min_value_1, scale_max_value_1 = 0.,0.
+        scale_min_value_2, scale_max_value_2 = 0.,0.
+        for i,q in enumerate(self.q_list):
+            phi = self.analytic_Born_Ion(0.0, R=q.r_q, index_q=i)
+            phi_save = phi.copy()
+            for j,q2 in enumerate(self.q_list):
+                if i==j: 
+                    continue
+                rx = np.linalg.norm(q.x_q-q2.x_q)
+                phi += self.analytic_Born_Ion(rx, R=rx, index_q=j)
+
+            if self.fields[0] == 'phi':
+                phi_1 = phi + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
+                phi_1_save = phi_save + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
+            else:
+                phi_1 = phi 
+                phi_1_save = phi_save
+            
+            phi_1_max = phi_1_save if phi_1_save>phi_1 else phi_1
+            phi_1_min = phi_1_save if phi_1_save<phi_1 else phi_1
+            if phi_1_max > scale_max_value_1:
+                scale_max_value_1 = phi_1_max
+            if phi_1_min < scale_min_value_1:
+                scale_min_value_1 = phi_1_min
+
+            if self.fields[1] == 'phi':
+                phi_2 = phi + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
+                phi_2_save = phi_save + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
+            else:
+                phi_2 = phi 
+                phi_2_save = phi_save
+           
+            phi_2_max = phi_2_save if phi_2_save>phi_2 else phi_2
+            phi_2_min = phi_2_save if phi_2_save<phi_2 else phi_2
+            if phi_2_max > scale_max_value_2:
+                scale_max_value_2 = phi_2_max
+            if phi_2_min < scale_min_value_2:
+                scale_min_value_2 = phi_2_min
+
+        self.scale_phi_1 = [float(scale_min_value_1),float(scale_max_value_1)]
+        self.scale_phi_2 = [float(scale_min_value_2),float(scale_max_value_2)]
+    
 
     def get_integral_operators(self):
         if self.bempp == None:
@@ -308,16 +369,41 @@ class PBE(Solution_utils):
         elements = self.mesh.mol_faces
         vertices = self.mesh.mol_verts
         self.grid = self.bempp.Grid(vertices.transpose(), elements.transpose())
-        self.space = self.bempp.function_space(self.grid, "P", 1)
+        self.space = self.bempp.function_space(self.grid, "DP", 0)
         self.dirichl_space = self.space
         self.neumann_space = self.space
 
         self.slp_q = bempp.api.operators.potential.laplace.single_layer(self.neumann_space, self.x_qs.numpy().transpose())
         self.dlp_q = bempp.api.operators.potential.laplace.double_layer(self.dirichl_space, self.x_qs.numpy().transpose())
+
+        vertices = self.grid.vertices
+        faces_normals = self.grid.normals
+        elements = self.grid.elements
+        centroids = np.zeros((3, elements.shape[1]))
+        for i, element in enumerate(elements.T):
+            centroids[:, i] = np.mean(vertices[:, element], axis=1)
+
+        self.mesh.grid_centroids = tf.reshape(tf.constant(centroids.transpose(),dtype=self.DTYPE), (-1,3))
+        self.mesh.grid_faces_normals = tf.reshape(tf.constant(faces_normals.transpose(),dtype=self.DTYPE), (-1,3))
     
+    def get_grid_coefficients_faces(self,model):
+
+        X = self.mesh.grid_centroids
+        Nv = self.mesh.grid_faces_normals
+        phi_mean,_,_ = self.get_phi_interface(X,model)
+        u_interface = phi_mean.numpy().flatten()
+        _,du_1,_ = self.get_dphi_interface(X,Nv,model)
+        du_1_interface = du_1.numpy().flatten()
+
+        phi = self.bempp.GridFunction(self.space, coefficients=u_interface)
+        dphi = self.bempp.GridFunction(self.space, coefficients=du_1_interface)
+
+        return phi,dphi
+
+
     @classmethod
     def create_L(cls):
-        cls.names = ['R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','Ir','E2','P1','P2']
+        cls.names = ['R1','D1','N1','K1','Q1','R2','D2','N2','K2','G','Iu','Id','Ir','E2','P1','P2','IB1','IB2']
         L = dict()
         for t in cls.names:
             L[t] = tf.constant(0.0, dtype=cls.DTYPE)

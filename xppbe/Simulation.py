@@ -36,54 +36,68 @@ class Simulation():
                         path=self.main_path,
                         simulation=self.simulation_name,
                         results_path=self.results_path,
-                        molecule_dir=self.molecule_dir
+                        molecule_dir=self.molecule_dir,
+                        losses_names= self.losses
                         )
 
-        if self.equation == 'standard':
-                from xppbe.Model.Equations import PBE_Std as PBE
-        elif self.equation == 'regularized_scheme_1':
-                from xppbe.Model.Equations import PBE_Reg_1 as PBE
-        elif self.equation == 'regularized_scheme_2':
-                from xppbe.Model.Equations import PBE_Reg_2 as PBE
+        if self.pinns_method == 'DCM':
+            if self.equation == 'direct':
+                    from xppbe.Model.Equations import PBE_Direct as PBE
+            elif self.equation == 'regularized_scheme_1':
+                    from xppbe.Model.Equations import PBE_Reg_1 as PBE
+            elif self.equation == 'regularized_scheme_2':
+                    from xppbe.Model.Equations import PBE_Reg_2 as PBE
+                    
+        elif self.pinns_method == 'DVM':
+            if self.equation == 'direct':
+                    from xppbe.Model.Equations import PBE_Var_Direct as PBE
+            elif self.equation == 'regularized_scheme_1':
+                    from xppbe.Model.Equations import PBE_Var_Reg_1 as PBE
+
+        elif self.pinns_method == 'DBM':
+            from xppbe.Model.Equations import PBE_Bound as PBE
 
         self.PBE_model = PBE(self.domain_properties,
                 mesh=self.Mol_mesh, 
+                pinns_method=self.pinns_method,
                 equation=self.pbe_model,
                 main_path=self.main_path,
                 molecule_dir=self.molecule_dir,
                 results_path=self.results_path
                 ) 
 
-        meshes_domain = dict()           
-        if self.equation == 'standard':
-            meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'fun':lambda X: self.PBE_model.source(X)}
-            meshes_domain['Q1'] = {'domain': 'molecule', 'type':'Q1', 'fun':lambda X: self.PBE_model.source(X)}
-            meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)}
+        meshes_domain = dict()   
+        if self.pinns_method in ['DCM','DVM']: 
                 
-        elif self.equation == 'regularized_scheme_1':
-            meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
-            meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
-            meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)-self.PBE_model.G(X)}
+            if self.equation == 'direct':
+                meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'fun':lambda X: self.PBE_model.source(X)}
+                meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
+                    
+            else:
+                meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
+                meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
 
-        elif self.equation == 'regularized_scheme_2':
-            meshes_domain['R1'] = {'domain': 'molecule', 'type':'R1', 'value':0.0}
-            meshes_domain['R2'] = {'domain': 'solvent', 'type':'R2', 'value':0.0}
             meshes_domain['D2'] = {'domain': 'solvent', 'type':'D2', 'fun':lambda X: self.PBE_model.G_Yukawa(X)}
+            meshes_domain['Q1'] = {'domain': 'molecule', 'type':'Q1', 'fun':lambda X: self.PBE_model.source(X)}
+            meshes_domain['K1'] = {'domain': 'molecule', 'type':'K1', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
+            meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
+            meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': f'experimental_data_{self.domain_properties["molecule"]}.dat', 'method': self.experimental_method}
+            meshes_domain['G'] = {'domain':'interface', 'type':'G'}
 
-        meshes_domain['K1'] = {'domain': 'molecule', 'type':'K1', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
-        meshes_domain['K2'] = {'domain': 'solvent', 'type':'K2', 'file':f'known_data_{self.domain_properties["molecule"]}.dat'}
-        meshes_domain['E2'] = {'domain': 'solvent', 'type': 'E2', 'file': f'experimental_data_{self.domain_properties["molecule"]}.dat', 'method': self.experimental_method}
-
-        if self.num_networks==2:
+            if self.num_networks==2:
                 meshes_domain['Iu'] = {'domain':'interface', 'type':'Iu'}
                 meshes_domain['Id'] = {'domain':'interface', 'type':'Id'}
                 meshes_domain['Ir'] = {'domain':'interface', 'type':'Ir'}
-        meshes_domain['G'] = {'domain':'interface', 'type':'G'}
+        
+        elif self.pinns_method == 'DBM':
+             meshes_domain['IB1'] = {'domain': 'interface', 'type':'IB1', 'value':0.0}
+             meshes_domain['IB2'] = {'domain': 'interface', 'type':'IB2', 'value':0.0}
+
 
         self.meshes_domain = dict()
         for t in self.losses:
-            self.meshes_domain[t] = meshes_domain[t]
+            if t in meshes_domain:
+                self.meshes_domain[t] = meshes_domain[t]
 
         self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
 
@@ -106,18 +120,20 @@ class Simulation():
 
         if self.num_networks == 2:
             from xppbe.NN.NeuralNet import PINN_2Dom_NeuralNet as NeuralNet
-        elif self.num_networks == 1:
+        elif self.num_networks == 1 or self.pinns_method=='DBM':
             from xppbe.NN.NeuralNet import PINN_1Dom_NeuralNet as NeuralNet     
-
+ 
 
         if self.starting_point == 'new':
             
-            self.hyperparameters_in['scale'] = self.PINN_solver.mesh.scale_1
-            self.hyperparameters_out['scale'] = self.PINN_solver.mesh.scale_2
+            self.hyperparameters_in['scale_input_s'] = self.PINN_solver.mesh.scale_1
+            self.hyperparameters_out['scale_input_s'] = self.PINN_solver.mesh.scale_2
 
-            if self.scale_NN_q:
-                self.hyperparameters_in['scale_NN'] = self.PBE_model.scale_q_factor
-                self.hyperparameters_out['scale_NN'] = self.PBE_model.scale_q_factor 
+            if self.PBE_model.PDE_in.field == 'phi' and self.pinns_method != 'DBM':
+                 self.hyperparameters_in['scale_output'] = False
+
+            self.hyperparameters_in['scale_output_s'] = self.PBE_model.scale_phi_1
+            self.hyperparameters_out['scale_output_s'] = self.PBE_model.scale_phi_2
 
             self.PINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out])
         

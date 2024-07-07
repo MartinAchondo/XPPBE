@@ -1,5 +1,7 @@
 # Simulation settings
 
+pinns_method: DCM
+
 # Equation to solve
 equation: regularized_scheme_2
 
@@ -67,6 +69,8 @@ hyperparameters_in:
     architecture_Net: FCNN
     fourier_features: true
     weight_factorization: false
+    scale_input: true
+    scale_output: false
 
 hyperparameters_out:
     input_shape: [null, 3]
@@ -78,9 +82,8 @@ hyperparameters_out:
     architecture_Net: FCNN
     fourier_features: true
     weight_factorization: false
-
-# Scale charges
-scale_NN_q: false
+    scale_input: true
+    scale_output: false
 
 # Optimizer properties
 optimizer: Adam

@@ -18,9 +18,13 @@ dependencies = [
     "numpy==1.23.5",
     "tensorflow==2.10.0",
     "scipy==1.13.1",
+    "numba==0.59.1",
     "trimesh==3.23.5",
     "pygamer==2.0.7",
+    "meshio==5.3.4",
+    "gmsh==4.9.5",
     "rtree==1.0.1",
+    "bempp-cl==0.3.0",
     "matplotlib==3.5.1",
     "plotly==5.7.0",
     "kaleido==0.2.1",
@@ -33,12 +37,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pbe-standard = [
-    "numba==0.59.1",
-    "meshio==5.3.4",
-    "gmsh==4.9.5",
-    "bempp-cl==0.3.0"
-]
 pbj = [
     "pbj@git+https://github.com/bem4solvation/pbj"
 ]

@@ -55,6 +55,7 @@ hyperparameters_out:
     architecture_Net: FCNN
     fourier_features: true
     weight_factorization: true
+    scale_output: true
 
     
 # Solve parameters
