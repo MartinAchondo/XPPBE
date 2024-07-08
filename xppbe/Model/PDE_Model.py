@@ -58,8 +58,8 @@ class PBE(Solution_utils):
 
         domain_properties['concentration'] = (kappa/self.ang_to_m)**2*(self.eps0*epsilon_2*self.kb*T)/(2*self.qe**2*self.Na)/1000
 
-        qe_eps0_ang = qe/(eps0 * ang_to_m)  
-        fact = kb/(qe_eps0_ang*qe)
+        qe_eps0_ang = self.qe/(self.eps0 * self.ang_to_m)  
+        fact = self.kb/(qe_eps0_ang*self.qe)
         if self.adim == 'qe_eps0_angs':
             self.to_V = self.qe/(self.eps0 * self.ang_to_m)  
             domain_properties['beta'] = 1
