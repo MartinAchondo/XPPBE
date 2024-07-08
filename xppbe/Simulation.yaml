@@ -7,6 +7,7 @@ equation: regularized_scheme_2
 
 # PBE model
 pbe_model: linear
+phi_units: qe_eps0_angs
 
 # Domain properties
 domain_properties:

@@ -9,8 +9,6 @@ class Solution_utils():
     kb = 1.380649e-23              
     Na = 6.02214076e23
     ang_to_m = 1e-10
-    to_V = qe/(eps0 * ang_to_m)  
-    apbs_unit_to = kb/(qe*to_V)
     cal2j = 4.184
     T = 300
 
@@ -21,23 +19,21 @@ class Solution_utils():
     pbj_mesh_density = 5
     pbj_mesh_generator = 'msms'
 
-    def phi_known(self,function,field,X,flag,R=None,N=20):
-        r = np.linalg.norm(X, axis=1)   
-           
+    def phi_known(self,function,field,X,flag,*args,**kwargs):
         if function == 'Spherical_Harmonics':
-            phi_values = self.Spherical_Harmonics(X, flag, R,N=N)
+            phi_values = self.Spherical_Harmonics(X, flag,*args,**kwargs)
             if flag=='solvent':
                 phi_values -= self.G(X)[:,0]
         elif function == 'G_Yukawa':
             phi_values = self.G_Yukawa(X)[:,0] - self.G(X)[:,0]
         elif function == 'analytic_Born_Ion':
-            phi_values = self.analytic_Born_Ion(r, R)
+            phi_values = self.analytic_Born_Ion(np.linalg.norm(X, axis=1) ,*args,**kwargs)
         elif function == 'PBJ':
             phi_values = self.pbj_solution(X, flag)
             if flag=='solvent':
                 phi_values -= self.G(X)[:,0]
         elif function == 'APBS':
-            phi_values = self.apbs_solution(X)*self.apbs_unit_to*self.T
+            phi_values = self.apbs_solution(X)
         
         if field == 'react':
             return np.array(phi_values)
@@ -53,7 +49,7 @@ class Solution_utils():
         total_sum = tf.reduce_sum(q_over_r, axis=1)
         result = (1 / (self.epsilon_1 * 4 * self.pi)) * total_sum
         result = tf.expand_dims(result, axis=1)
-        return result
+        return result*self.beta**-1  
     
     def dG_n(self,X,n):
         r_vec_expanded = tf.expand_dims(X, axis=1)
@@ -68,7 +64,7 @@ class Solution_utils():
         dy_sum = tf.reduce_sum(dy, axis=1)
         dz_sum = tf.reduce_sum(dz, axis=1)
         dg_dn = n[:, 0] * dx_sum + n[:, 1] * dy_sum + n[:, 2] * dz_sum
-        return tf.reshape(dg_dn, (-1, 1))
+        return tf.reshape(dg_dn, (-1, 1))*self.beta**-1  
     
     def source(self,X):
         r_vec_expanded = tf.expand_dims(X, axis=1)
@@ -92,38 +88,24 @@ class Solution_utils():
         total_sum = tf.reduce_sum(q_over_r, axis=1)
         result = (1 / (self.epsilon_2 * 4 * self.pi)) * total_sum
         result = tf.expand_dims(result, axis=1)
-        return result
+        return result*self.beta**-1  
 
 
     def G_L(self,X,Xp):
         X_expanded = tf.expand_dims(X, axis=1)  # Shape: (n, 1, 3)
         Xp_expanded = tf.expand_dims(Xp, axis=0)  # Shape: (1, m, 3)
-        # Compute the pairwise differences
         r_diff = X_expanded - Xp_expanded  # Shape: (n, m, 3)
-        # Compute the Euclidean distances
         r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))  # Shape: (n, m)
-        # Avoid division by zero by ading a small epsilon where r is zero
-        # epsilon = 1e-10
-        # r = tf.where(r == 0, epsilon, r)
-        # Compute 1/r
         over_r = 1 / r  # Shape: (n, m)
-        # Compute the Green's function
         green_function = (1 / (4 * self.pi)) * over_r  # Shape: (n, m)
         return green_function
     
     def G_Y(self,X,Xp):
         X_expanded = tf.expand_dims(X, axis=1)  # Shape: (n, 1, 3)
         Xp_expanded = tf.expand_dims(Xp, axis=0)  # Shape: (1, m, 3)
-        # Compute the pairwise differences
         r_diff = X_expanded - Xp_expanded  # Shape: (n, m, 3)
-        # Compute the Euclidean distances
         r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))  # Shape: (n, m)
-        # Avoid division by zero by ading a small epsilon where r is zero
-        # epsilon = 1e-10
-        # r = tf.where(r == 0, epsilon, r)
-        # Compute 1/r
         e_over_r = tf.exp(-self.kappa*r) / r  # Shape: (n, m)
-        # Compute the Green's function
         green_function = (1 / (4 * self.pi)) * e_over_r  # Shape: (n, m)
         return green_function
     
@@ -132,19 +114,13 @@ class Solution_utils():
         X_expanded = tf.expand_dims(X, axis=1)  # Shape: (n, 1, 3)
         Xp_expanded = tf.expand_dims(Xp, axis=0)  # Shape: (1, m, 3)
         n_expanded = tf.expand_dims(N, axis=0)  # Shape: (1, m, 3)
-        # Compute the pairwise differences
         r_diff = X_expanded - Xp_expanded  # Shape: (n, m, 3)
-        # Compute the Euclidean distances
         r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))  # Shape: (n, m)
-        # Compute the derivative of the Green's function with respect to r
         dg_dr = (-1 / (4 * self.pi)) / (r**2)  # Shape: (n, m)
-        # Compute the components of the gradient
         grad_x = -1*dg_dr * r_diff[:, :, 0] / r  # Shape: (n, m)
         grad_y = -1*dg_dr * r_diff[:, :, 1] / r  # Shape: (n, m)
         grad_z = -1*dg_dr * r_diff[:, :, 2] / r  # Shape: (n, m)
-        # Combine the components into the gradient
         grad = tf.stack([grad_x, grad_y, grad_z], axis=2)  # Shape: (n, m, 3)
-        # Compute the dot product of the gradient with the normal vector
         dg_dn = tf.reduce_sum(grad * n_expanded, axis=2)  # Shape: (n, m)
         return dg_dn
 
@@ -152,19 +128,13 @@ class Solution_utils():
         X_expanded = tf.expand_dims(X, axis=1)  # Shape: (n, 1, 3)
         Xp_expanded = tf.expand_dims(Xp, axis=0)  # Shape: (1, m, 3)
         n_expanded = tf.expand_dims(N, axis=0)  # Shape: (1, m, 3)
-        # Compute the pairwise differences
         r_diff = X_expanded - Xp_expanded  # Shape: (n, m, 3)
-        # Compute the Euclidean distances
         r = tf.sqrt(tf.reduce_sum(tf.square(r_diff), axis=2))  # Shape: (n, m)
-        # Compute the derivative of the Green's function with respect to r
         dg_dr = (-tf.exp(-self.kappa*r) / (4 * self.pi)) / (r)  *(-self.kappa/r - 1/r**2) # Shape: (n, m)
-        # Compute the components of the gradient
         grad_x = -1*dg_dr * r_diff[:, :, 0] / r  # Shape: (n, m)
         grad_y = -1*dg_dr * r_diff[:, :, 1] / r  # Shape: (n, m)
         grad_z = -1*dg_dr * r_diff[:, :, 2] / r  # Shape: (n, m)
-        # Combine the components into the gradient
         grad = tf.stack([grad_x, grad_y, grad_z], axis=2)  # Shape: (n, m, 3)
-        # Compute the dot product of the gradient with the normal vector
         dg_dn = tf.reduce_sum(grad * n_expanded, axis=2)  # Shape: (n, m)
         return dg_dn
         
@@ -182,7 +152,7 @@ class Solution_utils():
 
         y = np.piecewise(r, [r<=R, r>R], [f_IN, f_OUT])
 
-        return y
+        return y*self.beta**-1  
 
     def analytic_Born_Ion_du(self,r):
         rI = self.mesh.R_mol
@@ -196,7 +166,7 @@ class Solution_utils():
 
         y = np.piecewise(r, [r<=rI, r>rI], [f_IN, f_OUT])
 
-        return y
+        return y*self.beta**-1  
 
 
     def Spherical_Harmonics(self, x, flag, R=None, N=20):
@@ -244,7 +214,7 @@ class Solution_utils():
 
             PHI[K] = np.real(phi)
         
-        return tf.constant(PHI, dtype=self.DTYPE)
+        return tf.constant(PHI, dtype=self.DTYPE)*self.beta**-1  
 
     @staticmethod
     def get_K(x, n):
@@ -277,7 +247,7 @@ class Solution_utils():
             self.pbj_created = True
 
         phi = self.pbj_obj.calculate_potential(X,flag)
-        return phi
+        return phi*self.qe/(self.eps0 * self.ang_to_m*self.to_V)
 
     def apbs_solution(self,X):
 
@@ -288,5 +258,5 @@ class Solution_utils():
             self.apbs_created = True
 
         phi = self.apbs_obj.calculate_potential(X)
-        return phi
+        return phi*self.kb*self.T/(self.qe*self.to_V)
 

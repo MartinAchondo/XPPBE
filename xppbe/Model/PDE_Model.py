@@ -15,17 +15,18 @@ class PBE(Solution_utils):
     Na = tf.constant(6.02214076e23, dtype=DTYPE)
     ang_to_m = tf.constant(1e-10, dtype=DTYPE)
     cal2j = tf.constant(4.184, dtype=DTYPE)
-    to_V = qe/(eps0 * ang_to_m)  
-    T_fact = kb/(to_V*qe)
+    # to_V = qe/(eps0 * ang_to_m)  
+    # T_fact = kb/(to_V*qe)
 
     pi = tf.constant(np.pi, dtype=DTYPE)
 
-    def __init__(self, domain_properties, mesh, equation, pinns_method, main_path, molecule_dir, results_path):      
+    def __init__(self, domain_properties, mesh, equation, pinns_method, adim, main_path, molecule_dir, results_path):      
 
         self.mesh = mesh
         self.main_path = main_path
         self.equation = equation
         self.pinns_method = pinns_method
+        self.adim = adim
         self.molecule_path = molecule_dir
         self.results_path = results_path
 
@@ -57,16 +58,26 @@ class PBE(Solution_utils):
         kappa = domain_properties['kappa'] if 'kappa' in domain_properties else self.domain_properties['kappa']
         epsilon_2 = domain_properties['epsilon_2'] if 'epsilon_2' in domain_properties else self.domain_properties['epsilon_2']
 
-        domain_properties['T_adim'] = T*self.T_fact
         domain_properties['concentration'] = (kappa/self.ang_to_m)**2*(self.eps0*epsilon_2*self.kb*T)/(2*self.qe**2*self.Na)/1000
 
-        for key in ['molecule','epsilon_1','epsilon_2','kappa','T','concentration','T_adim']:
+        if self.adim == 'qe_eps0_angs':
+            self.to_V = self.qe/(self.eps0 * self.ang_to_m)  
+            domain_properties['beta'] = T*self.kb*self.eps0*self.ang_to_m/self.qe**2
+            domain_properties['gamma'] = 1
+        elif self.adim == 'kbT_qe':
+            self.to_V = self.kb*self.T/self.qe
+            domain_properties['beta'] = 1
+            domain_properties['gamma'] = T*self.kb*self.eps0*self.ang_to_m/self.qe**2
+        
+        for key in ['molecule','epsilon_1','epsilon_2','kappa','T','concentration','beta','gamma']:
             if key in domain_properties:
                 self.domain_properties[key] = domain_properties[key]
             if key != 'molecule':
                 setattr(self, key, tf.constant(self.domain_properties[key], dtype=self.DTYPE))
             else:
                 setattr(self, key, self.domain_properties[key])
+
+
 
         self.sigma = self.mesh.G_sigma
             

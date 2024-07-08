@@ -61,6 +61,7 @@ class Simulation():
                 mesh=self.Mol_mesh, 
                 pinns_method=self.pinns_method,
                 equation=self.pbe_model,
+                adim=self.phi_units,
                 main_path=self.main_path,
                 molecule_dir=self.molecule_dir,
                 results_path=self.results_path
