@@ -221,6 +221,10 @@ class Postprocessing():
             G_known = self.PDE.solvation_energy_phi_qs(self.to_V**-1*self.phi_known(known_method,'react',tf.constant(self.PDE.x_qs, dtype=self.DTYPE),'molecule'))
             G_known = np.ones(len(self.PINN.G_solv_hist))*G_known
             label = known_method.replace('_',' ') if 'Born' not in known_method else 'Analytic'
+            if label=='PBJ':
+                label='BEM'
+            elif label=='APBS':
+                label='FDM'
             ax.plot(np.array(list(self.PINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'{label}')
         ax.legend()
         n_label = r'$n$'
@@ -287,8 +291,13 @@ class Postprocessing():
         ax.plot(r_out[r_out<0],u_out[r_out<0], label='PINN', c='b')
         ax.plot(r_out[r_out>0],u_out[r_out>0], c='b')
 
+        label = method.replace('_',' ')
+        if label=='PBJ':
+            label='BEM'
+        elif label=='APBS':
+            label='FDM'
         ax.plot(r_in,u_in_an[:], c='r', linestyle='--')
-        ax.plot(r_out[r_out<0],u_out_an[r_out<0], label=method.replace('_',' '), c='r', linestyle='--')
+        ax.plot(r_out[r_out<0],u_out_an[r_out<0], label=label, c='r', linestyle='--')
         ax.plot(r_out[r_out>0],u_out_an[r_out>0], c='r', linestyle='--')
         
         text_A = r'$\AA$'
