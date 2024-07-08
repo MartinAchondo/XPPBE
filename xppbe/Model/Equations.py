@@ -163,8 +163,7 @@ class PBE_Var_Direct(PBE_Direct):
         self.PDE_in = Variational_Poisson(self,self.domain_properties,field='phi')
         if self.equation=='linear':
             self.PDE_out = Variational_Helmholtz(self,self.domain_properties,field='phi')
-        elif self.equation=='nonlinear':
-            self.PDE_out = Variational_Non_Linear(self,self.domain_properties,field='phi')
+
 
 class PBE_Var_Reg_1(PBE_Reg_1):
 
@@ -176,8 +175,7 @@ class PBE_Var_Reg_1(PBE_Reg_1):
         self.PDE_in = Variational_Laplace(self,self.domain_properties,field='react')
         if self.equation=='linear':
             self.PDE_out = Variational_Helmholtz(self,self.domain_properties,field='react')
-        elif self.equation=='nonlinear':
-            self.PDE_out = Variational_Non_Linear(self,self.domain_properties,field='react')
+
 
 
 
@@ -386,7 +384,7 @@ class Variational_Helmholtz(Equations_utils):
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         gx,gy,gz = self.PBE.gradient(mesh,model,X,flag,value=self.field)
-        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa*2 * phi**2
+        r = self.epsilon*(gx**2+gy**2+gz**2)/2 + self.kappa*2 * phi**2/2
         return r
     
     def get_r_reg(self,mesh,model,X,SU,flag):
@@ -394,36 +392,9 @@ class Variational_Helmholtz(Equations_utils):
         R = mesh.stack_X(x,y,z)
         phi = self.PBE.get_phi(R,flag,model,value=self.field)
         gx,gy,gz = self.PBE.gradient(mesh,model,X,flag,value=self.field)
-        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa*2 * phi**2 - self.kappa*2*phi*self.PBE.G(X)
+        r = self.epsilon*(gx**2+gy**2+gz**2)/2 + self.kappa*2 * phi**2/2 - self.kappa*2*phi*self.PBE.G(X)
         return r
 
-    
-class Variational_Non_Linear(Equations_utils):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args,**kwargs)
-        self.epsilon = self.epsilon_2
-
-        if self.field == 'phi':
-            self.get_r = self.get_r_total
-        elif self.field == 'react':
-            self.get_r = self.get_r_reg
-
-    def get_r_total(self,mesh,model,X,SU,flag):
-        x,y,z = X
-        R = mesh.stack_X(x,y,z)
-        phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        gx,gy,gz = self.PBE.gradient(mesh,model,X,flag,value=self.field)
-        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.PBE.aprox_sinh(phi/self.T_adim) *phi
-        return r
-    
-    def get_r_reg(self,mesh,model,X,SU,flag):
-        x,y,z = X
-        R = mesh.stack_X(x,y,z)
-        phi = self.PBE.get_phi(R,flag,model,value=self.field)
-        gx,gy,gz = self.PBE.gradient(mesh,model,X,flag,value=self.field)
-        r = self.epsilon*(gx**2+gy**2+gz**2)/2 - self.kappa**2*self.T_adim*self.PBE.aprox_sinh((phi+self.PBE.G(X))/self.T_adim) *phi
-        return r
 
 
 class Boundary_Poisson(Equations_utils):
