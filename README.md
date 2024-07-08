@@ -72,14 +72,14 @@ To use this project, start by following the [Tutorial.ipynb](./tutorials/tutoria
 1. Import the simulation object, the YAML file, and initialize it:
     ```py
     from xppbe import Simulation
-    simulation = Simulation(yaml_path, molecule_path)
+    simulation = Simulation(yaml_path, molecule_dir)
     ```
 2. Run the simulation:
     ```py
     simulation.create_simulation()
     simulation.adapt_model()
     simulation.solve_model()
-    simulation.postprocessing()
+    simulation.postprocessing(run_all=True)
     ```
 The Simulation object import a YAML file with all the problem definitions. An explanation is as follows:
 
@@ -87,6 +87,7 @@ The Simulation object import a YAML file with all the problem definitions. An ex
     ```yaml
     equation: regularized_scheme_2
     pbe_model: linear
+    pinns_method: DCM
 
     domain_properties:
         molecule: methanol
@@ -101,16 +102,12 @@ The Simulation object import a YAML file with all the problem definitions. An ex
         vol_max_interior: 0.04
         vol_max_exterior: 0.1
         density_mol: 10
-        density_border: 4
-        dx_experimental: 1.0
-        N_pq: 100
-        G_sigma: 0.04
+        density_border: 0.5
         mesh_generator: msms
-        probe_radius: 1,4
         dR_exterior: 3
     ```
 
-3. Define the different loss terms (solute domain, solvent domain and combination of boths)
+3. Define the different loss terms (solute domain, solvent domain and combination of both)
     ```yaml
     losses:
         - R1
@@ -121,27 +118,23 @@ The Simulation object import a YAML file with all the problem definitions. An ex
     ```
 4. Define the architectures:
     ```yaml
-    network: xpinn
+    num_networks: 2
 
     hyperparameters_in:
-        input_shape: [null, 3]
+        architecture_Net: FCNN
         num_hidden_layers: 4
         num_neurons_per_layer: 200
-        output_dim: 1
         activation: tanh
         adaptative_activation: true
-        architecture_Net: FCNN
         fourier_features: true
         weight_factorization: false
 
     hyperparameters_out:
-        input_shape: [null, 3]
+        architecture_Net: FCNN
         num_hidden_layers: 4
         num_neurons_per_layer: 200
-        output_dim: 1
         activation: tanh
         adaptative_activation: true
-        architecture_Net: FCNN
         fourier_features: true
         weight_factorization: false
     ```
@@ -173,7 +166,7 @@ If you find this project useful for your research or work, please consider citin
 ```bibtex
 @misc{XPPBE,
   author    = {Martín Achondo},
-  title     = {XPPBE: PINN for PBE},
+  title     = {{XPPBE: PINN for PBE}},
   howpublished = {GitHub repository},
   year      = {2024},
   url       = {https://github.com/MartinAchondo/XPPBE},
