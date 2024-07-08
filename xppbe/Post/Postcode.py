@@ -65,7 +65,7 @@ class Postprocessing():
     def get_phi_ens(self,*args,**kwargs):
         ((X,X_values),flag) = self.mesh.domain_mesh_data['E2']
         q_L,_ = zip(*X_values)
-        return self.PDE.get_phi_ens(self.model,(X,flag),q_L, **kwargs)
+        return list(phi*self.to_V*1000 for phi in self.PDE.get_phi_ens(self.model,(X,flag),q_L, **kwargs))
     
     def run_all(self,plot_mesh,known_method):
         

@@ -15,8 +15,6 @@ class PBE(Solution_utils):
     Na = tf.constant(6.02214076e23, dtype=DTYPE)
     ang_to_m = tf.constant(1e-10, dtype=DTYPE)
     cal2j = tf.constant(4.184, dtype=DTYPE)
-    # to_V = qe/(eps0 * ang_to_m)  
-    # T_fact = kb/(to_V*qe)
 
     pi = tf.constant(np.pi, dtype=DTYPE)
 
@@ -62,12 +60,12 @@ class PBE(Solution_utils):
 
         if self.adim == 'qe_eps0_angs':
             self.to_V = self.qe/(self.eps0 * self.ang_to_m)  
-            domain_properties['beta'] = T*self.kb*self.eps0*self.ang_to_m/self.qe**2
-            domain_properties['gamma'] = 1
-        elif self.adim == 'kbT_qe':
-            self.to_V = self.kb*self.T/self.qe
             domain_properties['beta'] = 1
             domain_properties['gamma'] = T*self.kb*self.eps0*self.ang_to_m/self.qe**2
+        elif self.adim == 'kbT_qe':
+            self.to_V = self.kb*self.T/self.qe
+            domain_properties['beta'] = T*self.kb*self.eps0*self.ang_to_m/self.qe**2
+            domain_properties['gamma'] = 1
         
         for key in ['molecule','epsilon_1','epsilon_2','kappa','T','concentration','beta','gamma']:
             if key in domain_properties:
@@ -333,13 +331,13 @@ class PBE(Solution_utils):
         scale_min_value_1, scale_max_value_1 = 0.,0.
         scale_min_value_2, scale_max_value_2 = 0.,0.
         for i,q in enumerate(self.q_list):
-            phi = self.analytic_Born_Ion(0.0, R=q.r_q, index_q=i)
+            phi = self.analytic_Born_Ion(0.0, R=q.r_q, index_q=i).numpy()
             phi_save = phi.copy()
             for j,q2 in enumerate(self.q_list):
                 if i==j: 
                     continue
                 rx = np.linalg.norm(q.x_q-q2.x_q)
-                phi += self.analytic_Born_Ion(rx, R=rx, index_q=j)
+                phi += self.analytic_Born_Ion(rx, R=rx, index_q=j).numpy()
 
             if self.fields[0] == 'phi':
                 phi_1 = phi + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
