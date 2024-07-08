@@ -58,13 +58,15 @@ class PBE(Solution_utils):
 
         domain_properties['concentration'] = (kappa/self.ang_to_m)**2*(self.eps0*epsilon_2*self.kb*T)/(2*self.qe**2*self.Na)/1000
 
+        qe_eps0_ang = qe/(eps0 * ang_to_m)  
+        fact = kb/(qe_eps0_ang*qe)
         if self.adim == 'qe_eps0_angs':
             self.to_V = self.qe/(self.eps0 * self.ang_to_m)  
             domain_properties['beta'] = 1
-            domain_properties['gamma'] = T*self.kb*self.eps0*self.ang_to_m/self.qe**2
-        elif self.adim == 'kbT_qe':
+            domain_properties['gamma'] = T*fact
+        elif self.adim == 'kb_T_qe':
             self.to_V = self.kb*self.T/self.qe
-            domain_properties['beta'] = T*self.kb*self.eps0*self.ang_to_m/self.qe**2
+            domain_properties['beta'] = T*fact
             domain_properties['gamma'] = 1
         
         for key in ['molecule','epsilon_1','epsilon_2','kappa','T','concentration','beta','gamma']:
@@ -113,9 +115,9 @@ class PBE(Solution_utils):
                 else: 
                     phi = self.phi_known(known_method,'phi',tf.constant(X_solv),'solvent').reshape(-1,1)
                 r_H = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_solv), axis=1, keepdims=True))
-                G2_p = tf.math.reduce_sum(self.aprox_exp(-phi/self.T_adim)/r_H**6)
-                G2_m = tf.math.reduce_sum(self.aprox_exp(phi/self.T_adim)/r_H**6)
-                phi_ens_pred = - self.T_adim/2 * tf.math.log(G2_p/G2_m)
+                G2_p = tf.math.reduce_sum(self.aprox_exp(-phi/self.gamma)/r_H**6)
+                G2_m = tf.math.reduce_sum(self.aprox_exp(phi/self.gamma)/r_H**6)
+                phi_ens_pred = - self.gamma/2 * tf.math.log(G2_p/G2_m)
             
             elif method=='mean':
                 r_H = tf.math.sqrt(tf.reduce_sum(tf.square(x_q - X_solv), axis=1))
