@@ -67,7 +67,7 @@ class PINN_utils():
             if not w_name in weights:
                 self.w[w_name] = tf.constant(1.0, dtype=self.DTYPE)
             else:
-                self.w[w_name] = tf.constant(weights[w_name], dtype=self.DTYPE)
+                self.w[w_name] = tf.constant(float(weights[w_name]), dtype=self.DTYPE)
 
         self.w_hist = dict()
 

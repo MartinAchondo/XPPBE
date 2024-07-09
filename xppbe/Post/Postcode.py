@@ -904,14 +904,14 @@ class Postprocessing():
     def L2_interface_known(self,known_method):
         vertices = self.mesh.mol_verts.astype(np.float32)
         phi_known = self.phi_known(known_method,'react', vertices, flag='solvent')
-        phi_xpinn = self.get_phi_interface_verts(self.model,value='react')[0]
+        phi_pinn = self.get_phi_interface_verts(self.model,value='react')[0]
 
         if known_method == 'PBJ':
             vertices = self.PDE.pbj_vertices.astype(np.float32)
             phi_known = self.phi_known(known_method,'react', vertices, flag='solvent')
-            phi_xpinn = self.get_phi(vertices,flag='interface',model=self.model,value='react')
+            phi_pinn = self.get_phi(vertices,flag='interface',model=self.model,value='react')
 
-        phi_dif = (phi_xpinn.numpy() - phi_known.numpy().reshape(-1,1))
+        phi_dif = (phi_pinn.numpy() - phi_known.numpy().reshape(-1,1))
         error = np.sqrt(np.sum(phi_dif**2)/np.sum(phi_known.numpy()**2))
         return error
 
@@ -1050,9 +1050,9 @@ class Born_Ion_Postprocessing(Postprocessing):
 
         ax.set_xlim(-5,5)
         if value == 'phi':
-            ax.set_ylim(-0.1*self.to_V,1.6*self.to_V)
+            ax.set_ylim(-18.1,289.5)
         elif value == 'react':
-            ax.set_ylim(-0.085*self.to_V,-0.01*self.to_V)
+            ax.set_ylim(-15.4,-1.8)
 
         if self.save:
             path = f'analytic_{value}.png' if zoom==False else f'analytic_zoom_{value}.png'

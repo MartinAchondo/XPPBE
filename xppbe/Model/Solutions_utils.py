@@ -10,7 +10,6 @@ class Solution_utils():
     Na = 6.02214076e23
     ang_to_m = 1e-10
     cal2j = 4.184
-    T = 300
 
     pi = np.pi
 

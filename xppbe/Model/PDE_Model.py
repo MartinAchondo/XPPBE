@@ -65,7 +65,7 @@ class PBE(Solution_utils):
             domain_properties['beta'] = 1
             domain_properties['gamma'] = T*fact
         elif self.adim == 'kb_T_qe':
-            self.to_V = self.kb*self.T/self.qe
+            self.to_V = self.kb*T/self.qe
             domain_properties['beta'] = T*fact
             domain_properties['gamma'] = 1
         
@@ -76,8 +76,6 @@ class PBE(Solution_utils):
                 setattr(self, key, tf.constant(self.domain_properties[key], dtype=self.DTYPE))
             else:
                 setattr(self, key, self.domain_properties[key])
-
-
 
         self.sigma = self.mesh.G_sigma
             
@@ -94,7 +92,7 @@ class PBE(Solution_utils):
 
     def get_phi_interface_verts(self,model,**kwargs):      
         verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)
-        return self.get_phi_interface(verts,model)
+        return self.get_phi_interface(verts,model,**kwargs)
     
     def get_dphi_interface_verts(self,model,value='phi'): 
         verts = tf.constant(self.mesh.mol_verts, dtype=self.DTYPE)     
