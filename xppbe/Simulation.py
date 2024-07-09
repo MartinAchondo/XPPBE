@@ -100,7 +100,7 @@ class Simulation():
             if t in meshes_domain:
                 self.meshes_domain[t] = meshes_domain[t]
 
-        self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list)
+        self.PBE_model.mesh.adapt_meshes_domain(self.meshes_domain,self.PBE_model.q_list,self.PBE_model.to_V)
 
         from xppbe.NN.PINN import PINN
         self.PINN_solver = PINN(results_path=self.results_path)

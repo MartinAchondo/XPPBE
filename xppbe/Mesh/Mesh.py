@@ -287,9 +287,10 @@ class Domain_Mesh():
                 X_plot[f'{type_b}_sample'] = mesh.get_dataset().numpy()
             self.save_data_plot(X_plot)
 
-    def adapt_meshes_domain(self,data,q_list):
+    def adapt_meshes_domain(self,data,q_list,to_V):
 
         self.meshes_info = data
+        self.to_V = to_V.numpy()
         
         for bl in self.meshes_info.values():
 
@@ -340,7 +341,7 @@ class Domain_Mesh():
                             elif ens_method in current_method:
                                 if line:
                                     num, phi = line.split()
-                                    L_phi[str(num)] = float(phi)
+                                    L_phi[str(num)] = float(phi)/(1000*self.to_V)
 
                 L_names = ['H']
                 if 'sphere' in self.molecule  or self.molecule == 'born_ion':
@@ -379,7 +380,7 @@ class Domain_Mesh():
                 for q in q_list:
                     if q.atom_name in L_names:
                         if str(j) in L_phi:
-                            phi_ens = tf.constant(L_phi[str(j)] , dtype=self.DTYPE)/1000
+                            phi_ens = tf.constant(L_phi[str(j)] , dtype=self.DTYPE)
                             xq = tf.reshape(tf.constant(q.x_q, dtype=self.DTYPE), (1,3))
                             r_q = tf.constant(q.r_q, dtype=self.DTYPE)
                             X_exp_values.append(((xq,r_q),phi_ens))
@@ -440,7 +441,7 @@ class Domain_Mesh():
         x_b = tf.constant(np.array(x_b, dtype=self.DTYPE)[:, None])
         y_b = tf.constant(np.array(y_b, dtype=self.DTYPE)[:, None])
         z_b = tf.constant(np.array(z_b, dtype=self.DTYPE)[:, None])
-        phi_b = tf.constant(np.array(phi_b, dtype=self.DTYPE)[:, None])
+        phi_b = tf.constant(np.array(phi_b, dtype=self.DTYPE)[:, None])/self.to_V
 
         X = tf.concat([x_b, y_b, z_b], axis=1)
 

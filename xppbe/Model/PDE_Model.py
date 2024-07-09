@@ -238,7 +238,7 @@ class PBE(Solution_utils):
         phi_ens_pred_L = self.get_phi_ens(model,(X,flag),q_L,method)
 
         for phi_pred,phi_exp in zip(phi_ens_pred_L,phi_ens_exp_L):
-            loss += tf.square(phi_pred - phi_exp/self.to_V)
+            loss += tf.square(phi_pred - phi_exp)
 
         loss *= (1/n)
 
