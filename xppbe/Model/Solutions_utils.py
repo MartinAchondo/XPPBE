@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from scipy import special as sp
+from functools import wraps
 
 class Solution_utils(): 
 
@@ -39,6 +40,15 @@ class Solution_utils():
         elif field == 'phi':
             return np.array(phi_values + self.G(X)[:,0])
 
+
+    def adim_function(function):
+        @wraps(function)
+        def wrapper(self,*kargs,**kwargs):
+            ans = function(self,*kargs,**kwargs)
+            return ans*self.beta**-1
+        return wrapper
+
+    @adim_function
     def G(self,X):
         r_vec_expanded = tf.expand_dims(X, axis=1)
         x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
@@ -48,8 +58,9 @@ class Solution_utils():
         total_sum = tf.reduce_sum(q_over_r, axis=1)
         result = (1 / (self.epsilon_1 * 4 * self.pi)) * total_sum
         result = tf.expand_dims(result, axis=1)
-        return result*self.beta**-1  
+        return result
     
+    @adim_function
     def dG_n(self,X,n):
         r_vec_expanded = tf.expand_dims(X, axis=1)
         x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
@@ -63,8 +74,9 @@ class Solution_utils():
         dy_sum = tf.reduce_sum(dy, axis=1)
         dz_sum = tf.reduce_sum(dz, axis=1)
         dg_dn = n[:, 0] * dx_sum + n[:, 1] * dy_sum + n[:, 2] * dz_sum
-        return tf.reshape(dg_dn, (-1, 1))*self.beta**-1  
+        return tf.reshape(dg_dn, (-1, 1)) 
     
+
     def source(self,X):
         r_vec_expanded = tf.expand_dims(X, axis=1)
         x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
@@ -78,6 +90,7 @@ class Solution_utils():
         result = tf.expand_dims(result, axis=1)
         return result
         
+    @adim_function
     def G_Yukawa(self,X):
         r_vec_expanded = tf.expand_dims(X, axis=1)
         x_qs_expanded = tf.expand_dims(self.x_qs, axis=0)
@@ -87,7 +100,7 @@ class Solution_utils():
         total_sum = tf.reduce_sum(q_over_r, axis=1)
         result = (1 / (self.epsilon_2 * 4 * self.pi)) * total_sum
         result = tf.expand_dims(result, axis=1)
-        return result*self.beta**-1  
+        return result
 
 
     def G_L(self,X,Xp):
@@ -109,7 +122,6 @@ class Solution_utils():
         return green_function
     
     def dG_L(self,X,Xp,N):
-
         X_expanded = tf.expand_dims(X, axis=1)  # Shape: (n, 1, 3)
         Xp_expanded = tf.expand_dims(Xp, axis=0)  # Shape: (1, m, 3)
         n_expanded = tf.expand_dims(N, axis=0)  # Shape: (1, m, 3)
@@ -138,6 +150,7 @@ class Solution_utils():
         return dg_dn
         
 
+    @adim_function
     def analytic_Born_Ion(self,r, R=None, index_q=0):
         if R is None:
             R = self.mesh.R_mol
@@ -151,8 +164,9 @@ class Solution_utils():
 
         y = np.piecewise(r, [r<=R, r>R], [f_IN, f_OUT])
 
-        return y*self.beta**-1  
+        return y 
 
+    @adim_function
     def analytic_Born_Ion_du(self,r):
         rI = self.mesh.R_mol
         epsilon_1 = self.epsilon_1
@@ -165,9 +179,9 @@ class Solution_utils():
 
         y = np.piecewise(r, [r<=rI, r>rI], [f_IN, f_OUT])
 
-        return y*self.beta**-1  
+        return y
 
-
+    @adim_function
     def Spherical_Harmonics(self, x, flag, R=None, N=20):
 
         q = self.qs.numpy()
@@ -213,7 +227,7 @@ class Solution_utils():
 
             PHI[K] = np.real(phi)
         
-        return tf.constant(PHI, dtype=self.DTYPE)*self.beta**-1  
+        return tf.constant(PHI, dtype=self.DTYPE) 
 
     @staticmethod
     def get_K(x, n):
@@ -230,6 +244,7 @@ class Solution_utils():
             )
         return K
 
+    
     def pbj_solution(self,X,flag):
 
         if not self.pbj_created:
