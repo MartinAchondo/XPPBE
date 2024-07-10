@@ -175,7 +175,7 @@ class Simulation():
         return self.Post
 
 
-    def load_model_for_Post(self,Iter,save=False):
+    def load_model_for_Post(self,Iter='last',save=False):
 
         if self.num_networks == 2:
             from xppbe.NN.NeuralNet import PINN_2Dom_NeuralNet as NeuralNet
@@ -183,6 +183,10 @@ class Simulation():
             from xppbe.NN.NeuralNet import PINN_1Dom_NeuralNet as NeuralNet  
 
         self.PINN_solver.results_path = self.results_path
+        if Iter=='last':
+            from xppbe.Post.Results_utils import get_max_iteration
+            Iter = get_max_iteration(os.path.join(self.results_path,'iterations'))
+        
         self.PINN_solver.load_NeuralNet(NeuralNet,self.results_path,f'iter_{Iter}',Iter)
         self.PINN_solver.N_iters = self.N_iters
          

@@ -3,12 +3,16 @@ import json
 import pandas as pd
 
 
-def find_largest_iteration(folder_path):
+def get_max_iteration(folder_path):
     subdirectories = [d for d in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, d))]
     iteration_numbers = [int(d.split('_')[1]) for d in subdirectories if d.startswith('iter_')]
     if not iteration_numbers:
         return None
-    largest_iteration_folder = os.path.join(folder_path, f'iter_{max(iteration_numbers)}')
+    return max(iteration_numbers)
+
+def find_largest_iteration(folder_path):
+    Iter = get_max_iteration(folder_path)
+    largest_iteration_folder = os.path.join(folder_path, f'iter_{Iter}')
     return largest_iteration_folder
 
 def find_loss_csv(folder_path):
