@@ -126,7 +126,7 @@ class NeuralNet(tf.keras.Model):
             self.create_ResNet()
 
         # Output layer
-        self.out = tf.keras.layers.Dense(output_dim,
+        self.out = self.Dense_Layer(output_dim,
                                activation=None,
                                name=f'output_layer')
 
