@@ -66,7 +66,7 @@ hyperparameters_in:
     num_neurons_per_layer: 200
     output_dim: 1
     activation: tanh
-    adaptative_activation: true
+    adaptive_activation: true
     architecture_Net: FCNN
     fourier_features: true
     weight_factorization: false
@@ -79,7 +79,7 @@ hyperparameters_out:
     num_neurons_per_layer: 200
     output_dim: 1
     activation: tanh
-    adaptative_activation: true
+    adaptive_activation: true
     architecture_Net: FCNN
     fourier_features: true
     weight_factorization: false

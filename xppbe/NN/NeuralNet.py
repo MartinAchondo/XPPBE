@@ -54,7 +54,7 @@ class NeuralNet(tf.keras.Model):
                  num_neurons_per_layer=20,
                  num_hidden_blocks=2,
                  activation='tanh',
-                 adaptative_activation=False,
+                 adaptive_activation=False,
                  kernel_initializer='glorot_normal',
                  architecture_Net='FCNN',
                  fourier_features=False, 
@@ -75,7 +75,7 @@ class NeuralNet(tf.keras.Model):
         self.num_hidden_blocks = num_hidden_blocks
         
         self.activation = activation
-        self.adaptative_activation = adaptative_activation
+        self.adaptive_activation = adaptive_activation
 
         self.kernel_initializer = kernel_initializer
         self.architecture_Net = architecture_Net
@@ -143,7 +143,7 @@ class NeuralNet(tf.keras.Model):
             layer = self.Dense_Layer(self.num_neurons_per_layer,
                         activation=CustomActivation(units=self.num_neurons_per_layer,
                                                     activation=self.activation, 
-                                                    adaptative_activation=self.adaptative_activation),
+                                                    adaptive_activation=self.adaptive_activation),
                         kernel_initializer=self.kernel_initializer,
                         name=f'layer_{i}')
             self.hidden_layers.append(layer)
@@ -154,13 +154,13 @@ class NeuralNet(tf.keras.Model):
         self.U = self.Dense_Layer(self.num_neurons_per_layer,
                     activation=CustomActivation(units=self.num_neurons_per_layer,
                                                 activation=self.activation, 
-                                                adaptative_activation=self.adaptative_activation),
+                                                adaptive_activation=self.adaptive_activation),
                     kernel_initializer=self.kernel_initializer,
                     name=f'layer_u')
         self.V = self.Dense_Layer(self.num_neurons_per_layer,
                     activation=CustomActivation(units=self.num_neurons_per_layer,
                                                 activation=self.activation, 
-                                                adaptative_activation=self.adaptative_activation),
+                                                adaptive_activation=self.adaptive_activation),
                     kernel_initializer=self.kernel_initializer,
                     name=f'layer_v')
         self.call_architecture = self.call_ModMLP
@@ -170,7 +170,7 @@ class NeuralNet(tf.keras.Model):
         self.first = self.Dense_Layer(self.num_neurons_per_layer,
                         activation=CustomActivation(units=self.num_neurons_per_layer,
                                                     activation=self.activation, 
-                                                    adaptative_activation=self.adaptative_activation),
+                                                    adaptive_activation=self.adaptive_activation),
                         kernel_initializer=self.kernel_initializer,
                         name=f'layer_0')
         self.hidden_blocks = list()
@@ -180,7 +180,7 @@ class NeuralNet(tf.keras.Model):
             block.add(self.Dense_Layer(self.num_neurons_per_layer,
                             activation=CustomActivation(units=self.num_neurons_per_layer,
                                                         activation=self.activation,
-                                                        adaptative_activation=self.adaptative_activation),
+                                                        adaptive_activation=self.adaptive_activation),
                             kernel_initializer=self.kernel_initializer))
             block.add(self.Dense_Layer(self.num_neurons_per_layer,
                             activation=None,
@@ -188,13 +188,13 @@ class NeuralNet(tf.keras.Model):
             self.hidden_blocks.append(block)
             activation_layer = tf.keras.layers.Activation(activation=CustomActivation(units=self.num_neurons_per_layer,
                                                                                         activation=self.activation,
-                                                                                        adaptative_activation=self.adaptative_activation))
+                                                                                        adaptive_activation=self.adaptive_activation))
             self.hidden_blocks_activations.append(activation_layer)
         
         self.last = self.Dense_Layer(self.num_neurons_per_layer,
                         activation=CustomActivation(units=self.num_neurons_per_layer,
                                                     activation=self.activation, 
-                                                    adaptative_activation=self.adaptative_activation),
+                                                    adaptive_activation=self.adaptive_activation),
                         kernel_initializer=self.kernel_initializer,
                         name=f'layer_1')
         self.call_architecture = self.call_ResNet
@@ -235,17 +235,17 @@ class NeuralNet(tf.keras.Model):
 
 class CustomActivation(tf.keras.layers.Layer):
 
-    def __init__(self, units=1, activation='tanh', adaptative_activation=False, **kwargs):
+    def __init__(self, units=1, activation='tanh', adaptive_activation=False, **kwargs):
         super(CustomActivation, self).__init__(**kwargs)
         self.units = units
         self.activation = activation
-        self.adaptative_activation = adaptative_activation
+        self.adaptive_activation = adaptive_activation
 
     def build(self, input_shape):
         self.a = self.add_weight(name='a',
                                 shape=(self.units,),
                                 initializer='ones',
-                                trainable=self.adaptative_activation)
+                                trainable=self.adaptive_activation)
 
     def call(self, inputs):
         a_expanded = tf.expand_dims(self.a, axis=0) 

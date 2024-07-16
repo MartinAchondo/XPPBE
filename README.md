@@ -125,7 +125,7 @@ The Simulation object import a YAML file with all the problem definitions. An ex
         num_hidden_layers: 4
         num_neurons_per_layer: 200
         activation: tanh
-        adaptative_activation: true
+        adaptive_activation: true
         fourier_features: true
         weight_factorization: false
 
@@ -134,7 +134,7 @@ The Simulation object import a YAML file with all the problem definitions. An ex
         num_hidden_layers: 4
         num_neurons_per_layer: 200
         activation: tanh
-        adaptative_activation: true
+        adaptive_activation: true
         fourier_features: true
         weight_factorization: false
     ```
