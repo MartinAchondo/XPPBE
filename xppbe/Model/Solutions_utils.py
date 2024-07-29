@@ -151,20 +151,37 @@ class Solution_utils():
         
 
     @adim_function
+    def charges_Born_Ion(self,r, R, q):
+        if R is None:
+            R = self.mesh.R_mol
+        epsilon_1 = self.epsilon_1
+        epsilon_2 = self.epsilon_2
+        kappa = self.kappa
+
+        return (q / (4 * self.pi)) * (-1 / (epsilon_1 * R) + 1 / (epsilon_2 * (1 + kappa * R) * R))
+
+
+
+    @adim_function
     def analytic_Born_Ion(self,r, R=None, index_q=0):
         if R is None:
             R = self.mesh.R_mol
         epsilon_1 = self.epsilon_1
         epsilon_2 = self.epsilon_2
         kappa = self.kappa
-        q = self.q_list[index_q].q
+        q = self.qs[index_q]
 
-        f_IN = lambda r: (q/(4*self.pi)) * ( - 1/(epsilon_1*R) + 1/(epsilon_2*(1+kappa*R)*R) )
-        f_OUT = lambda r: (q/(4*self.pi)) * (np.exp(-kappa*(r-R))/(epsilon_2*(1+kappa*R)*r) - 1/(epsilon_1*r))
 
-        y = np.piecewise(r, [r<=R, r>R], [f_IN, f_OUT])
+        def f_IN():
+            return (q / (4 * self.pi)) * (-1 / (epsilon_1 * R) + 1 / (epsilon_2 * (1 + kappa * R) * R))
 
-        return y 
+        def f_OUT():
+            return (q / (4 * self.pi)) * (tf.exp(-kappa * (r - R)) / (epsilon_2 * (1 + kappa * R) * r) - 1 / (epsilon_1 * r))
+
+        y = np.piecewise(r, [r<=R, r>R], [f_IN(), f_OUT()])
+
+        return y
+
 
     @adim_function
     def analytic_Born_Ion_du(self,r):
