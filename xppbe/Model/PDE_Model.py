@@ -316,7 +316,6 @@ class PBE(Solution_utils):
     def get_charges(self):
         self.pqr_path = os.path.join(self.molecule_path,self.molecule+'.pqr')
         self.q_list = get_charges_list(self.pqr_path)
-        #self.scale_q_factor = min(self.q_list, key=lambda q_obj: np.abs(q_obj.q)).q
 
         n = len(self.q_list)
         self.qs = np.zeros(n)
@@ -328,48 +327,59 @@ class PBE(Solution_utils):
         self.qs = tf.constant(self.qs, dtype=self.DTYPE)
         self.x_qs = tf.constant(self.x_qs, dtype=self.DTYPE)
 
-        scale_min_value_1, scale_max_value_1 = 0.,0.
-        scale_min_value_2, scale_max_value_2 = 0.,0.
-        for i,q in enumerate(self.q_list):
-            phi = self.analytic_Born_Ion(0.0, R=q.r_q, index_q=i).numpy()
-            phi_save = phi.copy()
-            for j,q2 in enumerate(self.q_list):
-                if i==j: 
-                    continue
-                rx = np.linalg.norm(q.x_q-q2.x_q)
-                phi += self.analytic_Born_Ion(rx, R=rx, index_q=j).numpy()
+        radii = np.array([q.r_q for q in self.q_list])
+        radii[radii<1e-6] = np.mean(radii)
 
-            if self.fields[0] == 'phi':
-                phi_1 = phi + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
-                phi_1_save = phi_save + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
-            else:
-                phi_1 = phi 
-                phi_1_save = phi_save
-            
-            phi_1_max = phi_1_save if phi_1_save>phi_1 else phi_1
-            phi_1_min = phi_1_save if phi_1_save<phi_1 else phi_1
-            if phi_1_max > scale_max_value_1:
-                scale_max_value_1 = phi_1_max
-            if phi_1_min < scale_min_value_1:
-                scale_min_value_1 = phi_1_min
+        scale_min_value_1, scale_max_value_1 = 0., 0.
+        scale_min_value_2, scale_max_value_2 = 0., 0.
 
-            if self.fields[1] == 'phi':
-                phi_2 = phi + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
-                phi_2_save = phi_save + self.G(self.x_qs[i,:] + tf.constant([[q.r_q,0,0]],dtype=self.DTYPE))
-            else:
-                phi_2 = phi 
-                phi_2_save = phi_save
-           
-            phi_2_max = phi_2_save if phi_2_save>phi_2 else phi_2
-            phi_2_min = phi_2_save if phi_2_save<phi_2 else phi_2
-            if phi_2_max > scale_max_value_2:
-                scale_max_value_2 = phi_2_max
-            if phi_2_min < scale_min_value_2:
-                scale_min_value_2 = phi_2_min
+        positions = self.x_qs
+        radii = np.array([q.r_q for q in self.q_list])
+        radii[radii<1e-6] = np.mean(radii)
+        radii = tf.constant(radii, dtype=self.DTYPE)
+        num_charges = len(self.q_list)
 
-        self.scale_phi_1 = [float(scale_min_value_1),float(scale_max_value_1)]
-        self.scale_phi_2 = [float(scale_min_value_2),float(scale_max_value_2)]
-    
+        positions_expanded = tf.expand_dims(positions, axis=1)
+        positions_diff = tf.norm(positions_expanded - positions, axis=2)
+        mask = tf.not_equal(positions_diff, 0) 
+
+        phi_born_all = self.charges_Born_Ion(0.0,radii,self.qs)
+
+        def compute_phi_contribs(idx):
+            valid_indices = tf.boolean_mask(tf.range(num_charges), mask[idx])
+            diff_positions = tf.boolean_mask(positions_diff[idx], mask[idx])
+            phi_contribs = tf.map_fn(
+                lambda j: self.charges_Born_Ion(diff_positions[j], R=diff_positions[j], q=self.qs[valid_indices[j]]),
+                tf.range(tf.size(valid_indices)), dtype=self.DTYPE
+            )
+            return tf.reduce_sum(phi_contribs, axis=0)
+        phi_contribs_all = tf.vectorized_map(compute_phi_contribs, tf.range(num_charges))
+
+        phi_total_all = phi_born_all + phi_contribs_all
+
+        G_additions = self.G(positions + tf.concat([tf.expand_dims(radii, axis=1), tf.zeros_like(positions[:, 1:3])], axis=1))
+
+        phi_max_all = tf.reshape(tf.maximum(phi_born_all,phi_total_all), (-1,1))
+        phi_min_all = tf.reshape(tf.minimum(phi_born_all,phi_total_all), (-1,1))
+
+        phi_1_max_all = tf.where(tf.equal(self.fields[0], 'phi'), phi_max_all + G_additions, phi_max_all)
+        phi_1_min_all = tf.where(tf.equal(self.fields[0], 'phi'), phi_min_all + G_additions, phi_min_all)
+        phi_2_max_all = tf.where(tf.equal(self.fields[1], 'phi'), phi_max_all + G_additions, phi_max_all)
+        phi_2_min_all = tf.where(tf.equal(self.fields[1], 'phi'), phi_min_all + G_additions, phi_min_all)
+
+        phi_1_max = tf.reduce_max(phi_1_max_all)
+        phi_1_min = tf.reduce_min(phi_1_min_all)
+        phi_2_max = tf.reduce_max(phi_2_max_all)
+        phi_2_min = tf.reduce_min(phi_2_min_all)
+
+        scale_max_value_1 = tf.maximum(0.0, phi_1_max)
+        scale_min_value_1 = tf.minimum(0.0, phi_1_min)
+        scale_max_value_2 = tf.maximum(0.0, phi_2_max)
+        scale_min_value_2 = tf.minimum(0.0, phi_2_min)
+
+        self.scale_phi_1 = [float(scale_min_value_1), float(scale_max_value_1)]
+        self.scale_phi_2 = [float(scale_min_value_2), float(scale_max_value_2)]
+
 
     def get_integral_operators(self):
         if self.bempp == None:
