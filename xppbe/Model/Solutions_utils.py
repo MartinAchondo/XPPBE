@@ -171,15 +171,12 @@ class Solution_utils():
         kappa = self.kappa
         q = self.qs[index_q]
 
-        def f_IN():
-            return (q / (4 * self.pi)) * (-1 / (epsilon_1 * R) + 1 / (epsilon_2 * (1 + kappa * R) * R))
+        f_IN = lambda r: (q/(4*self.pi)) * ( - 1/(epsilon_1*R) + 1/(epsilon_2*(1+kappa*R)*R) )
+        f_OUT = lambda r: (q/(4*self.pi)) * (np.exp(-kappa*(r-R))/(epsilon_2*(1+kappa*R)*r) - 1/(epsilon_1*r))
 
-        def f_OUT():
-            return (q / (4 * self.pi)) * (tf.exp(-kappa * (r - R)) / (epsilon_2 * (1 + kappa * R) * r) - 1 / (epsilon_1 * r))
+        y = np.piecewise(r, [r<=R, r>R], [f_IN, f_OUT])
 
-        y = np.piecewise(r, [r<=R, r>R], [f_IN(), f_OUT()])
-
-        return y
+        return y 
 
 
 
