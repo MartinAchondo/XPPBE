@@ -170,10 +170,6 @@ class Solution_utils():
         epsilon_2 = self.epsilon_2
         kappa = self.kappa
         q = self.qs[index_q]
-<<<<<<< HEAD
-
-=======
->>>>>>> 867b0f3d7e05e480d7ef25a8797f326d0beb4e4c
 
         def f_IN():
             return (q / (4 * self.pi)) * (-1 / (epsilon_1 * R) + 1 / (epsilon_2 * (1 + kappa * R) * R))
