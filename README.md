@@ -61,7 +61,11 @@ To install and run this project locally, follow these steps:
    ```bash
    conda create --name xppbe python=3.9
    ```
-4. Install the project
+4. Activate the virtual environment
+   ```bash
+   conda activate xppbe
+   ```
+5. Install the project
     ```bash
    pip install .
     ```
@@ -128,6 +132,8 @@ The Simulation object import a YAML file with all the problem definitions. An ex
         adaptive_activation: true
         fourier_features: true
         weight_factorization: false
+        scale_input: true
+        scale_output: true
 
     hyperparameters_out:
         architecture_Net: FCNN
@@ -137,6 +143,8 @@ The Simulation object import a YAML file with all the problem definitions. An ex
         adaptive_activation: true
         fourier_features: true
         weight_factorization: false
+        scale_input: true
+        scale_output: true
     ```
 
 5. Finally, specify the optimization algorithm, the weights algorithm, the batches/samples approach and the number of iterations.
