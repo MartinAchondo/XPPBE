@@ -4,10 +4,14 @@ import tensorflow as tf
 
 class PINN_2Dom_NeuralNet(tf.keras.Model):
 
-    def __init__(self, hyperparameters, **kwargs):
+    def __init__(self, hyperparameters, bc_param=None, **kwargs):
         super().__init__(name='PINN_NN', **kwargs)
         param_1, param_2 = hyperparameters
-        self.NNs = [NeuralNet(**param_1, name='Molecule_NN'), NeuralNet(**param_2, name='Solvent_NN')]
+        if bc_param is None:
+            self.NNs = [NeuralNet(**param_1, name='Molecule_NN'), NeuralNet(**param_2, name='Solvent_NN')]
+        else:
+            self.NNs = [NeuralNet(**param_1, name='Molecule_NN'), NeuralNet_constrained(param_2,bc_param, name='Solvent_NN_c')]
+        
 
     def call(self, X, flag):
         outputs = tf.zeros([tf.shape(X)[0], 2])   
@@ -28,7 +32,7 @@ class PINN_2Dom_NeuralNet(tf.keras.Model):
 
 class PINN_1Dom_NeuralNet(tf.keras.Model):
 
-    def __init__(self, hyperparameters, **kwargs):
+    def __init__(self, hyperparameters, bc_param=None, **kwargs):
         super().__init__(name='PINN_NN', **kwargs)
         param_1, param_2 = hyperparameters
         self.NN = NeuralNet(**param_1, name='NN')
@@ -42,6 +46,23 @@ class PINN_1Dom_NeuralNet(tf.keras.Model):
     def build_Net(self):
         self.NN.build_Net()
 
+
+class NeuralNet_constrained(tf.keras.Model):
+    
+    def __init__(self, hyperparameters, bc_param, **kwargs):
+        super().__init__(**kwargs) 
+        self.fun = bc_param['fun']
+        self.R_sphere = float(bc_param['R'])
+        self.NN = NeuralNet(**hyperparameters, name=kwargs['name'].replace('_c',''))
+        self.input_shape_N = self.NN.input_shape_N
+
+    def call(self, X):
+        output = self.NN(X)*(self.R_sphere-tf.norm(X, axis=1, keepdims=True))/self.R_sphere + self.fun(X)
+        return output
+    
+    def build_Net(self):
+        self.NN.build_Net()
+        
 
 class NeuralNet(tf.keras.Model):
 

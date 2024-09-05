@@ -29,9 +29,9 @@ class PINN_utils():
         self.iter = 0
 
 
-    def create_NeuralNet(self, NN_class, hyperparameters, *args, **kwargs):
+    def create_NeuralNet(self, NN_class, hyperparameters,bc_param, *args, **kwargs):
         self.hyperparameters = hyperparameters
-        self.model = NN_class(hyperparameters, *args, **kwargs)
+        self.model = NN_class(hyperparameters,bc_param, *args, **kwargs)
         self.model.build_Net()
 
     def adapt_optimizer(self,optimizer,lr,optimizer2=False,options2=None):
@@ -245,14 +245,14 @@ class PINN_utils():
 
     ##############################################################################################
 
-    def load_NeuralNet(self,NN_class,dir_load,iter_path,Iter):   
+    def load_NeuralNet(self,NN_class,bc_param, dir_load,iter_path,Iter):   
 
         path = os.path.join(dir_load,'iterations',iter_path)
 
         with open(os.path.join(path,'hyperparameters.json'), "r") as json_file:
             hyper = json.load(json_file)
         hyperparameters = [hyper['Molecule_NN'],hyper['Solvent_NN']]
-        self.create_NeuralNet(NN_class, hyperparameters)
+        self.create_NeuralNet(NN_class, hyperparameters, bc_param)
 
         self.model.load_weights(os.path.join(path,'weights'))
         self.iter = Iter

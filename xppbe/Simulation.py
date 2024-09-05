@@ -10,7 +10,6 @@ class Simulation():
        
     def __init__(self, yaml_path, molecule_dir, results_path=None):
 
-
         from xppbe import xppbe_path
         with open(os.path.join(xppbe_path,'Simulation.yaml'), 'r') as yaml_file:
             yaml_data = yaml.safe_load(yaml_file)
@@ -94,6 +93,8 @@ class Simulation():
              meshes_domain['IB1'] = {'domain': 'interface', 'type':'IB1', 'value':0.0}
              meshes_domain['IB2'] = {'domain': 'interface', 'type':'IB2', 'value':0.0}
 
+        if self.bc_enforcement == 'hard' and 'D2' in self.losses:
+            self.losses.remove('D2')
 
         self.meshes_domain = dict()
         for t in self.losses:
@@ -105,6 +106,14 @@ class Simulation():
         from xppbe.NN.PINN import PINN
         self.PINN_solver = PINN(results_path=self.results_path)
         self.PINN_solver.adapt_PDE(self.PBE_model)
+
+
+        if self.bc_enforcement == 'hard':
+            self.bc_param = dict()
+            self.bc_param['fun'] = self.PBE_model.G_Yukawa
+            self.bc_param['R'] = self.Mol_mesh.R_max_dist + self.Mol_mesh.dR_exterior
+        else:
+            self.bc_param = None
 
 
     def adapt_model(self):
@@ -123,7 +132,6 @@ class Simulation():
             from xppbe.NN.NeuralNet import PINN_2Dom_NeuralNet as NeuralNet
         elif self.num_networks == 1 or self.pinns_method=='DBM':
             from xppbe.NN.NeuralNet import PINN_1Dom_NeuralNet as NeuralNet     
- 
 
         if self.starting_point == 'new':
             
@@ -136,10 +144,10 @@ class Simulation():
             self.hyperparameters_in['scale_output_s'] = self.PBE_model.scale_phi_1
             self.hyperparameters_out['scale_output_s'] = self.PBE_model.scale_phi_2
 
-            self.PINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out])
+            self.PINN_solver.create_NeuralNet(NeuralNet,[self.hyperparameters_in,self.hyperparameters_out],self.bc_param)
         
         elif self.starting_point == 'continue':
-            self.PINN_solver.load_NeuralNet(NeuralNet,self.results_path,f'iter_{self.continue_iteration}',self.continue_iteration)
+            self.PINN_solver.load_NeuralNet(NeuralNet,self.bc_param,self.results_path,f'iter_{self.continue_iteration}',self.continue_iteration)
         
         self.PINN_solver.starting_point = self.starting_point
 
@@ -187,7 +195,7 @@ class Simulation():
             from xppbe.Post.Results_utils import get_max_iteration
             Iter = get_max_iteration(os.path.join(self.results_path,'iterations'))
         
-        self.PINN_solver.load_NeuralNet(NeuralNet,self.results_path,f'iter_{Iter}',Iter)
+        self.PINN_solver.load_NeuralNet(NeuralNet,self.bc_param,self.results_path,f'iter_{Iter}',Iter)
         self.PINN_solver.N_iters = self.N_iters
          
         if self.domain_properties['molecule'] == 'born_ion':

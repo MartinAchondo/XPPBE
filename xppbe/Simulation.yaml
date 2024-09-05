@@ -36,8 +36,11 @@ experimental_method: mean
 # Sampling method
 sample_method: random_sample
 
+# Boundary condition
+bc_enforcement: soft
+
 # Frequency of solvation energy calculation
-G_solve_iter: 100
+G_solve_iter: 10
 
 # Losses to add, and initial weights
 losses:
