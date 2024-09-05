@@ -12,7 +12,7 @@ matplotlib_logger = logging.getLogger('matplotlib')
 matplotlib_logger.setLevel(logging.WARNING)
 
 plt.rcParams['figure.max_open_warning'] = 50
-plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams["font.family"] = "serif"
 plt.rcParams['figure.dpi'] = 150
 plt.rcParams['savefig.dpi'] = 150
 
@@ -465,6 +465,10 @@ class Postprocessing():
                 fig.write_html(path_save+'.html')
             elif ext=='png':
                 fig.write_image(path_save+'.png', scale=3)
+
+        if jupyter:
+            fig.show()
+        return fig
 
     @staticmethod
     def plot_interface_error_by(error,vertices,elements,scale='log',jupyter=True):
