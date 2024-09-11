@@ -919,6 +919,15 @@ class Postprocessing():
         error = np.sqrt(np.sum(phi_dif**2)/np.sum(phi_known.numpy()**2))
         return error
 
+    def L2_Gsolv_known(self,known_method):
+
+        phi_q = self.PDE.phi_known(known_method,'react',self.PDE.x_qs,flag='molecule')
+        gsolv_known = self.PDE.solvation_energy_phi_qs(phi_q)
+        gsolv_pinn = self.PDE.get_solvation_energy(self.model)
+
+        error = np.abs((gsolv_known-gsolv_pinn)/gsolv_known)
+        return error
+
     def save_values_file(self, save=True, L2_err_method=None):
      
         max_iter = max(map(int,list(self.PINN.G_solv_hist.keys())))
@@ -955,6 +964,37 @@ class Postprocessing():
         path_save = os.path.join(self.directory,'results_values.json')
         with open(path_save, 'w') as json_file:
             json.dump(df_dict, json_file, indent=4)
+
+    def values_for_paper(self, save=True, err_method=None):
+     
+        max_iter = max(map(int,list(self.PINN.G_solv_hist.keys())))
+        Gsolv_value = self.PINN.G_solv_hist[str(max_iter)]
+
+        dict_pre = {
+            'Gsolv_value': Gsolv_value,
+            'Training_loss': self.PINN.losses['TL1'][-1]+self.PINN.losses['TL2'][-1], 
+            'Validation_loss': self.PINN.validation_losses['TL1'][-1]+self.PINN.validation_losses['TL2'][-1],
+        } 
+
+        if not err_method is None:
+            dict_pre['Error_phi'] = self.L2_interface_known(err_method)
+            dict_pre['Error_Gsolv'] = self.L2_Gsolv_known(err_method)
+
+        df_dict = {}
+        for key, value in dict_pre.items():
+            if key=='Gsolv_value':
+                df_dict[key] = np.format_float_positional(float(value), unique=False, precision=3)
+                continue
+            df_dict[key] = '{:.3e}'.format(float(value))
+
+        if not save:
+            return df_dict
+        
+        path_save = os.path.join(self.directory,'values_paper.json')
+        with open(path_save, 'w') as json_file:
+            json.dump(df_dict, json_file, indent=4)
+
+
 
     def save_model_summary(self):
         path_save = os.path.join(self.directory,self.path_plots_model,'models_summary.txt')
