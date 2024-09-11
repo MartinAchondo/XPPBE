@@ -117,6 +117,8 @@ class Postprocessing():
                 self.plot_interface_3D_known(known_method)
                 self.plot_interface_error(known_method, type_e='relative',scale='log')
                 self.plot_interface_error(known_method, type_e='absolute',scale='linear')
+
+                self.values_for_paper(save=True, err_method=known_method)
                 
         self.save_model_summary();
         self.plot_architecture(domain=1);
