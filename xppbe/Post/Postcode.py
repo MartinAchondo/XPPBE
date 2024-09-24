@@ -118,7 +118,7 @@ class Postprocessing():
                 self.plot_interface_error(known_method, type_e='relative',scale='log')
                 self.plot_interface_error(known_method, type_e='absolute',scale='linear')
 
-                self.values_for_paper(save=True, err_method=known_method)
+            self.values_for_paper(save=True, err_method=known_method)
                 
         self.save_model_summary();
         self.plot_architecture(domain=1);
@@ -260,7 +260,7 @@ class Postprocessing():
         text_A = r'$\AA$'
         text_r = r'$r$'
         ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
-        text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
+        text_l = r'$\phi$' if value=='phi' else r'$\psi$'
         ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         text_theta = r'$\theta$'
         text_phi = r'$\phi$'
@@ -305,7 +305,7 @@ class Postprocessing():
         text_A = r'$\AA$'
         text_r = r'$r$'
         ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
-        text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
+        text_l = r'$\phi$' if value=='phi' else r'$\psi$'
         ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         text_theta = r'$\theta$'
         text_phi = r'$\phi$'
@@ -339,7 +339,7 @@ class Postprocessing():
         text_A = r'$\AA$'
         text_r = r'$r$'
         ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
-        text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
+        text_l = r'$\phi$' if value=='phi' else r'$\psi$'
         ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         # ax.set_title(f'Solution {text_l} of PBE')
         ax.grid()
@@ -365,7 +365,7 @@ class Postprocessing():
         text_v = r'$v$'
         ax.set_xlabel(f'{text_u} [{text_A}]', fontsize='11')
         ax.set_ylabel(f'{text_v} [{text_A}]', fontsize='11')
-        text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
+        text_l = r'$\phi$' if value=='phi' else r'$\psi$'
         cbar = fig.colorbar(s, ax=ax)
         cbar.set_label(f'{text_l} [V]', rotation=270)
         text_n = r'$n$'
@@ -387,10 +387,10 @@ class Postprocessing():
          
         if variable == 'phi':
             values,values_1,values_2 = self.get_phi_interface_verts(self.PINN.model,value=value)
-            text_l = r'phi' if value == 'phi' else 'ϕ react'
+            text_l = r'phi' if value == 'phi' else '𝜓'
         elif variable == 'dphi':
             values,values_1,values_2 = self.get_dphi_interface_verts(self.PINN.model)
-            text_l = r'dphi' if value == 'phi' else '∂ϕ react'
+            text_l = r'dphi' if value == 'phi' else '∂𝜓'
 
         if domain =='interface':
             values = values.numpy().flatten()
@@ -443,7 +443,7 @@ class Postprocessing():
         fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
                             i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
                             intensity=phi_known, colorscale='RdBu_r',cmin=cmin,cmax=cmax,
-                            colorbar=dict(title='ϕ react [V]')))
+                            colorbar=dict(title='𝜓 [V]')))
         fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
         if jupyter:
             fig.show()
@@ -1081,9 +1081,9 @@ class Born_Ion_Postprocessing(Postprocessing):
             ax.indicate_inset_zoom(axin)
         
         text_A = r'$\AA$'
-        text_r = r'$r$'
+        text_r = r'$x$'
         ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
-        text_l = r'$\phi$' if value=='phi' else r'$\phi_{react}$'
+        text_l = r'$\phi$' if value=='phi' else r'$\psi$'
         ax.set_ylabel(f'{text_l} [V]', fontsize='11')
         text_theta = r'$\theta$'
         text_phi = r'$\phi$'
@@ -1160,7 +1160,7 @@ class Born_Ion_Postprocessing(Postprocessing):
             if value == 'phi':
                 text_l = r'$\phi$'
             else:
-                text_l = r'$\phi_{react}$'
+                text_l = r'$\psi$'
         elif plot=='du':
             unit = r'V/$\AA$'
             if value == 'phi':
