@@ -14,7 +14,7 @@ mesh_properties:
     dR_exterior: 1
 
 # Frequency of solvation energy calculation
-G_solve_iter: 1
+Indicators_iter: 1
 
 # Losses to add, and initial weights
 losses:
