@@ -1115,7 +1115,7 @@ class Postprocessing():
         error = np.sqrt(np.sum(phi_dif**2)/np.sum(phi_known.numpy().reshape(-1,1)**2))
         return error
 
-    def L2_Gsolv_known(self,known_method):
+    def Error_Gsolv_known(self,known_method):
 
         phi_q = self.PDE.phi_known(known_method,'react',self.PDE.x_qs,flag='molecule')
         gsolv_known = self.PDE.solvation_energy_phi_qs(phi_q)
@@ -1174,7 +1174,7 @@ class Postprocessing():
 
         if not err_method is None:
             dict_pre['Error_phi'] = self.L2_interface_known(err_method)
-            dict_pre['Error_Gsolv'] = self.L2_Gsolv_known(err_method)
+            dict_pre['Error_Gsolv'] = self.Error_Gsolv_known(err_method)
 
         df_dict = {}
         for key, value in dict_pre.items():
