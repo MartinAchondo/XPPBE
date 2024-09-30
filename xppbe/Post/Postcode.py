@@ -125,9 +125,6 @@ class Postprocessing():
             #self.values_for_paper(save=True, err_method=known_method)
                 
         self.save_model_summary();
-        self.plot_architecture(domain=1);
-        self.plot_architecture(domain=2);
-
 
 
     def plot_loss_history_total(self):
