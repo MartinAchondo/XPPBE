@@ -114,6 +114,8 @@ class PINN(PINN_utils):
         X_v = self.get_batches('full_batch', validation=True)
         X_d = self.get_batches(self.sample_method)
 
+        self.initialize_indicators()
+
         self.train_sgd(X_d, X_v)
 
         if self.use_optimizer_2:
@@ -124,7 +126,7 @@ class PINN(PINN_utils):
 
         self.iter+=1
         self.checkers_iterations()
-        self.calculate_G_solv(self.calc_Gsolv_now)
+        self.calculate_Indicators(self.calc_Indicator_now)
         self.callback(L,L_v)
         self.check_adapt_new_weights(self.adapt_w_now)
 
@@ -165,16 +167,27 @@ class PINN(PINN_utils):
             w = float(loss_wo_w/(L[t]+eps))
             self.w[t] = self.alpha_w*self.w[t] + (1-self.alpha_w)*w  
 
-    def calculate_G_solv(self,calc_now):
+    def calculate_Indicators(self,calc_now):
         if calc_now:
-            self.current_G_solv = self.PDE.get_solvation_energy(self.model).numpy()
-            self.G_solv_hist[str(self.iter)] = self.current_G_solv   
+            if self.Indicators['G_solv']:
+                self.current_G_solv = self.PDE.get_solvation_energy(self.model).numpy()
+                self.G_solv_hist[str(self.iter)] = self.current_G_solv   
+
+            if self.Indicators['L2_error_phi']:
+                phi_pinn = self.PDE.get_phi_interface_verts(self.model,value='react')[0]
+                phi_dif = (phi_pinn.numpy().reshape(-1,1) - self.phi_known_L2.reshape(-1,1))
+                error = np.sqrt(np.sum(phi_dif**2)/np.sum(self.phi_known_L2.reshape(-1,1)**2))
+
+                self.current_L2_error = error
+                self.L2_error_hist[str(self.iter)] = self.current_L2_error 
 
 
-    def solve(self,N=1000, N2=0, save_model=0, G_solve_iter=100):
+    def solve(self,N=1000, N2=0, save_model=0, Indicators_iter=100, Indicators=dict(G_solv=True)):
 
         self.save_model_iter = save_model if save_model != 0 else N
-        self.G_solv_iter = G_solve_iter
+        self.Indicators_iter = Indicators_iter
+        self.Indicators = Indicators
+
         t0 = time()
         
         self.main_loop(N,N2)

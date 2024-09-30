@@ -158,7 +158,8 @@ class Simulation():
             N=self.N_iters, 
             N2=self.N_steps_2,
             save_model = self.iters_save_model, 
-            G_solve_iter= self.G_solve_iter
+            Indicators_iter = self.Indicators_iter,
+            Indicators = {key: value for d in self.Indicators for key, value in d.items()}
             )
         
 

@@ -31,7 +31,7 @@ mesh_properties:
     center_pqr: false
 
 # Phi ENS method
-experimental_method: mean
+experimental_method: exponential
 
 # Sampling method
 sample_method: random_sample
@@ -39,8 +39,13 @@ sample_method: random_sample
 # Boundary condition
 bc_enforcement: soft
 
-# Frequency of solvation energy calculation
-G_solve_iter: 10
+# Frequency of additional indicators calculation
+Indicators_iter: 10
+
+# Additional indicators
+Indicators:
+    - G_solv: true
+    - L2_error_phi: false
 
 # Losses to add, and initial weights
 losses:

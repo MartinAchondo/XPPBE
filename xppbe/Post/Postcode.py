@@ -3,6 +3,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import matplotlib.ticker as ticker
 import os
 import json
 import pandas as pd
@@ -15,6 +16,7 @@ plt.rcParams['figure.max_open_warning'] = 50
 plt.rcParams["font.family"] = "serif"
 plt.rcParams['figure.dpi'] = 150
 plt.rcParams['savefig.dpi'] = 150
+plt.rcParams["font.size"] = 18
 
 class Postprocessing():
 
@@ -63,9 +65,9 @@ class Postprocessing():
         return self.PDE.get_solvation_energy(self.model)
     
     def get_phi_ens(self,*args,**kwargs):
-        ((X,X_values),flag) = self.mesh.domain_mesh_data['E2']
+        ((X,X_values),flag,method) = self.mesh.domain_mesh_data['E2']
         q_L,_ = zip(*X_values)
-        return list(phi*self.to_V*1000 for phi in self.PDE.get_phi_ens(self.model,(X,flag),q_L, **kwargs))
+        return list(phi*self.to_V*1000 for phi in self.PDE.get_phi_ens(self.model,(X,flag),q_L, method,**kwargs))
     
     def run_all(self,plot_mesh,known_method):
         
@@ -74,6 +76,8 @@ class Postprocessing():
         
         self.plot_loss_validation_history(domain=1,loss='TL');
         self.plot_loss_validation_history(domain=2,loss='TL');
+
+        self.plot_loss_hisotry_training_validation();
 
         if plot_mesh:
             self.plot_collocation_points_3D();
@@ -124,9 +128,46 @@ class Postprocessing():
         self.plot_architecture(domain=1);
         self.plot_architecture(domain=2);
 
-    
+
+
+    def plot_loss_history_total(self):
+
+        loss_label = {
+            'R1': r'$L_{\Omega_m}$',
+            'R2': r'$L_{\Omega_w}$',
+            'Iu': r'$L_{\Gamma_D}$',
+            'Id': r'$L_{\Gamma_N}$',
+            'D2': r'$L_{\partial\Omega}$',
+            'E2': r'$L_{\phi_{ENS}}$'
+        }
+
+
+        fig,ax = plt.subplots()
+        c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime', 'Ir': 'aqua', 'E':'darkslategrey','G': 'salmon','IB1':'lime','IB2': 'aqua'}
+        c2 = ['r','b','gold','m','lime','darkslategrey', 'royalblue','springgreen','aqua', 'pink','yellowgreen','teal']
+
+        i = 0
+        for t in self.PINN.losses_names:
+            if t in self.mesh.domain_mesh_names:
+                ax.semilogy(range(1,len(self.PINN.losses[t])+1),self.PINN.losses[t],c2[i],label=loss_label[t])
+                i+=1
+
+        ax.legend(ncol=2)
+        n_label = r'$n$'
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1000:.1f}'))
+        ax.set_xlabel(r'Iterations ($\times \mathrm{10^3}$)')
+        loss_label = r'$L$'
+        ax.set_ylabel(f'Losses')
+
+        ax.grid()
+        if self.save:
+            path = f'loss_history.png'
+            path_save = os.path.join(self.directory,self.path_plots_losses,path)
+            fig.savefig(path_save, bbox_inches='tight')
+        return fig,ax
 
     def plot_loss_history(self, domain=1, plot_w=False, loss='all'):
+
         fig,ax = plt.subplots()
         c = {'TL': 'k','R':'r','D':'b','N':'g', 'K': 'gold','Q': 'c','Iu':'m','Id':'lime', 'Ir': 'aqua', 'E':'darkslategrey','G': 'salmon','IB1':'lime','IB2': 'aqua'}
         c2 = {'royalblue','springgreen','aqua', 'pink','yellowgreen','teal'}
@@ -147,9 +188,10 @@ class Postprocessing():
 
         ax.legend()
         n_label = r'$n$'
-        ax.set_xlabel(f'Iterations', fontsize='11')
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1000:.1f}'))
+        ax.set_xlabel(r'Iterations ($\times \mathrm{10^3}$)')
         loss_label = r'$\mathcal{L}$'
-        ax.set_ylabel(f'Losses {loss_label}', fontsize='11')
+        ax.set_ylabel(f'Losses')
         # if loss=='TL' or loss=='all':
         #     ax.set_title(f'Loss History of NN{domain}, Loss: {self.loss_last[domain]}')
         # else:
@@ -176,9 +218,10 @@ class Postprocessing():
 
         ax.legend()
         n_label = r'$n$'
-        ax.set_xlabel(f'Iterations', fontsize='11')
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1000:.1f}'))
+        ax.set_xlabel(r'Iterations ($\times \mathrm{10^3}$)')
         loss_label = r'$\mathcal{L}$'
-        ax.set_ylabel(f'Losses {loss_label}', fontsize='11')
+        ax.set_ylabel(f'Losses')
         # if loss=='TL' or loss=='all':
         #     ax.set_title(f'Loss History of NN{domain}, Loss: {self.loss_last[domain]}')
         # else:
@@ -190,6 +233,28 @@ class Postprocessing():
             fig.savefig(path_save, bbox_inches='tight')
         return fig,ax
 
+    def plot_loss_hisotry_training_validation(self):
+        fig,ax = plt.subplots()
+
+        ax.semilogy(range(1,len(self.PINN.losses['vTL1'])+1), self.PINN.losses['vTL1']+self.PINN.losses['vTL2'],'r-',label=f'Training')
+        ax.semilogy(range(1,len(self.PINN.validation_losses['TL1'])+1), self.PINN.validation_losses['TL1']+self.PINN.validation_losses['TL2'],'b-',label=f'Validation')
+
+        ax.legend()
+        n_label = r'$n$'
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1000:.1f}'))
+        ax.set_xlabel(r'Iterations ($\times \mathrm{10^3}$)')
+        loss_label = r'$\mathcal{L}$'
+        ax.set_ylabel(f'Losses')
+        # if loss=='TL' or loss=='all':
+        #     ax.set_title(f'Loss History of NN{domain}, Loss: {self.loss_last[domain]}')
+        # else:
+        #     ax.set_title(f'Loss History of NN{domain}')
+        ax.grid()
+        if self.save:
+            path = f'loss_training_validation_history_.png' 
+            path_save = os.path.join(self.directory,self.path_plots_losses,path)
+            fig.savefig(path_save, bbox_inches='tight')
+        return fig,ax
 
     def plot_weights_history(self, domain=1):
         fig,ax = plt.subplots()
@@ -204,9 +269,10 @@ class Postprocessing():
                 
         ax.legend()
         n_label = r'$n$'
-        ax.set_xlabel(f'Iterations', fontsize='11')
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1000:.1f}'))
+        ax.set_xlabel(r'Iterations ($\times \mathrm{10^3}$)')
         w_label = r'$w$'
-        ax.set_ylabel(f'Weights', fontsize='11')
+        ax.set_ylabel(f'Weights')
         # ax.set_title(f'Weights History of NN{domain}')
         ax.grid()
         if self.save:
@@ -230,9 +296,10 @@ class Postprocessing():
             ax.plot(np.array(list(self.PINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'{label}')
         ax.legend()
         n_label = r'$n$'
-        ax.set_xlabel(f'Iterations', fontsize='11')
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1000:.1f}'))
+        ax.set_xlabel(r'Iterations ($\times \mathrm{10^3}$)')
         text_l = r'$\Delta G_{solv}$'
-        ax.set_ylabel(f'{text_l} [kcal/mol]', fontsize='11')
+        ax.set_ylabel(f'{text_l} [kcal/mol]')
         max_iter = max(map(int,list(self.PINN.G_solv_hist.keys())))
         #Gsolv_value = np.format_float_positional(self.PINN.G_solv_hist[str(max_iter)], unique=False, precision=2)
         # ax.set_title(f'Solution {text_l} of PBE')
@@ -259,9 +326,9 @@ class Postprocessing():
         
         text_A = r'$\AA$'
         text_r = r'$r$'
-        ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
+        ax.set_xlabel(f'{text_r} [{text_A}]')
         text_l = r'$\phi$' if value=='phi' else r'$\psi$'
-        ax.set_ylabel(f'{text_l} [V]', fontsize='11')
+        ax.set_ylabel(f'{text_l} [V]')
         text_theta = r'$\theta$'
         text_phi = r'$\phi$'
         theta = np.format_float_positional(theta, unique=False, precision=2)
@@ -298,20 +365,26 @@ class Postprocessing():
             label='BEM'
         elif label=='APBS':
             label='FDM'
+        elif label=='Spherical Harmonics':
+            label='Analytic'
+            
         ax.plot(r_in,u_in_an[:], c='r', linestyle='--')
         ax.plot(r_out[r_out<0],u_out_an[r_out<0], label=label, c='r', linestyle='--')
         ax.plot(r_out[r_out>0],u_out_an[r_out>0], c='r', linestyle='--')
         
         text_A = r'$\AA$'
         text_r = r'$r$'
-        ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
+        if theta==0 and phi==np.pi/2:
+            text_r = r'$x$'
+        elif theta==np.pi/2 and phi==np.pi/2:
+            text_r = r'$y$'
+        elif theta==np.pi/2 and phi==np.pi:
+            text_r = r'$z$'
+        ax.set_xlabel(f'{text_r} [{text_A}]')
         text_l = r'$\phi$' if value=='phi' else r'$\psi$'
-        ax.set_ylabel(f'{text_l} [V]', fontsize='11')
-        text_theta = r'$\theta$'
-        text_phi = r'$\phi$'
+        ax.set_ylabel(f'{text_l} [V]')
         theta = np.format_float_positional(theta, unique=False, precision=2)
         phi = np.format_float_positional(phi, unique=False, precision=2)
-        text_x0 = r'$x_0$'
         # ax.set_title(f'Solution {text_l} of PBE;  ({text_x0}=[{x0[0]},{x0[1]},{x0[2]}] {text_theta}={theta}, {text_phi}={phi})')
         ax.grid()
         ax.legend()
@@ -338,9 +411,9 @@ class Postprocessing():
 
         text_A = r'$\AA$'
         text_r = r'$r$'
-        ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
+        ax.set_xlabel(f'{text_r} [{text_A}]')
         text_l = r'$\phi$' if value=='phi' else r'$\psi$'
-        ax.set_ylabel(f'{text_l} [V]', fontsize='11')
+        ax.set_ylabel(f'{text_l} [V]')
         # ax.set_title(f'Solution {text_l} of PBE')
         ax.grid()
         ax.legend()
@@ -363,8 +436,8 @@ class Postprocessing():
         text_A = r'$\AA$'
         text_u = r'$u$'
         text_v = r'$v$'
-        ax.set_xlabel(f'{text_u} [{text_A}]', fontsize='11')
-        ax.set_ylabel(f'{text_v} [{text_A}]', fontsize='11')
+        ax.set_xlabel(f'{text_u} [{text_A}]')
+        ax.set_ylabel(f'{text_v} [{text_A}]')
         text_l = r'$\phi$' if value=='phi' else r'$\psi$'
         cbar = fig.colorbar(s, ax=ax)
         cbar.set_label(f'{text_l} [V]', rotation=270)
@@ -380,7 +453,7 @@ class Postprocessing():
         return fig,ax
 
 
-    def plot_interface_3D(self,variable='phi', value='phi', domain='interface', jupyter=False, ext='html'):
+    def plot_interface_3D(self,variable='phi', value='phi', domain='interface', jupyter=False, ext='html',cmin=None, cmax=None, dic_camera=False):
         
         vertices = self.mesh.mol_verts.astype(np.float32)
         elements = self.mesh.mol_faces.astype(np.float32)
@@ -399,15 +472,19 @@ class Postprocessing():
         elif domain =='solvent':
             values = values_2.numpy().flatten()
 
-        fig = go.Figure()
-        fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
-                            i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
-                            intensity=values, colorscale='RdBu_r',
-                            colorbar=dict(title=f'{text_l} [V]')))
-
-        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'),margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
+        fig = self.plot_interface_3D_known_by(values, vertices, elements, cmin=cmin, cmax=cmax, jupyter=False)
 
         path_save = os.path.join(self.directory, self.path_plots_solution, f'Interface_{variable}_{value}_{domain}')
+        
+        if dic_camera:
+            fig.update_layout(
+                scene = dict(
+                    xaxis = dict(visible=False),
+                    yaxis = dict(visible=False),
+                    zaxis =dict(visible=False)
+                    ))
+            fig.update_layout(**dic_camera)
+
         if self.save:
             if ext=='html':
                 fig.write_html(path_save+'.html')
@@ -418,14 +495,29 @@ class Postprocessing():
         return fig
 
 
-    def plot_interface_3D_known(self, method, cmin=None,cmax=None, jupyter=False, ext='html'):
+    def plot_interface_3D_known(self, method, cmin=None,cmax=None, jupyter=False, ext='html',dic_camera=False):
         
         vertices = self.mesh.mol_verts.astype(np.float32)
         elements = self.mesh.mol_faces.astype(np.float32)
         phi_known = self.phi_known(method,'react', vertices,'solvent')
 
-        fig = self.plot_interface_3D_known_by(phi_known, vertices, elements, jupyter=False)
+        if method=='PBJ':
+            vertices = self.PDE.pbj_vertices.astype(np.float32)
+            elements = self.PDE.pbj_elements.astype(np.float32)
+            phi_known = self.phi_known(method,'react', vertices, flag='solvent')
+
+        fig = self.plot_interface_3D_known_by(phi_known, vertices, elements, cmin=cmin, cmax=cmax, jupyter=False)
         path_save = os.path.join(self.directory, self.path_plots_solution, f'Interface_{method}')
+
+        if dic_camera:
+            fig.update_layout(
+                scene = dict(
+                    xaxis = dict(visible=False),
+                    yaxis = dict(visible=False),
+                    zaxis =dict(visible=False)
+                    ))
+            fig.update_layout(**dic_camera)
+
         if self.save:
             if ext=='html':
                 fig.write_html(path_save+'.html')
@@ -440,28 +532,77 @@ class Postprocessing():
         cmin = np.min(phi_known) if cmin is None else cmin
         cmax = np.max(phi_known) if cmax is None else cmax
         fig = go.Figure()
-        fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
-                            i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
-                            intensity=phi_known, colorscale='RdBu_r',cmin=cmin,cmax=cmax,
-                            colorbar=dict(title='𝜓 [V]')))
-        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
+        fig.add_trace(go.Mesh3d(
+            x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
+            i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
+            intensity=phi_known, colorscale='RdBu_r',
+            cmin=cmin, cmax=cmax,
+#            showscale=False
+            colorbar=dict(
+                #title='𝜓_θ [V]',
+                tickfont=dict(size=28)  # Colorbar tick font size
+                #titlefont=dict(size=20)  # Colorbar title font size
+            )
+        ))
+        fig.update_layout(
+            scene=dict(
+                aspectmode='data',
+                xaxis=dict(
+                    title=dict(text='x [Å]', font=dict(size=18))  # X-axis title font size
+                ),
+                yaxis=dict(
+                    title=dict(text='y [Å]', font=dict(size=18))  # Y-axis title font size
+                ),
+                zaxis=dict(
+                    title=dict(text='z [Å]', font=dict(size=18))  # Z-axis title font size
+                )
+            ),
+            margin=dict(l=30, r=40, t=20, b=20),
+            font_family="Times New Roman",
+            font_size=16
+        )
+        fig.update_layout(
+            scene = dict(
+                xaxis = dict(visible=False),
+                yaxis = dict(visible=False),
+                zaxis =dict(visible=False)
+                )
+            )
         if jupyter:
             fig.show()
         return fig
 
-    def plot_interface_error(self,method, type_e='relative',scale='log',jupyter=False, ext='html'):
+    def plot_interface_error(self,method, type_e='relative',scale='log',jupyter=False, ext='html',dic_camera=False,cmin=None,cmax=None):
         vertices = self.mesh.mol_verts.astype(np.float32)
         elements = self.mesh.mol_faces.astype(np.float32)
 
         phi_known = self.phi_known(method,'react', vertices, flag='solvent')
         phi_pinn = self.get_phi(vertices,flag='interface',model=self.model,value='react')
 
-        error = np.abs(phi_pinn.numpy() - phi_known.numpy().reshape(-1,1))
+        if method == 'PBJ':
+            vertices = self.PDE.pbj_vertices.astype(np.float32)
+            elements = self.PDE.pbj_elements.astype(np.float32)
+            phi_known = self.phi_known(method,'react', vertices, flag='solvent')
+            phi_pinn = self.get_phi(vertices,flag='molecule',model=self.model,value='react')
+
+        error = np.abs(phi_pinn.numpy().reshape(-1,1) - phi_known.numpy().reshape(-1,1))
         if type_e == 'relative':
             error /= phi_known.numpy().reshape(-1,1)
-        fig = self.plot_interface_error_by(error,vertices,elements,scale,jupyter=False)
+
+
+        fig = self.plot_interface_error_by(error,vertices,elements,scale,jupyter=False,cmin=cmin,cmax=cmax)
 
         path_save = os.path.join(self.directory, self.path_plots_solution, f'Interface_error_{method}_{type_e}_{scale}')
+
+        if dic_camera:
+            fig.update_layout(
+                scene = dict(
+                    xaxis = dict(visible=False),
+                    yaxis = dict(visible=False),
+                    zaxis =dict(visible=False)
+                    ))
+            fig.update_layout(**dic_camera)
+
         if self.save:
             if ext=='html':
                 fig.write_html(path_save+'.html')
@@ -473,7 +614,9 @@ class Postprocessing():
         return fig
 
     @staticmethod
-    def plot_interface_error_by(error,vertices,elements,scale='log',jupyter=True):
+    def plot_interface_error_by(error,vertices,elements,scale='log',jupyter=True,cmin=None,cmax=None):
+        cmin = np.log(np.min(error)) if cmin is None else cmin
+        cmax = np.log(np.max(error)) if cmax is None else cmax
         fig = go.Figure()
         if scale=='log':
             epsilon = 1e-10
@@ -482,24 +625,28 @@ class Postprocessing():
                                 i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
                                 intensity=log_intensity,
                                 colorscale='Plasma',
+                                cmin=cmin, cmax=cmax,
+#                                showscale=False,
                                 colorbar=dict(
-                                    title='Error',
+                                    # title='\Delta 𝜓',
+                                    tickfont=dict(size=28),
                                     tickvals=np.log(np.array([1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1e0,1e1,1e2,1e3]) + epsilon),
                                     ticktext=['1e-7','1e-6','1e-5','1e-4','1e-3','1e-2','1e-1','1e0','1e1','1e2','1e3']
-                                )))
+                                )
+                                ))
         elif scale=='linear':
             fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
                     i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
                     intensity=np.abs(error), colorscale='Plasma',
-                    colorbar=dict(title='Error')))
-        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
+                    colorbar=dict(title='\Delta 𝜓',font={'size': 18},)))
+        fig.update_layout(scene=dict(aspectmode='data', xaxis_title='x [Å]', yaxis_title='y [Å]', zaxis_title='z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
 
         if jupyter:
             fig.show()
         return fig
 
 
-    def plot_collocation_points_3D(self, jupyter=False, ext='html'):
+    def plot_collocation_points_3D(self, jupyter=False, ext='html', dic_camera=False):
 
         color_dict = {
             'Q1_verts': 'red',
@@ -520,10 +667,11 @@ class Postprocessing():
         subsets_directory = os.path.join(self.directory,'mesh')
         csv_files = [file for file in os.listdir(subsets_directory) if file.endswith('.csv')]
         fig = make_subplots(rows=1, cols=1, specs=[[{'type': 'scatter3d'}]])
-        for i, csv_file in enumerate(csv_files):
+        names = ['R2_sample','D2_sample','R1_sample','I_sample']
+        for i, csv_file in enumerate(names):
 
             name = csv_file.replace('.csv','')
-            data = pd.read_csv(os.path.join(subsets_directory, csv_file))
+            data = pd.read_csv(os.path.join(subsets_directory, csv_file+'.csv'))
             trace = go.Scatter3d(
                 x=data['X'],
                 y=data['Y'],
@@ -537,6 +685,16 @@ class Postprocessing():
         fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
         
         path_save = os.path.join(self.directory,self.path_plots_meshes, 'collocation_points_plot_3d')
+
+        if dic_camera:
+            fig.update_layout(
+                scene = dict(
+                    xaxis = dict(visible=False),
+                    yaxis = dict(visible=False),
+                    zaxis =dict(visible=False)
+                    ))
+            fig.update_layout(**dic_camera)
+        
         if self.save:
             if ext=='html':
                 fig.write_html(path_save+'.html')
@@ -546,7 +704,7 @@ class Postprocessing():
             fig.show()
         return fig
 
-    def plot_surface_mesh_3D(self, jupyter=False, ext='html'):
+    def plot_surface_mesh_3D(self, jupyter=False, ext='html', dic_camera=False):
 
         vertices = self.mesh.mol_verts
         elements = self.mesh.mol_faces
@@ -583,6 +741,16 @@ class Postprocessing():
         fig.update_layout(scene=dict(aspectmode='data', xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
 
         path_save = os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surf_3D')
+
+        if dic_camera:
+            fig.update_layout(
+                scene = dict(
+                    xaxis = dict(visible=False),
+                    yaxis = dict(visible=False),
+                    zaxis =dict(visible=False)
+                    ))
+            fig.update_layout(**dic_camera)
+        
         if self.save:
             if ext=='html':
                 fig.write_html(path_save+'.html')
@@ -592,7 +760,7 @@ class Postprocessing():
             fig.show()
         return fig
 
-    def plot_vol_mesh_3D(self, jupyter=False, ext='html'):
+    def plot_vol_mesh_3D(self, jupyter=False, ext='html', dic_camera=False):
         toRemove = []
         ext_tetmesh = self.mesh.ext_tetmesh
         for vertexID in ext_tetmesh.vertexIDs:
@@ -675,6 +843,16 @@ class Postprocessing():
         fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
         
         path_save = os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_vol_3D')
+
+        if dic_camera:
+            fig.update_layout(
+                scene = dict(
+                    xaxis = dict(visible=False),
+                    yaxis = dict(visible=False),
+                    zaxis =dict(visible=False)
+                    ))
+            fig.update_layout(**dic_camera)
+
         if self.save:
             if ext=='html':
                 fig.write_html(path_save+'.html')
@@ -685,7 +863,7 @@ class Postprocessing():
         return fig
 
 
-    def plot_mesh_3D(self,domain,element_indices=None, jupyter=False, ext='html'):
+    def plot_mesh_3D(self,domain,element_indices=None, jupyter=False, ext='html', dic_camera=False):
 
         element_indices_input = element_indices
 
@@ -774,6 +952,14 @@ class Postprocessing():
             fig = go.Figure(data=[trace_vertices, trace_edges, trace_elements])
 
         fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
+        if dic_camera:
+            fig.update_layout(
+                scene = dict(
+                    xaxis = dict(visible=False),
+                    yaxis = dict(visible=False),
+                    zaxis =dict(visible=False)
+                    ))
+            fig.update_layout(**dic_camera)
 
         path_save = os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_3D_{domain}')
         if self.save:
@@ -785,7 +971,7 @@ class Postprocessing():
             fig.show()
         return fig
 
-    def plot_surface_mesh_normals(self,plot='vertices',jupyter=False, ext='html'):
+    def plot_surface_mesh_normals(self,plot='vertices',jupyter=False, ext='html', dic_camera=False):
 
         mesh_obj = self.mesh
         
@@ -837,6 +1023,14 @@ class Postprocessing():
         fig = go.Figure(data=[mesh_trace, vertex_normals_trace, edge_trace])
         fig.update_layout(scene=dict(aspectmode="data", xaxis_title='X [Å]', yaxis_title='Y [Å]', zaxis_title='Z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
 
+        if dic_camera:
+            fig.update_layout(
+                scene = dict(
+                    xaxis = dict(visible=False),
+                    yaxis = dict(visible=False),
+                    zaxis =dict(visible=False)
+                    ))
+            fig.update_layout(**dic_camera)
 
         path_save = os.path.join(self.directory,self.path_plots_meshes,f'mesh_plot_surface_normals_{plot}')
         if self.save:
@@ -917,8 +1111,8 @@ class Postprocessing():
             phi_known = self.phi_known(known_method,'react', vertices, flag='solvent')
             phi_pinn = self.get_phi(vertices,flag='interface',model=self.model,value='react')
 
-        phi_dif = (phi_pinn.numpy() - phi_known.numpy().reshape(-1,1))
-        error = np.sqrt(np.sum(phi_dif**2)/np.sum(phi_known.numpy()**2))
+        phi_dif = (phi_pinn.numpy().reshape(-1,1) - phi_known.numpy().reshape(-1,1))
+        error = np.sqrt(np.sum(phi_dif**2)/np.sum(phi_known.numpy().reshape(-1,1)**2))
         return error
 
     def L2_Gsolv_known(self,known_method):
@@ -1082,9 +1276,9 @@ class Born_Ion_Postprocessing(Postprocessing):
         
         text_A = r'$\AA$'
         text_r = r'$x$'
-        ax.set_xlabel(f'{text_r} [{text_A}]', fontsize='11')
+        ax.set_xlabel(f'{text_r} [{text_A}]')
         text_l = r'$\phi$' if value=='phi' else r'$\psi$'
-        ax.set_ylabel(f'{text_l} [V]', fontsize='11')
+        ax.set_ylabel(f'{text_l} [V]')
         text_theta = r'$\theta$'
         text_phi = r'$\phi$'
         theta = np.format_float_positional(theta, unique=False, precision=2)
@@ -1167,8 +1361,8 @@ class Born_Ion_Postprocessing(Postprocessing):
                 text_l = r'$\partial_n\phi$'
             else:
                 text_l = r'$\partial_n\phi_{react}$'  
-        ax.set_xlabel(r'$\beta$ [rad]', fontsize='11')
-        ax.set_ylabel(f'{text_l} [{unit}]', fontsize='11')
+        ax.set_xlabel(r'$\beta$ [rad]')
+        ax.set_ylabel(f'{text_l} [{unit}]')
         text_n = r'$n$'
         # ax.set_title(f'Solution {text_l} of PBE at Interface;  ({text_n}=[{np.format_float_positional(nn[0], unique=False, precision=1)},{np.format_float_positional(nn[1], unique=False, precision=1)},{np.format_float_positional(nn[2], unique=False, precision=1)}])')
 

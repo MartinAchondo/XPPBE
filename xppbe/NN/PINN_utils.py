@@ -26,6 +26,10 @@ class PINN_utils():
         self.current_G_solv = 0.0
         self.G_solv_hist['0'] = 0.0
 
+        self.L2_error_hist = dict()
+        self.current_L2_error = 0.0
+        self.L2_error_hist['0'] = 0.0
+
         self.iter = 0
 
 
@@ -100,6 +104,20 @@ class PINN_utils():
             self.validation_losses[t] = np.concatenate((self.validation_losses[t],np.zeros(N_extend, dtype=self.DTYPE)))
         for t in self.w:
             self.w_hist[t] = np.concatenate((self.w_hist[t],np.zeros(N_extend, dtype=self.DTYPE)))
+
+
+    def initialize_indicators(self):
+        known_method = self.Indicators['L2_error_phi']
+        if not known_method:
+            return
+
+        vertices = self.mesh.mol_verts.astype(np.float32)
+        phi_known = self.PDE.phi_known(known_method,'react', vertices, flag='solvent')
+        if known_method == 'PBJ':
+            vertices = self.PDE.pbj_vertices.astype(np.float32)
+            phi_known = self.PDE.phi_known(known_method,'react', vertices, flag='solvent')
+
+        self.phi_known_L2 = phi_known
 
 
     ##############################################################################################
@@ -179,10 +197,10 @@ class PINN_utils():
     def checkers_iterations(self):
 
         # solvation energy
-        if (self.iter)%self.G_solv_iter==0 and self.iter>1:
-            self.calc_Gsolv_now = True
+        if (self.iter)%self.Indicators_iter==0 and self.iter>1:
+            self.calc_Indicator_now = True
         else:
-            self.calc_Gsolv_now = False
+            self.calc_Indicator_now = False
 
         # adapt losses weights
         if self.adapt_weights and (self.iter)%self.adapt_w_iter==0 and (self.iter)<self.N_iters:
@@ -279,6 +297,11 @@ class PINN_utils():
         for iters,G_solv in zip(list(df_2['iter']),list(df_2['G_solv'])):
             self.G_solv_hist[str(iters)] = G_solv
 
+        path_load = os.path.join(path,'L2_phi_error.csv')
+        df_3 = pd.read_csv(path_load)
+        for iters,L2_phi_error in zip(list(df_3['iter']),list(df_3['L2_phi_error'])):
+            self.L2_error_hist[str(iters)] = L2_phi_error
+
         path_load = os.path.join(path, 'optimizer.npy')
         self.loaded_opt_weights = np.load(path_load, allow_pickle=True)
 
@@ -305,6 +328,11 @@ class PINN_utils():
         df_2.columns = ['iter','G_solv']
         path_save = os.path.join(dir_save,'G_solv.csv')
         df_2.to_csv(path_save)  
+
+        df_3 = pd.DataFrame(self.L2_error_hist.items())
+        df_3.columns = ['iter','L2_phi_error']
+        path_save = os.path.join(dir_save,'L2_phi_error.csv')
+        df_3.to_csv(path_save)  
 
         path_save = os.path.join(dir_save,'hyperparameters.json')
         with open(path_save, "w") as json_file:
