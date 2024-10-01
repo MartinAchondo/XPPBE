@@ -4,7 +4,7 @@ This folder contains all the necessary files and configurations to reproduce the
 
 ## How to Run the Simulations
 
-1. **Set Up the Environment**: Make sure you have installed all dependencies as specified in the main [README](../README.md).
+1. **Set Up the Environment**: Make sure you have installed all dependencies as specified in the main [README](../../README.md).
    
 2. **Choose the YAML Configuration File**: Select the desired configuration file from this [directory](./input_files/) (e.g., `input_files/BI/BI_WA_TF_FF_SI_SO.yaml`).
 
