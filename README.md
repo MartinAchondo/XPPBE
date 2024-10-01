@@ -38,18 +38,6 @@ $$\nabla^2 \phi_w = \kappa^2_w\phi_w \quad x \in \Omega_w $$
   <img height="200" src="img/molecule.png">
 </p>
 
-## Recent Publication
-
-Our recent work investigates the application of Physics-Informed Neural Networks (PINNs) to solve the Poisson-Boltzmann equation (PBE) using XPPBE. In this study, we highlight the impact of incorporating advanced neural network features, such as input and output scaling, random Fourier features, trainable activation functions, and a loss balancing algorithm. 
-
-<!-- Our findings show that these enhancements achieve accuracies of the order of 10⁻²—10⁻³, comparable to state-of-the-art methods. -->
-
-- **Title**: An Investigation of Physics Informed Neural Networks to solve the Poisson-Boltzmann Equation in Molecular Electrostatics.
-- **Authors**: Martín A. Achondo, Jehanzeb H. Chaudhry, Christopher D. Cooper.
-- **Journal/Conference**: Under review.
-- **DOI**: Pending.
-
-All input files and scripts to reproduce the results are available in the [Paper Folder](./papers/PINN_PB_paper).
 
 ## Resources
 
@@ -178,6 +166,20 @@ The Simulation object import a YAML file with all the problem definitions. An ex
 
     N_iters: 20000
     ```
+
+## Recent Publication
+
+Our recent work investigates the application of Physics-Informed Neural Networks (PINNs) to solve the Poisson-Boltzmann equation (PBE) using XPPBE. In this study, we highlight the impact of incorporating advanced neural network features, such as input and output scaling, random Fourier features, trainable activation functions, and a loss balancing algorithm. 
+
+<!-- Our findings show that these enhancements achieve accuracies of the order of 10⁻²—10⁻³, comparable to state-of-the-art methods. -->
+
+- **Title**: An Investigation of Physics Informed Neural Networks to solve the Poisson-Boltzmann Equation in Molecular Electrostatics.
+- **Authors**: Martín A. Achondo, Jehanzeb H. Chaudhry, Christopher D. Cooper.
+- **Journal/Conference**: Under review.
+- **DOI**: Pending.
+
+All input files and scripts to reproduce the results are available in the [Paper Folder](./papers/PINN_PB_paper).
+
 
 ## Citing
 
