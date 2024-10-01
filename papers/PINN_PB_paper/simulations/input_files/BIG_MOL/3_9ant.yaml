@@ -22,16 +22,18 @@ mesh_properties:
     percentage_vol_mesh: 0.5
     density_mol: 1.5
     density_border: 0.3
-    dx_experimental: 0.8
-    N_pq: 1
     mesh_generator: nanoshaper
     dR_exterior: 5.0
 
 # Sampling method
 sample_method: random_sample
 
-# Frequency of solvation energy calculation
-G_solve_iter: 50
+# Frequency of additional indicators calculation
+Indicators_iter: 50
+
+# Additional indicators
+Indicators:
+    - G_solv: true
 
 # Losses to add, and initial weights
 losses:
@@ -59,6 +61,7 @@ hyperparameters_in:
     adaptive_activation: true
     architecture_Net: FCNN
     fourier_features: true
+    scale_input: true
     scale_output: true
 
 hyperparameters_out:
@@ -70,6 +73,7 @@ hyperparameters_out:
     adaptive_activation: true
     architecture_Net: FCNN
     fourier_features: true
+    scale_input: true
     scale_output: true
 
 
@@ -82,21 +86,12 @@ lr:
     decay_rate: 0.9
     staircase: true
 
-optimizer2: L-BFGS-B
-options_optimizer2:
-    maxiter: 100
-    maxfun: 5000
-    maxcor: 50
-    maxls: 50
-    ftol: 0.0000000000002
     
 # Solve parameters
-N_iters: 24000
-N_steps_2: 0
+N_iters: 40000
 
-
-iters_save_model: 2000
+iters_save_model: 100
 
 partition_simulation: true
 num_iters_per_step: 4000
-total_N_iters: 60000
+total_N_iters: 40000

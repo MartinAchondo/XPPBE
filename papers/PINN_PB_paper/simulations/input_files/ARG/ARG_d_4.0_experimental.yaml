@@ -5,6 +5,7 @@ equation: regularized_scheme_2
 
 # PBE model
 pbe_model: linear
+phi_units: qe_eps0_angs
 
 # Domain properties
 domain_properties:
@@ -26,8 +27,12 @@ mesh_properties:
 # Sampling method
 sample_method: random_sample
 
-# Frequency of solvation energy calculation
-G_solve_iter: 10
+# Frequency of additional indicators calculation
+Indicators_iter: 10
+
+# Additional indicators
+Indicators:
+    - G_solv: true
 
 # Losses to add, and initial weights
 losses:
@@ -84,17 +89,8 @@ lr:
     decay_rate: 0.9
     staircase: true
 
-optimizer2: L-BFGS-B
-options_optimizer2:
-    maxiter: 100
-    maxfun: 5000
-    maxcor: 50
-    maxls: 50
-    ftol: 0.0000000000002
     
 # Solve parameters
 N_iters: 20000
-N_steps_2: 0
-
 
 iters_save_model: 20000

@@ -8,22 +8,22 @@
 
 Physics-Informed Neural Network solver for the Poisson-Boltzmann equation applied to real macromolecules in polarizable media.
 
-$$\nabla^2 \phi_1 = -\frac{1}{\epsilon_1}\sum_k q_k\delta(x_k) \quad x \in \Omega_1 $$
+$$\nabla^2 \phi_m = -\frac{1}{\epsilon_m}\sum_k q_k\delta(x_k) \quad x \in \Omega_m $$
 
-$$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
+$$\nabla^2 \phi_w = \kappa^2_w\phi_w \quad x \in \Omega_w $$
 
 
 <!-- <p align="center">
   <img height="200" src="img/Implicit-solvent-tr.png">
 </p> -->
 
-<p align="center">
+<!-- <p align="center">
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="img/Implicit-solvent-tr.png">
     <source media="(prefers-color-scheme: light)" srcset="img/Implicit-solvent.png">
     <img height="200" src="https://user-images.githubusercontent.com/25423296/163456779-a8556205-d0a5-45e2-ac17-42d089e3c3f8.png">
 </picture>
-</p>
+</p> -->
 
 ## Features
 
@@ -31,13 +31,25 @@ $$\nabla^2 \phi_2 = \kappa^2\phi_2 \quad x \in \Omega_2 $$
 - Simple molecule definition by .pdb or .pqr file.
 - Different loss terms can be added to the model.
 - Use of different architectures is available, very customizable.
-- Weigths balancing algortithm implemented.
+- Loss balancing algorithm implemented.
 - Build in Python/Tensorflow.
 
 <p align="center">
   <img height="200" src="img/molecule.png">
 </p>
 
+## Recent Publication
+
+Our recent work investigates the application of Physics-Informed Neural Networks (PINNs) to solve the Poisson-Boltzmann equation (PBE) using XPPBE. In this study, we highlight the impact of incorporating advanced neural network features, such as input and output scaling, random Fourier features, trainable activation functions, and a loss balancing algorithm. 
+
+<!-- Our findings show that these enhancements achieve accuracies of the order of 10⁻²—10⁻³, comparable to state-of-the-art methods. -->
+
+- **Title**: An Investigation of Physics Informed Neural Networks to solve the Poisson-Boltzmann Equation in Molecular Electrostatics.
+- **Authors**: Martín A. Achondo, Jehanzeb H. Chaudhry, Christopher D. Cooper.
+- **Journal/Conference**: Under review.
+- **DOI**: Pending.
+
+All input files and scripts to reproduce the results are available in the [Paper Folder](./papers/PINN_PB_paper).
 
 ## Resources
 

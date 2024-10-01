@@ -1,7 +1,5 @@
 # Simulation settings
 
-pinns_method: DCM
-
 # Equation to solve
 equation: regularized_scheme_2
 
@@ -30,8 +28,12 @@ mesh_properties:
 # Sampling method
 sample_method: random_sample
 
-# Frequency of solvation energy calculation
-G_solve_iter: 10
+# Frequency of additional indicators calculation
+Indicators_iter: 10
+
+# Additional indicators
+Indicators:
+    - G_solv: true
 
 # Losses to add, and initial weights
 losses:
@@ -74,8 +76,6 @@ hyperparameters_out:
     scale_input: true
     scale_output: true
 
-# Scale charges
-scale_NN_q: false
 
 # Optimizer properties
 optimizer: Adam
@@ -86,21 +86,12 @@ lr:
     decay_rate: 0.9
     staircase: true
 
-optimizer2: L-BFGS-B
-options_optimizer2:
-    maxiter: 100
-    maxfun: 5000
-    maxcor: 50
-    maxls: 50
-    ftol: 0.0000000000002
     
 # Solve parameters
-N_iters: 45000
-N_steps_2: 0
-
+N_iters: 40000
 
 iters_save_model: 100
 
 partition_simulation: true
 num_iters_per_step: 500
-total_N_iters: 60000
+total_N_iters: 40000
