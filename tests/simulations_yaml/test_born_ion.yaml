@@ -16,6 +16,9 @@ mesh_properties:
 # Frequency of solvation energy calculation
 Indicators_iter: 1
 
+Indicators:
+    - G_solv: true
+
 # Losses to add, and initial weights
 losses:
     - R1

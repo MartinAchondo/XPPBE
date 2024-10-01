@@ -186,7 +186,11 @@ class PINN(PINN_utils):
 
         self.save_model_iter = save_model if save_model != 0 else N
         self.Indicators_iter = Indicators_iter
-        self.Indicators = Indicators
+
+        self.Indicators = {'G_solv': True, 'L2_error_phi': False}
+        for key in self.Indicators:
+            if key in Indicators:
+                self.Indicators[key] = Indicators[key]
 
         t0 = time()
         

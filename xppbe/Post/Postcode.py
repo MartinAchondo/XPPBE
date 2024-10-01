@@ -77,7 +77,7 @@ class Postprocessing():
         self.plot_loss_validation_history(domain=1,loss='TL');
         self.plot_loss_validation_history(domain=2,loss='TL');
 
-        self.plot_loss_hisotry_training_validation();
+        self.plot_loss_history_training_validation();
 
         if plot_mesh:
             self.plot_collocation_points_3D();
@@ -230,7 +230,7 @@ class Postprocessing():
             fig.savefig(path_save, bbox_inches='tight')
         return fig,ax
 
-    def plot_loss_hisotry_training_validation(self):
+    def plot_loss_history_training_validation(self):
         fig,ax = plt.subplots()
 
         ax.semilogy(range(1,len(self.PINN.losses['vTL1'])+1), self.PINN.losses['vTL1']+self.PINN.losses['vTL2'],'r-',label=f'Training')
