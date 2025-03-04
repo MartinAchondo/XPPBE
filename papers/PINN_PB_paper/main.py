@@ -52,7 +52,3 @@ post.plot_phi_line_aprox_known(known_method, value='react',theta=0, phi=np.pi/2)
 post.plot_phi_line_aprox_known(known_method, value='react',theta=np.pi/2, phi=np.pi/2)
 post.plot_phi_line_aprox_known(known_method, value='react', theta=np.pi/2, phi=np.pi)
 post.plot_interface_error(known_method, type_e='absolute', scale='log', ext='png')
-post.plot_interface_error(known_method, type_e='absolute', scale='linear', ext='png')
-
-
-

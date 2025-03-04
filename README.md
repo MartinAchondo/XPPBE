@@ -186,11 +186,10 @@ All input files and scripts to reproduce the results are available in the [Paper
 If you find this project useful for your research or work, please consider citing it. Here is an example BibTeX entry:
 
 ```bibtex
-@misc{XPPBE,
-  author    = {Martín Achondo},
-  title     = {{XPPBE: PINN for PBE}},
-  howpublished = {GitHub repository},
-  year      = {2024},
-  url       = {https://github.com/MartinAchondo/XPPBE},
+@article{achondo2024investigation,
+  title={An Investigation of Physics Informed Neural Networks to solve the Poisson-Boltzmann Equation in Molecular Electrostatics},
+  author={Achondo, Martin A and Chaudhry, Jehanzeb H and Cooper, Christopher D},
+  journal={arXiv preprint arXiv:2410.12810},
+  year={2024}
 }
 ```
