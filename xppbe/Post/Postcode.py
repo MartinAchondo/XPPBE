@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import matplotlib.ticker as ticker
+from matplotlib.colors import LogNorm
 import os
 import json
 import pandas as pd
@@ -285,11 +286,13 @@ class Postprocessing():
         if not known_method is None:
             G_known = self.PDE.solvation_energy_phi_qs(self.to_V**-1*self.phi_known(known_method,'react',tf.constant(self.PDE.x_qs, dtype=self.DTYPE),'molecule'))
             G_known = np.ones(len(self.PINN.G_solv_hist))*G_known
-            label = known_method.replace('_',' ') if 'Born' not in known_method else 'Analytic'
+            label = known_method.replace('_',' ')
             if label=='PBJ':
                 label='BEM'
             elif label=='APBS':
                 label='FDM'
+            elif label=='Spherical Harmonics' or label=='analytic Born Ion':
+                label='Analytic'
             ax.plot(np.array(list(self.PINN.G_solv_hist.keys()), dtype=self.DTYPE), G_known,'r--',label=f'{label}')
         ax.legend()
         n_label = r'$n$'
@@ -362,7 +365,7 @@ class Postprocessing():
             label='BEM'
         elif label=='APBS':
             label='FDM'
-        elif label=='Spherical Harmonics':
+        elif label=='Spherical Harmonics' or label=='analytic Born Ion':
             label='Analytic'
             
         ax.plot(r_in,u_in_an[:], c='r', linestyle='--')
@@ -448,6 +451,44 @@ class Postprocessing():
             path_save = os.path.join(self.directory,self.path_plots_solution,path)
             fig.savefig(path_save, bbox_inches='tight')
         return fig,ax
+
+
+    def plot_residual_contour(self, N=100, x0=np.array([0,0,0]), n=np.array([1,0,0])):
+        
+        fig, ax = plt.subplots()
+
+        X_in, X_out, bools, vectors = self.get_points_plane(N, x0, n)
+        T, S = vectors
+
+        XX_in = self.mesh.get_X(tf.constant(X_in, dtype=self.DTYPE))
+        XX_out = self.mesh.get_X(tf.constant(X_out, dtype=self.DTYPE))
+
+        u_in = self.PDE.PDE_in.get_r(self.mesh, self.model, XX_in, '', 'molecule')
+        u_out = self.PDE.PDE_in.get_r(self.mesh, self.model, XX_out, '', 'solvent')
+
+        u_in = np.abs(u_in) + 1e-10  
+        u_out = np.abs(u_out) + 1e-10  
+
+        vmax, vmin = self.get_max_min(u_in, u_out)
+
+        norm = LogNorm(vmin, vmax)
+        
+        s = ax.scatter(T.ravel()[bools[0]], S.ravel()[bools[0]], c=u_in[:], norm=norm, cmap='plasma')
+        s = ax.scatter(T.ravel()[bools[1]], S.ravel()[bools[1]], c=u_out[:], norm=norm, cmap='plasma')
+
+        ax.set_xlabel(r'$x$ [$\AA$]')
+        ax.set_ylabel(r'$y$ [$\AA$]')
+        
+        cbar = fig.colorbar(s, ax=ax)
+        # cbar.set_label(r'$\phi$ [V]', rotation=270)
+        ax.grid()
+
+        if self.save:
+            path = f'residual_contour.png'
+            path_save = os.path.join(self.directory,self.path_plots_solution,path)
+            fig.savefig(path_save, bbox_inches='tight')
+        return fig,ax
+
 
 
     def plot_interface_3D(self,variable='phi', value='phi', domain='interface', jupyter=False, ext='html',cmin=None, cmax=None, dic_camera=False):
@@ -587,7 +628,7 @@ class Postprocessing():
             error /= phi_known.numpy().reshape(-1,1)
 
 
-        fig = self.plot_interface_error_by(error,vertices,elements,scale,jupyter=False,cmin=cmin,cmax=cmax)
+        fig = self.plot_interface_error_by(error,vertices,elements,scale,jupyter=jupyter,cmin=cmin,cmax=cmax)
 
         path_save = os.path.join(self.directory, self.path_plots_solution, f'Interface_error_{method}_{type_e}_{scale}')
 
@@ -612,12 +653,15 @@ class Postprocessing():
 
     @staticmethod
     def plot_interface_error_by(error,vertices,elements,scale='log',jupyter=True,cmin=None,cmax=None):
-        cmin = np.log(np.min(error)) if cmin is None else cmin
-        cmax = np.log(np.max(error)) if cmax is None else cmax
+
         fig = go.Figure()
         if scale=='log':
             epsilon = 1e-10
             log_intensity = np.log(np.abs(error) + epsilon)
+            cmin = np.min(log_intensity) if cmin is None else cmin
+            cmax = np.max(log_intensity) if cmax is None else cmax
+            tickvals = np.linspace(cmin, cmax, num=7)
+            ticktext = [f"{np.exp(v):.1e}" for v in tickvals]
             fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
                                 i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
                                 intensity=log_intensity,
@@ -627,16 +671,29 @@ class Postprocessing():
                                 colorbar=dict(
                                     # title='\Delta 𝜓',
                                     tickfont=dict(size=28),
-                                    tickvals=np.log(np.array([1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1e0,1e1,1e2,1e3]) + epsilon),
-                                    ticktext=['1e-7','1e-6','1e-5','1e-4','1e-3','1e-2','1e-1','1e0','1e1','1e2','1e3']
+                                    # tickvals=np.log(np.array([1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1e0,1e1,1e2,1e3,1e4,1e5]) + epsilon),
+                                    # ticktext=['1e-7','1e-6','1e-5','1e-4','1e-3','1e-2','1e-1','1e0','1e1','1e2','1e3','1e4','1e5']
+                                    tickvals=tickvals,
+                                    ticktext=ticktext,
                                 )
                                 ))
         elif scale=='linear':
+            cmin = np.min(error) if cmin is None else cmin
+            cmax = np.max(error) if cmax is None else cmax
             fig.add_trace(go.Mesh3d(x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
                     i=elements[:, 0], j=elements[:, 1], k=elements[:, 2],
-                    intensity=np.abs(error), colorscale='Plasma',
-                    colorbar=dict(title='\Delta 𝜓',font={'size': 18},)))
+                    intensity=np.abs(error), colorscale='Plasma',cmin=cmin, cmax=cmax,
+                    colorbar=dict(
+                                    # title='\Delta 𝜓',
+                                    tickfont=dict(size=28))))
         fig.update_layout(scene=dict(aspectmode='data', xaxis_title='x [Å]', yaxis_title='y [Å]', zaxis_title='z [Å]'), margin=dict(l=30, r=40, t=20, b=20),font_family="Times New Roman")
+        fig.update_layout(
+            scene = dict(
+                xaxis = dict(visible=False),
+                yaxis = dict(visible=False),
+                zaxis =dict(visible=False)
+                )
+            )
 
         if jupyter:
             fig.show()
