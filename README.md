@@ -175,8 +175,8 @@ Our recent work investigates the application of Physics-Informed Neural Networks
 
 - **Title**: An Investigation of Physics Informed Neural Networks to solve the Poisson-Boltzmann Equation in Molecular Electrostatics.
 - **Authors**: Martín A. Achondo, Jehanzeb H. Chaudhry, Christopher D. Cooper.
-- **Journal/Conference**: Under review.
-- **DOI**: Pending.
+- **Journal/Conference**: Journal of Chemical Theory and Computation.
+- **DOI**: https://doi.org/10.1021/acs.jctc.4c01747
 
 All input files and scripts to reproduce the results are available in the [Paper Folder](./papers/PINN_PB_paper).
 
@@ -187,9 +187,10 @@ If you find this project useful for your research or work, please consider citin
 
 ```bibtex
 @article{achondo2024investigation,
-  title={An Investigation of Physics Informed Neural Networks to solve the Poisson-Boltzmann Equation in Molecular Electrostatics},
-  author={Achondo, Martin A and Chaudhry, Jehanzeb H and Cooper, Christopher D},
-  journal={arXiv preprint arXiv:2410.12810},
-  year={2024}
+  title={An Investigation of Physics Informed Neural Networks to Solve the Poisson--Boltzmann Equation in Molecular Electrostatics},
+  author={Achondo, Mart{\'\i}n A and Chaudhry, Jehanzeb H and Cooper, Christopher D},
+  journal={Journal of Chemical Theory and Computation},
+  year={2024},
+  publisher={ACS Publications}
 }
 ```
