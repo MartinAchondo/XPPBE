@@ -1,6 +1,6 @@
 # Reproducing Paper Results
 
-This folder contains all the necessary files and configurations to reproduce the results from our recent publication: *An Investigation of Physics Informed Neural Networks to solve the Poisson-Boltzmann Equation in Molecular Electrostatics*.
+This folder contains all the necessary files and configurations to reproduce the results from our recent publication: *An Investigation of Physics Informed Neural Networks to solve the Poisson-Boltzmann Equation in Molecular Electrostatics*, DOI: https://doi.org/10.1021/acs.jctc.4c01747.
 
 ## How to Run the Simulations
 
